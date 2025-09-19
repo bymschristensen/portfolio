@@ -1,1178 +1,144 @@
+<script src="https://unpkg.com/@barba/core@2/dist/barba.umd.js"></script>
 <script>
-	window.addEventListener("error", (e) => {
-		console.log("Caught error:", e.message);
-	});
+	function initTheme(){const t=localStorage.getItem("theme")||"light";document.documentElement.setAttribute("data-theme",t)}initTheme();
+	gsap.registerPlugin(ScrollTrigger,Flip,SplitText,TextPlugin,Observer);
+	const DEBUG = false; if (DEBUG && window.ScrollTrigger) { ScrollTrigger.config({ log: true }); }
 
-	document.addEventListener("DOMContentLoaded", () => {
-		gsap.registerPlugin(Flip, ScrollTrigger, SplitText, TextPlugin, Observer);
+// Helpers
+	let _gsapObservers=[],_activeTickers=[];function registerGsapObserver(e){return _gsapObservers.push(e),e}function registerTicker(e){return _activeTickers.push(e),e}let _activeObservers=[];function registerObserver(e){return _activeObservers.push(e),e}
+	function resetWebflow(t){const e=(new DOMParser).parseFromString(t.next.html,"text/html"),a=e.querySelector("html").getAttribute("data-wf-page"),o=e.querySelector("script[data-wf-site-data]")?.textContent;if(document.documentElement.setAttribute("data-wf-page",a),document.querySelectorAll("script[data-wf-site-data]").forEach((t=>t.remove())),o){const t=document.createElement("script");t.type="application/json",t.setAttribute("data-wf-site-data",""),t.textContent=o,document.head.appendChild(t)}window.Webflow?.destroy?.(),window.Webflow?.ready?.();const n=Webflow.require?.("ix2");n?.init()}
+	function destroyAllYourInits(){if(window.ScrollTrigger&&ScrollTrigger.getAll().forEach((r=>r.kill())),window.Observer&&Observer.getAll)try{Observer.getAll().forEach((r=>r.kill()))}catch(r){}_gsapObservers.forEach((r=>{try{r.kill&&r.kill()}catch(r){}})),_gsapObservers=[],_activeTickers.forEach((r=>{try{gsap.ticker.remove(r)}catch(r){}})),_activeTickers=[],_activeObservers.forEach((r=>{try{r.disconnect&&r.disconnect()}catch(r){}})),_activeObservers=[];const r=document.querySelector("canvas.cursor-webgl");r&&r.remove();const e=document.querySelector(".custom-cursor");e&&e.remove()}
+	function runSafeInit(e,{preserveServicePins:r=!1}={}){return new Promise((i=>{const n=async()=>{window.ScrollTrigger&&ScrollTrigger.getAll().forEach((e=>{r&&e.trigger?.classList?.contains("section-single-service")||e.kill()})),_activeObservers.forEach((e=>{"function"==typeof e.disconnect&&e.disconnect()})),_activeObservers=[],initAllYourInits(e),await new Promise((e=>requestAnimationFrame(e))),await new Promise((e=>requestAnimationFrame(e))),ScrollTrigger.refresh(),i()};/^((?!chrome|android).)*safari/i.test(navigator.userAgent)?requestAnimationFrame(n):document.fonts&&document.fonts.ready?document.fonts.ready.then((()=>{requestAnimationFrame((()=>{requestAnimationFrame((()=>{"requestIdleCallback"in window?requestIdleCallback(n):setTimeout(n,0)}))}))})):setTimeout(n,600)}))}
+	function reinitWebflowModules(){if(window.Webflow&&Webflow.require){try{Webflow.ready&&Webflow.ready()}catch(e){}try{const e=Webflow.require("tabs");e&&"function"==typeof e.ready&&e.ready()}catch(e){}}}
+	function isSlowConnection() { const nav = navigator.connection || {};	return nav.effectiveType && nav.effectiveType !== "4g"; }
+	function isReload() { const entries = performance.getEntriesByType("navigation"); return entries.length ? entries[0].type === "reload" : performance.navigation?.type === 1; }
+	function shouldShowPreloader() {
+		// return isSlowConnection() || isReload() || !sessionStorage.getItem("preloaderSeen");
+		return false;
+	}
 
-		// === Text Animations ===
-				// Split & mask ONE element
-				function splitAndMask(el) {
-					// we stash the raw HTML so we can restore it later
-					if (!el._originalHTML) el._originalHTML = el.innerHTML;
-					if (el._split) return el._split.lines;
+// Functions
+	function splitAndMask(e){if(e._originalHTML||(e._originalHTML=e.innerHTML),e._split)return e._split;const t=getComputedStyle(e).whiteSpace||"normal",i=e.style.whiteSpace,l=e.style.display;e.style.whiteSpace=t,"inline"===getComputedStyle(e).display&&(e.style.display="block"),e.clientWidth;const s=new SplitText(e,{type:"lines",linesClass:"line",reduceWhiteSpace:!1});return s.lines.forEach((e=>{const i=e.getBoundingClientRect().height||e.offsetHeight||0,l=document.createElement("div");l.className="text-mask",l.style.overflow="hidden",l.style.display="block",l.style.height=i+"px",e.style.whiteSpace=t,e.style.display="block",e.parentNode.insertBefore(l,e),l.appendChild(e)})),gsap.set(s.lines,{yPercent:100,rotation:10,transformOrigin:"0 10%",willChange:"transform,opacity"}),e.style.whiteSpace=i,e.style.display=l,s}
+	function safelyRevertSplit(e,i){e&&i&&(e.revert(),i._originalHTML&&(i.innerHTML=i._originalHTML,delete i._originalHTML),delete i._split)}
+	function animateLines(t){return gsap.set(t,{transformOrigin:"0 10%",rotation:10,yPercent:100,willChange:"transform, opacity"}),gsap.to(t,{yPercent:0,rotation:0,duration:.8,ease:"power2.out",stagger:.08})}
+	function triggerTAOne(e){const n=splitAndMask(e);requestAnimationFrame((()=>{animateLines(n.lines).eventCallback("onComplete",(()=>{safelyRevertSplit(n,e)}))}))}
+	function initTextAnimationOne(e=document,t=".ta-one"){e.querySelectorAll(t).forEach((e=>{gsap.set(e,{autoAlpha:0}),safelyRevertSplit(e._split,e)}));const r=registerObserver(new IntersectionObserver(((e,t)=>{e.forEach((e=>{if(!e.isIntersecting)return;const r=e.target;gsap.set(r,{autoAlpha:1}),triggerTAOne(r),t.unobserve(r)}))}),{root:null,rootMargin:"0px 0px -5% 0px",threshold:0}));e.querySelectorAll(t).forEach((e=>{r.observe(e);const t=e.getBoundingClientRect();t.top<window.innerHeight&&t.bottom>0&&(gsap.set(e,{autoAlpha:1}),triggerTAOne(e),r.unobserve(e))})),e.querySelectorAll(".w-tab-pane").forEach((e=>{registerObserver(new MutationObserver((()=>{e.classList.contains("w--tab-active")&&e.querySelectorAll(t).forEach((e=>{gsap.set(e,{autoAlpha:0}),safelyRevertSplit(e._split,e),r.observe(e);const t=e.getBoundingClientRect();t.top<window.innerHeight&&t.bottom>0&&(gsap.set(e,{autoAlpha:1}),triggerTAOne(e),r.unobserve(e))}))}))).observe(e,{attributes:!0,attributeFilter:["class"]})}))}
+	function initReparentChildren(t=document){t.querySelectorAll("[data-child]").forEach((e=>{if(e.matches(".w-tab-link, .w-tab-pane")||e.closest(".w-tabs"))return;const a=e.getAttribute("data-child");let n=t.querySelector(`[data-parent="${a}"]`);n||t===document||(n=document.querySelector(`[data-parent="${a}"]`)),n&&n.appendChild(e)}))}
+	function markTabLinksForBarba(a=document){a.querySelectorAll(".w-tab-link").forEach((a=>{a.setAttribute("data-barba-prevent","all")}))}
+	function initLinkMappings(e=document){const r=[{triggerId:"selectedOpen",targetId:"selected"},{triggerId:"archiveOpen",targetId:"archive"},{triggerId:"resourcesOpen",targetId:"resources"},{triggerId:"resourcesOpenShortcut",targetId:"resources"}];for(let e=1;e<=4;e++)r.push({triggerId:`recommendationsOpen${e}`,targetId:"recommendations"});r.forEach((({triggerId:r,targetId:t})=>{const c=e.querySelector(`#${r}`),n=e.querySelector(`#${t}`);if (c && n && !c.classList.contains("w-tab-link")){c.addEventListener("click",e=>{e.preventDefault();n.click();});}}))}
+	function initSelectedWorkLoop(e=document){const t=e.querySelector(".selected-container"),n=t?.querySelector(".selected-content");if(!t||!n)return;if(t.__selectedLoopInited)return;t.__selectedLoopInited=!0;const o=Array.from(n.querySelectorAll(".selected-item-outer"));if(!o.length)return;n.style.justifyContent="center",n.style.transform="translateZ(0)";const r=e=>e.offsetWidth+(e=>(parseFloat(getComputedStyle(e).marginLeft)||0)+(parseFloat(getComputedStyle(e).marginRight)||0))(e),a=()=>{const e=Math.max(document.documentElement.clientWidth,window.innerWidth||0);return Math.round(e*(window.matchMedia("(max-width: 767px)").matches?.78:.28))};function l(e){Array.from(n.querySelectorAll(".selected-item-outer")).forEach((t=>{t._baseW=e,t.style.width=e+"px"}))}function s(){let e=0;return Array.from(n.children).forEach((t=>{1===t.nodeType&&(e+=r(t))})),e}function i(){o.forEach((e=>{const t=e.cloneNode(!0);t.setAttribute("data-clone","true"),n.appendChild(t)}))}function c(){const e=Array.from(n.children).filter((e=>1===e.nodeType)),o=Math.floor(e.length/2);let a=0;for(let t=0;t<o;t++)a+=r(e[t]);const l=r(e[o]);h=-(a+.5*l-.5*t.clientWidth),gsap.set(n,{x:h})}function d(){t.hasAttribute("data-loop-ready")||(t.setAttribute("data-loop-ready","1"),n.dispatchEvent(new CustomEvent("selected:loop-ready",{bubbles:!0})))}!function(){Array.from(n.children).forEach((e=>1===e.nodeType&&e.hasAttribute("data-clone")&&e.remove())),l(a()),i(),i();const e=3*t.clientWidth;let o=0;for(;s()<e&&o++<8;)i();l(a())}();let h=0,u=0,f=1;const p={t:0},m=gsap.quickTo(p,"t",{duration:.45,ease:"power3.out",onUpdate:y});function y(){Array.from(n.querySelectorAll(".selected-item-outer")).forEach((e=>{const t=e._baseW||a();e.style.width=t*(1+p.t)+"px"}))}let b=!1;const w=t.closest(".w-tab-pane");gsap.ticker.add(((e,t)=>{if(w&&!w.classList.contains("w--tab-active"))return;const o=t/16.6667,a=u+1*f;h-=a*o;let l=n.firstElementChild,s=0;for(;l&&h<-r(l);){const e=r(l);if(h+=e,n.appendChild(l),l=n.firstElementChild,++s>50)break}let i=n.lastElementChild;for(s=0;i&&h>0;){const e=r(i);if(h-=e,n.insertBefore(i,n.firstElementChild),i=n.lastElementChild,++s>50)break}gsap.set(n,{x:h});const c=Math.min(1,Math.abs(a)/70);m((a>=0?.14:-.1)*c),Math.abs(a)<3&&Math.abs(p.t)>.002&&!b&&(b=!0,gsap.to(p,{t:0,duration:1.1,ease:"elastic.out(0.62,0.32)",onUpdate:y})),Math.abs(a)>=3&&(b=!1);const d=n.querySelectorAll(".selected-item-visual");if(d.length){const e=.5*window.innerWidth,t=.5+.5*c;d.forEach((n=>{const o=n.closest(".selected-visual");if(!o)return;const r=o.getBoundingClientRect(),a=(e-(r.left+.5*r.width))/window.innerWidth;n.style.setProperty("--drift",80*a*t+"px")}))}u*=Math.pow(.94,o),Math.abs(u)<.01&&(u=0)})),Observer.create({target:n,type:"wheel,touch",wheelSpeed:1,tolerance:6,onChange(e){const t=Math.abs(e.deltaX)>=Math.abs(e.deltaY)?e.deltaX:e.deltaY;if(!t)return;const n=e.event.type.includes("touch")?.34:.08;u+=t*n,u=gsap.utils.clamp(-70,70,u),f=t>0?1:-1}}),c(),d();let g=0;new ResizeObserver((()=>{cancelAnimationFrame(g),g=requestAnimationFrame((()=>{l(a()),y(),c(),d()}))})).observe(t)}
+	function initOverscrollBehavior(e=document){const r=Array.from(e.querySelectorAll(".w-tab-pane")),t=(()=>{let e=0;return()=>{cancelAnimationFrame(e),e=requestAnimationFrame((()=>{requestAnimationFrame((()=>{ScrollTrigger?.refresh(!0)}))}))}})(),o=new MutationObserver((()=>{e.querySelector(".wrapper-selected-work.w--tab-active")?document.body.style.overscrollBehavior="none":document.body.style.overscrollBehavior="",t()}));r.forEach((e=>o.observe(e,{attributes:!0,attributeFilter:["class"]}))),e.querySelector(".wrapper-selected-work.w--tab-active")&&(document.body.style.overscrollBehavior="none"),registerObserver(o)}
+	function initCounters(e=document){[{id:"work-counter-selected",selector:".selected-item-outer"},{id:"work-counter-archive",selector:".list-item-archive-project"},{id:"work-counter-resources",selector:".list-item-resource"},{id:"archive-results-counter",selector:".list-item-archive-project"}].forEach((({id:t,selector:r})=>{const o=e.querySelector(`#${t}`);if(!o)return;const c=e.querySelectorAll(r).length;if("archive-results-counter"===t){const e=o.textContent||"",t={value:parseInt(e.replace(/\D/g,""),10)||0};gsap.to(t,{value:c,duration:.5,ease:"power1.out",onUpdate:()=>{o.textContent=Math.round(t.value)}})}else o.textContent=`(${c})`}))}
+	function openFirstArchiveProject(e=document){e.querySelectorAll(".list-item-archive-project.open").forEach((e=>e.classList.remove("open")));const t=Array.from(e.querySelectorAll(".list-item-archive-project")).find((e=>null!==e.offsetParent));t&&(t.classList.add("open"),requestAnimationFrame((()=>{["scroll","resize"].forEach((e=>{window.dispatchEvent(new Event(e,{bubbles:!0})),document.documentElement.dispatchEvent(new Event(e,{bubbles:!0})),document.body.dispatchEvent(new Event(e,{bubbles:!0}))})),[document.documentElement,document.body].forEach((e=>{e.scrollTop+=2,e.scrollTop-=2}))})))}
+	function initArchiveFilters(e=document){const t=Array.from(e.querySelectorAll(".filters-tab")),r=Array.from(e.querySelectorAll(".list-item-archive-project")),a=Array.from(e.querySelectorAll("[id^='nav-archive-filter-']"));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))}));const o=e=>"all"===e?r.length:r.filter((t=>t._catsNorm.includes(e))).length;function c(t,a=!0){const o=e.querySelector("#archive-results-counter");if(!o)return;const c=parseInt(o.textContent?.replace(/\D/g,""),10)||0;r.forEach((e=>{e.style.display="all"===t||e._catsNorm.includes(t)?"":"none"}));const l=r.filter((e=>"none"!==e.style.display)),i=l.length;if(gsap.to({v:c},{v:i,duration:a?.5:.01,ease:"power1.out",onUpdate:function(){o.textContent=Math.round(this.targets()[0].v)}}),!l.length)return;if(a){const e=gsap.timeline();e.set(l,{y:100,opacity:0,filter:"blur(0px)",willChange:"transform,opacity"}),e.to(l,{y:0,opacity:1,duration:.6,ease:"power2.out",stagger:.12})}else gsap.set(l,{y:0,opacity:1,filter:"blur(0px)"});const s=l.find((e=>null!==e.offsetParent));e.querySelectorAll(".list-item-archive-project.open").forEach((e=>e.classList.remove("open"))),s&&s.classList.add("open")}t.forEach((e=>{const t=e.id.replace("archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),r=e.querySelector(".filters-counter");r&&(r.textContent=`(${o(t)})`)})),a.forEach((e=>{const t=e.querySelector(".nav-counter-filters"),r=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,"");t&&(t.textContent=`(${o(r)})`)})),t.forEach((e=>{e.addEventListener("click",(r=>{r.preventDefault(),t.forEach((e=>e.classList.remove("active"))),e.classList.add("active");c(e.id.replace("archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),!0)}))}));const l=e.querySelector("#archive-filter-all");l&&l.classList.add("active");const i=e.querySelector('.w-tab-pane[data-w-tab="Archive"]');let s=!1;const n=new MutationObserver((()=>{i&&i.classList.contains("w--tab-active")&&(s||(s=!0,c("all",!0)))}));i&&n.observe(i,{attributes:!0,attributeFilter:["class"]}),registerObserver(n),c("all",!1);const u=Array.from(e.querySelectorAll(".list-item-archive-project img")).slice(0,12);("requestIdleCallback"in window?window.requestIdleCallback:e=>setTimeout(e,0))((()=>{u.forEach((e=>{e&&e.decode&&e.decode().catch((()=>{}))}))}))}
+	function initMenuNavigation(e=document){e.querySelectorAll(".nav-primary-wrap").forEach((e=>{const t=e.querySelector(".nav-button-menu"),n=e.querySelector(".nav-button-text"),o=e.querySelector(".phone-number"),l=e.querySelectorAll(".button-minimal-darkmode"),r=e.querySelectorAll(".menu-link"),a=e.querySelector(".ta-one-menu");if(!(t&&n&&o&&l.length&&r.length&&a))return;let i;n.dataset.orig=n.textContent;const u=gsap.timeline({paused:!0}).call((()=>{i=splitAndMask(a),animateLines(i.lines).eventCallback("onComplete",(()=>{safelyRevertSplit(i,a),i=null}))}),null,0).from(o,{opacity:0,duration:.5},">").from(l,{opacity:0,duration:.5,stagger:.2},"<").from(r,{opacity:0,yPercent:240,duration:.5,stagger:.2},"<").to(n,{text:"Close",duration:.3},"<");u.eventCallback("onReverseComplete",(()=>{n.textContent=n.dataset.orig})),e._menuTimeline=u,e._menuButton=t}))}
+	function initFilterNavigation(e=document){e.querySelectorAll(".nav-primary-wrap").forEach((t=>{const r=t.querySelector(".nav-button-filter"),i=t.querySelector(".filters-container"),o=t.querySelectorAll(".filter-tuner"),a=t.querySelector(".filter-line-1"),n=t.querySelector(".filter-line-2"),l=t.querySelector(".modal-filters-caption"),c=t.querySelectorAll(".modal-filters-item"),s=e.querySelector(".menu-filter-hover"),u=e.querySelectorAll(".menu-filter-image");if(!r||!i||!c.length)return;function d(){e.querySelector(".archive-tab.w--tab-active")?(r.style.display="flex",gsap.to(r,{opacity:1,duration:.2})):gsap.to(r,{opacity:0,duration:.2,onComplete:()=>r.style.display="none"})}d();const p=registerObserver(new MutationObserver(d));if(e.querySelectorAll(".archive-tab, .archive-tab-link").forEach((e=>p.observe(e,{attributes:!0,attributeFilter:["class"]}))),e.querySelectorAll("#archiveOpen, .archive-tab-link").forEach((e=>e.addEventListener("click",(()=>setTimeout(d,50))))),s&&u.length){gsap.set(s,{xPercent:-50,yPercent:-50,scale:0});const e=gsap.quickTo(s,"x",{duration:2.6,ease:"expo"}),t=gsap.quickTo(s,"y",{duration:2.6,ease:"expo"});window.addEventListener("mousemove",(r=>{e(r.pageX),t(r.pageY)}));const r=gsap.timeline({paused:!0}).to(s,{scale:1,opacity:1,rotation:0,duration:.5,ease:"power1.inOut"});c.forEach(((e,t)=>{e.addEventListener("mouseover",(()=>{u[t]?.classList.add("active"),r.play()})),e.addEventListener("mouseout",(()=>{r.reverse(),u[t]?.classList.remove("active")}))}))}const v=gsap.timeline({paused:!0}).to(i,{opacity:1,duration:.4,ease:"power2.out"},0).to(o,{opacity:0,duration:.15},"<").to(a,{rotation:45,transformOrigin:"center",duration:.35},"<").to(n,{rotation:-45,marginTop:"-4px",transformOrigin:"center",duration:.35},"<").from(l,{opacity:0,duration:.5},"<").from(c,{opacity:0,duration:.8,stagger:.2},"<");c.forEach((e=>{e.addEventListener("click",(t=>{t.preventDefault();const r=e.id.replace("nav-archive-filter-",""),i=document.getElementById(`archive-filter-${r}`);i&&i.click(),v.timeScale(3).reverse()}))})),t._filterTimeline=v,t._filterButton=r}))}
+	function initNavigationTriggers(e=document){e.querySelectorAll(".nav-primary-wrap").forEach((e=>{const l=e._menuButton,t=e._filterButton,n=e._menuTimeline,o=e._filterTimeline,i=e.querySelector(".menu-wrapper"),r=e.querySelector(".menu-container"),a=e.querySelector(".filters-container");let s=null;function y(){r.style.display="none",i.style.display="none",document.body.style.overflow="",s=null}function d(){a.style.display="none",i.style.display="none",document.body.style.overflow="",s=null}n.eventCallback("onReverseComplete",y),o.eventCallback("onReverseComplete",d),l.addEventListener("click",(()=>{if("filter"===s)return o.timeScale(2).reverse(),void o.eventCallback("onReverseComplete",(()=>{d(),s="menu",document.body.style.overflow="hidden",i.style.display="flex",r.style.display="flex",n.timeScale(1).play(0),o.eventCallback("onReverseComplete",d)}));"menu"!==s?(s="menu",document.body.style.overflow="hidden",i.style.display="flex",r.style.display="flex",n.timeScale(1).play(0)):n.timeScale(2).reverse()})),t.addEventListener("click",(()=>{if("menu"===s)return n.timeScale(2).reverse(),void n.eventCallback("onReverseComplete",(()=>{y(),s="filter",document.body.style.overflow="hidden",i.style.display="flex",a.style.display="flex",o.timeScale(1).play(0),n.eventCallback("onReverseComplete",y)}));"filter"!==s?(s="filter",document.body.style.overflow="hidden",i.style.display="flex",a.style.display="flex",o.timeScale(1).play(0)):o.timeScale(2).reverse()}))}))}
+	function initNavigation(root = document) {initMenuNavigation(root);initFilterNavigation(root);initNavigationTriggers(root);}
+	function initMenuLinkHover(e=document){window.matchMedia("(hover: hover) and (min-width: 1024px)").matches&&e.querySelectorAll(".menu-link").forEach((e=>{let t=e.querySelector(".menu-link-bg");t||(t=document.createElement("div"),t.classList.add("menu-link-bg"),e.appendChild(t)),e.addEventListener("mouseenter",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:1,duration:.3,ease:"power2.out"})})),e.addEventListener("mouseleave",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:0,duration:.3,ease:"power2.in"})}))}))}
+	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
+	window.initPinnedSections=function(e=document){console.log("[initPinnedSections] loaded for",e);Array.from(e.querySelectorAll(".section-single-service")).forEach(t=>{const r=t.offsetHeight<window.innerHeight;gsap.timeline({scrollTrigger:{trigger:t,start:r?"top top":"bottom bottom",pin:!0,pinSpacing:!1,scrub:1}}).to(t,{ease:"none",startAt:{filter:"contrast(100%) blur(0px)"},filter:"contrast(10%) blur(10px)"},0)});const t=e.querySelector('.w-tab-pane[data-w-tab="Resources"]')||e.querySelector(".wrapper-resources")?.closest(".w-tab-pane")||null,r=e.querySelectorAll(".section-resources .resource-item,.section-resources .rescource-item");console.log("[initPinnedSections] resources found:",r.length,"tabActive:",!!t&&t.classList.contains("w--tab-active"));function n(){if(!r.length){console.log("[initPinnedSections] no resource items");return}const e=Array.from(r),t=e.length-1;function n(e){let t=e.querySelector(":scope > .resource-ovl");if(!t){t=document.createElement("div"),t.className="resource-ovl",t.style.cssText="position:absolute;inset:0;pointer-events:none;opacity:0;background:rgba(0,0,0,.22);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);z-index:2;","static"===getComputedStyle(e).position&&(e.style.position="relative"),e.appendChild(t)}return t}function o(e){let t=e.querySelector(":scope > .resource-scroll-inner");if(!t){t=document.createElement("div"),t.className="resource-scroll-inner",t.style.position="relative",t.style.willChange="transform";const r=[];e.childNodes.forEach(n=>{1===n.nodeType&&!n.classList.contains("resource-ovl")&&r.push(n)}),r.forEach(r=>t.appendChild(r)),e.appendChild(t)}return t}function i(e,t){const r=window.innerHeight||document.documentElement.clientHeight,n=t.scrollHeight||t.offsetHeight||e.offsetHeight;return Math.max(1,n-r)}e.forEach((r,a)=>{const l=n(r),s=o(r);r.style.zIndex=String(200+a);const c=s.querySelector(".container.difference h2"),d=s.querySelector(".resource-block"),u=s.querySelector(".resource-visual"),f=i(r,s),g=gsap.timeline({defaults:{ease:"none"}});console.log("[initPinnedSections] item",a,"panelH:",r.offsetHeight,"innerH:",s.scrollHeight,"pinDist:",f);g.fromTo(s,{y:0},{y:-f,duration:1},0),c&&g.fromTo(c,{y:0},{y:20,duration:1},0),d&&g.fromTo(d,{y:0},{y:-300,duration:1},0),u&&g.fromTo(u,{y:0},{y:-480,duration:1},0),g.set(r,{filter:"contrast(100%) blur(0px)"},0).to(r,{filter:"contrast(65%) blur(0px)",duration:.85},0).fromTo(l,{opacity:0,backdropFilter:"blur(0px)",webkitBackdropFilter:"blur(0px)"},{opacity:1,backdropFilter:"blur(12px)",webkitBackdropFilter:"blur(12px)",duration:.15},.85),a<t?ScrollTrigger.create({trigger:r,start:"top top",endTrigger:e[a+1],end:"top top",scrub:.95,pin:!0,pinSpacing:!1,animation:g,anticipatePin:1,invalidateOnRefresh:!0}):ScrollTrigger.create({trigger:r,start:"top bottom",end:"bottom top",scrub:.8,animation:g,invalidateOnRefresh:!0})}),ScrollTrigger.refresh(!0)}if(t){if(t.classList.contains("w--tab-active")){console.log("[initPinnedSections] Resources tab active → build now");requestAnimationFrame(()=>requestAnimationFrame(n))}else{console.log("[initPinnedSections] Resources tab inactive → wait");const e=new MutationObserver(()=>{if(t.classList.contains("w--tab-active")){console.log("[initPinnedSections] Resources tab became active → build");requestAnimationFrame(()=>requestAnimationFrame(n)),e.disconnect()}});e.observe(t,{attributes:!0,attributeFilter:["class"]}),registerObserver&&registerObserver(e)}}else{console.log("[initPinnedSections] no tab pane detected → build now");requestAnimationFrame(()=>requestAnimationFrame(n))}};
 
-					const split = new SplitText(el, {
-						type: "lines",
-						linesClass: "line"
-					});
-					el._split = split;
+	function initServicesGallery(e=document){const t=e.querySelectorAll(".infinite-gallery");t.length&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches&&t.forEach((e=>{const t=e.querySelector(".infinite-gallery-wrapper");if(!t||t.__inited)return;t.__inited=!0,e.setAttribute("data-armed","0");const r=Array.from(t.querySelectorAll(".service-visual-wrapper"));if(!r.length)return void e.setAttribute("data-armed","1");e.setAttribute("data-armed","measure");const i=new Set;r.forEach(((e,t)=>{e.style.height="";const r=e.getBoundingClientRect().width,i=parseFloat(getComputedStyle(e).height)||e.getBoundingClientRect().height||0;e.dataset.key=String(t),e.dataset.targetH=String(i),e.style.minWidth=r+"px",e.style.maxWidth=r+"px",e.style.height="0px",e.style.overflow="hidden",e.dataset.revealed="0"}));const a="right"===(e.dataset.direction||"left").toLowerCase(),n=parseFloat(e.dataset.speed)||.6,l=parseFloat(getComputedStyle(t).gap||0)||0,o=e=>e.getBoundingClientRect().width+l;function s(){r.forEach((e=>{const r=e.cloneNode(!0),a=e.dataset.key||"",n=+e.dataset.targetH||0;r.setAttribute("data-clone","1"),r.dataset.key=a,r.style.minWidth=e.style.minWidth,r.style.maxWidth=e.style.maxWidth,r.style.height=i.has(a)?n+"px":"0px",r.style.overflow="hidden",t.appendChild(r)}))}function d(){let e=0;return t.childNodes.forEach((t=>{1===t.nodeType&&(e+=o(t))})),e}function c(){Array.from(t.querySelectorAll(".service-visual-wrapper[data-clone]")).forEach((e=>e.remove())),s(),s();let e=0;for(;d()<3*t.clientWidth&&e++<8;)s()}c(),e.setAttribute("data-armed","1");let h=0,u=!1,g=0;function f(e){if(!u)return void cancelAnimationFrame(h);if(e-g<80)return void(h=requestAnimationFrame(f));g=e||performance.now();const r=window.innerWidth,a=-.05*r,n=1.05*r,l=Array.from(t.querySelectorAll(".service-visual-wrapper")).filter((e=>{const t=e.getBoundingClientRect();return t.right>a&&t.left<n})).filter((e=>"1"!==e.dataset.revealed&&"1"!==e.dataset.revealing)).sort(((e,t)=>e.getBoundingClientRect().left-t.getBoundingClientRect().left));if(l.length){const e=gsap.timeline();l.forEach(((r,a)=>{const n=+r.dataset.targetH||0,l=r.dataset.key||"";r.dataset.revealing="1",e.to(r,{height:n,duration:.9,ease:"power2.out",onComplete:()=>{r.style.height="",r.dataset.revealed="1",r.dataset.revealing="",i.add(l),t.querySelectorAll('.service-visual-wrapper[data-clone][data-key="'+l+'"]').forEach((e=>{e.style.height=n+"px"}))}},.12*a)}))}h=requestAnimationFrame(f)}new IntersectionObserver((t=>{t.forEach((t=>{t.target===e&&(t.isIntersecting?u||(u=!0,cancelAnimationFrame(h),h=requestAnimationFrame(f)):(u=!1,cancelAnimationFrame(h)))}))}),{root:null,threshold:0,rootMargin:"0px 0px -5% 0px"}).observe(e);let p=0,m=a?-1:1,y=60*n;gsap.ticker.add(((e,r)=>{p-=m*y*(r/1e3);let i=t.firstElementChild,a=0;for(;i&&p<-o(i)&&(p+=o(i),t.appendChild(i),i=t.firstElementChild,!(++a>50)););let n=t.lastElementChild;for(a=0;n&&p>0&&(p-=o(n),t.insertBefore(n,t.firstElementChild),n=t.lastElementChild,!(++a>50)););gsap.set(t,{x:p});const l=window.innerWidth/2;t.querySelectorAll(".service-visual").forEach((e=>{const t=e.closest(".service-visual-wrapper");if(!t)return;const r=t.getBoundingClientRect(),i=(l-(r.left+r.width/2))/window.innerWidth;e.style.setProperty("--drift",40*i+"px")}))})),new ResizeObserver((()=>{c()})).observe(t)}))}
+	function initAccordions(e=document){const o=e.querySelectorAll(".accordion-list");if(!o.length)return;let t;const i=()=>{clearTimeout(t),t=setTimeout((()=>ScrollTrigger.refresh()),100)};o.forEach((e=>{const o=e.querySelectorAll(".accordion-subservice, .accordion-mindset, .accordion-quote");o.length&&o.forEach((e=>{const t=e.querySelector(".accordion-header"),c=e.querySelector(".cross-line-animating"),r=e.querySelector(".accordion-content"),a=e.querySelector(".accordion-icon-quote"),n=e.classList.contains("accordion-quote");if(!t||!c||!r)return;gsap.set(r,{maxHeight:0,opacity:0,paddingBottom:0,paddingTop:n?0:void 0});const s=gsap.timeline({paused:!0,defaults:{ease:"power2.out"}}).to(t,{paddingTop:"2rem",duration:.4},0).to(c,{rotation:0,duration:.4},0).to(r,{maxHeight:600,opacity:1,paddingBottom:n?"0rem":"2rem",paddingTop:n?"2rem":void 0,duration:.5,onUpdate:i,onComplete:()=>gsap.set(r,{maxHeight:"none"})},0);n&&a&&s.from(a,{opacity:0,duration:.4},0),e._accordionTimeline=s,e.addEventListener("click",(()=>{if(s.isActive())return;const c=t.classList.contains("accordion-active");o.forEach((o=>{if(o!==e){const e=o.querySelector(".accordion-header"),t=o._accordionTimeline;e.classList.contains("accordion-active")&&!t.isActive()&&(e.classList.remove("accordion-active"),t.reverse())}})),c?(gsap.set(r,{maxHeight:r.offsetHeight}),s.eventCallback("onReverseComplete",i),s.reverse()):(gsap.set(r,{maxHeight:0}),s.play()),t.classList.toggle("accordion-active",!c)}))}))}))}
+	function initAppearInLine(e=document,t=".appear-in-line",r=":scope > *"){const o=.15,a=.8;e.querySelectorAll(t).forEach((e=>{const t=[],s=[],n=Array.from(e.querySelectorAll(r));e.getBoundingClientRect(),n.forEach((e=>{const r=getComputedStyle(e),o=parseInt(r.columnCount,10)||1,a=e.getBoundingClientRect();if(o>1){const r=new SplitText(e,{type:"lines",linesClass:"split-line"});t.push(r);const n=a.width/o,i=Array.from({length:o},(()=>[]));r.lines.forEach((e=>{const t=e.getBoundingClientRect().left-a.left,r=Math.min(Math.floor(t/n),o-1);i[r].push(e),gsap.set(e,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"})})),i.forEach((e=>s.push(e)))}else gsap.set(e,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"}),s.push([e])})),e._appearData={splits:t,groups:s};const i=registerObserver(new IntersectionObserver(((e,t)=>{e.forEach((e=>{if(!e.isIntersecting)return;t.unobserve(e.target);const{splits:r,groups:s}=e.target._appearData;s.forEach(((e,t)=>{gsap.to(e,{y:0,opacity:1,filter:"blur(0px)",duration:a,ease:"power2.out",delay:t*o})}));const n=(s.length-1)*o+a;gsap.delayedCall(n+.05,(()=>{r.forEach((e=>e.revert()))}))}))}),{root:null,rootMargin:"0px 0px -10% 0px",threshold:0}));e._appearObserver=i,i.observe(e);const l=e.getBoundingClientRect();if(l.top<window.innerHeight&&l.bottom>0){i.unobserve(e);const{splits:t,groups:r}=e._appearData;r.forEach(((e,t)=>{gsap.to(e,{y:0,opacity:1,filter:"blur(0px)",duration:a,ease:"power2.out",delay:t*o})}));const s=(r.length-1)*o+a;gsap.delayedCall(s+.05,(()=>t.forEach((e=>e.revert()))))}const p=e.closest(".w-tab-pane");if(p){registerObserver(new MutationObserver((()=>{p.classList.contains("w--tab-active")&&requestAnimationFrame((()=>requestAnimationFrame((()=>i.observe(e)))))}))).observe(p,{attributes:!0,attributeFilter:["class"]})}}))}
+	function initCustomCursor(){if(!window.matchMedia("(pointer: fine)").matches&&!window.matchMedia("(hover: hover)").matches)return void document.body.classList.remove("cursor--disable-all-cursors");const e=document.createElement("canvas");e.classList.add("cursor-webgl"),document.body.appendChild(e);const t=e.getContext("2d"),s={x:window.innerWidth/2,y:window.innerHeight/2,tX:window.innerWidth/2,tY:window.innerHeight/2},[o,n,i,a]=[40,.45,.4,.5],r=Array.from({length:o},(()=>({x:s.x,y:s.y,vx:0,vy:0}))),c={s:1};let d=window.innerWidth,l=window.innerHeight;function u(){d=window.innerWidth,l=window.innerHeight,e.width=d,e.height=l}window.addEventListener("resize",u),u();let m,h,y=!1,w={x:s.x,y:s.y},p=Date.now(),g=2e3,v=!1;function x(){if(y)return v=!1,void cancelAnimationFrame(h);v||(v=!0);const e=Date.now();e-p>g&&(w.x=Math.random()*d,w.y=Math.random()*l,p=e,g=1e3+2e3*Math.random()),s.tX+=.01*(w.x-s.tX),s.tY+=.01*(w.y-s.tY),h=requestAnimationFrame(x)}window.addEventListener("mousemove",(e=>{y=!0,v=!1,cancelAnimationFrame(h),s.tX=e.clientX,s.tY=e.clientY,clearTimeout(m),m=setTimeout((()=>{y=!1,x()}),1e4)})),x(),function e(){t.clearRect(0,0,d,l),s.x+=(s.tX-s.x)*n,s.y+=(s.tY-s.y)*n,r.forEach(((e,t)=>{if(0===t)e.x=s.x,e.y=s.y;else{const s=r[t-1];e.vx+=(s.x-e.x)*i,e.vy+=(s.y-e.y)*i,e.vx*=a,e.vy*=a,e.x+=e.vx,e.y+=e.vy}}));const o=getComputedStyle(document.documentElement).getPropertyValue("--colors--highlight").trim()||"#000";t.strokeStyle=o;for(let e=0;e<r.length-1;e++){const s=r[e],o=r[e+1],n=e/(r.length-1);t.lineWidth=16*(1-n)+2*n,t.lineCap="round",t.beginPath(),t.moveTo(s.x,s.y),t.lineTo(o.x,o.y),t.stroke()}t.beginPath(),t.fillStyle=o,t.arc(s.x,s.y,10*c.s,0,2*Math.PI),t.fill(),requestAnimationFrame(e)}();const f=document.createElement("div");f.classList.add("custom-cursor");const L=document.createElement("div");L.classList.add("cursor-content"),f.appendChild(L),document.body.appendChild(f),gsap.set(f,{x:s.x,y:s.y,scale:1,opacity:0,transformOrigin:"center center"}),gsap.set(L,{scale:1,transformOrigin:"center center"});const b=gsap.quickSetter(f,"x","px"),C=gsap.quickSetter(f,"y","px");!function e(){b(s.x),C(s.y),requestAnimationFrame(e)}(),document.addEventListener("pointerover",(e=>{const t=e.target.closest("[data-cursor]");if(!t)return;L.innerHTML="",f.className="custom-cursor",document.body.classList.remove("cursor--disable-all-cursors"),c.s=1;const s=t.dataset.cursor.toLowerCase();let o=1;if("hide"===s)return f.classList.add("cursor--hide"),document.body.classList.add("cursor--disable-all-cursors"),gsap.set(f,{scale:0,opacity:0,overwrite:!0}),void gsap.set(c,{s:0,overwrite:!0});if("scaleup"===s)o=3,f.classList.add("cursor--scaleup");else if("text"===s)L.textContent=t.dataset.text||"",f.classList.add("cursor--active"),o=3;else if("icon"===s){const e=(t.dataset.icon||"").trim();if(e.toLowerCase().endsWith(".svg")){const t=new Image;t.src=e,t.style.width=t.style.height="1em",L.appendChild(t)}else if(e){const t=document.createElement("i");t.className=e,L.appendChild(t)}f.classList.add("cursor--active"),o=3}gsap.killTweensOf(L),gsap.set(L,{scale:1/o}),gsap.to(f,{scale:o,opacity:1,duration:.6,ease:"elastic.out(0.6, 0.3)",overwrite:!0}),gsap.to(c,{s:o,duration:.6,ease:"elastic.out(0.6, 0.3)",overwrite:!0})})),document.addEventListener("pointerout",(e=>{e.target.closest("[data-cursor]")&&(L.innerHTML="",f.className="custom-cursor",document.body.classList.remove("cursor--disable-all-cursors"),gsap.killTweensOf(L),gsap.set(L,{scale:1}),gsap.to(f,{scale:1,opacity:0,duration:.6,ease:"elastic.out(0.6, 0.3)",overwrite:!0}),gsap.to(c,{s:1,duration:.6,ease:"elastic.out(0.6, 0.3)",overwrite:!0}))}))}
+	function initThemeSwitch(t=document){const e=t.querySelector(".theme-switch");if(!e)return;const c=document.documentElement.getAttribute("data-theme");e.classList.toggle("dark","dark"===c),e.addEventListener("click",(()=>{const t="dark"===document.documentElement.getAttribute("data-theme")?"light":"dark";document.documentElement.setAttribute("data-theme",t),localStorage.setItem("theme",t),e.classList.toggle("dark","dark"===t)}))}
+	function initCaseStudyBackgroundScroll(o){const r=o.closest(".barba-container"),e=o.querySelector(".cs-details"),t=o.querySelector(".cs-morework");if(!r||!e||!t)return;const a=getComputedStyle(r).backgroundColor,n="var(--colors--background)";ScrollTrigger.create({trigger:e,start:"top bottom-=15%",onEnter:()=>gsap.to(r,{backgroundColor:n,duration:.6,ease:"power1.inOut"}),onLeaveBack:()=>gsap.to(r,{backgroundColor:a,duration:.6,ease:"power1.inOut"})}),ScrollTrigger.create({trigger:t,start:"top bottom-=15%",onEnter:()=>gsap.to(r,{backgroundColor:"var(--colors--border)",duration:.6,ease:"power1.inOut"}),onLeaveBack:()=>gsap.to(r,{backgroundColor:n,duration:.6,ease:"power1.inOut"})})}
+	function initDynamicPortraitColumns(e=document){const t=Array.from(e.querySelectorAll(".cs-gallery-inner"));if(!t.length)return;const r=e=>{if(e.naturalWidth>0&&e.naturalHeight>0)return e.naturalHeight/e.naturalWidth;const t=(e=>{const t=parseInt(e.getAttribute("width"),10),r=parseInt(e.getAttribute("height"),10);return t>0&&r>0?r/t:null})(e);if(t)return t;const r=e.clientWidth,n=e.clientHeight;return r>0&&n>0?n/r:null};let n=0;const i=e=>{cancelAnimationFrame(n),n=requestAnimationFrame((()=>{e()}))},o=()=>{if(t.forEach((e=>{e.style.removeProperty("width"),e.classList.remove("is-portrait","is-paired")})),!(window.innerWidth>=1024))return;const e=t.map((e=>e.querySelector("img"))).filter(Boolean).map((e=>{const t=r(e),n=!!t&&t>1;return n&&e.closest(".cs-gallery-inner")?.classList.add("is-portrait"),n}));for(let r=0;r<t.length-1;r++)e[r]&&e[r+1]&&([t[r],t[r+1]].forEach((e=>{e.style.width="calc(50% - 0.5rem)",e.classList.add("is-paired")})),r+=1)},s=t.map((e=>e.querySelector("img"))).filter(Boolean);if(!s.length)return;Promise.all(s.map((e=>{const t=()=>e.naturalWidth>0&&e.naturalHeight>0;if(t())return Promise.resolve();const r="function"==typeof e.decode?e.decode().catch((()=>{})):Promise.resolve(),n=new Promise((e=>{let r=0;const n=()=>t()?e():(r+=50,r>=3e3?e():void setTimeout(n,50));n()})),i=new Promise((t=>{const r=()=>{e.removeEventListener("load",r),t()};e.addEventListener("load",r,{once:!0})}));return Promise.race([r,n,i])}))).then((()=>{i(o)}));const a=new ResizeObserver((()=>i(o)));s.forEach((e=>a.observe(e)));const c=()=>i(o);window.addEventListener("resize",c,{passive:!0});const l=new MutationObserver((()=>{document.body.contains(e)||(a.disconnect(),window.removeEventListener("resize",c),l.disconnect())}));l.observe(document.body,{childList:!0,subtree:!0})}
+	const preloader=document.querySelector(".preloader"),q=gsap.utils.selector(preloader),titleEl=q(".preloader-title")[0],subEl=q(".preloader-subtitle")[0],wrapEl=q(".preloader-image-wrap")[0],counter=q(".preloader-counter")[0],visual=q(".preloader-visual-counter")[0];let slides,maxW,maxVh;if(isSlowConnection()){slides=["#93A8AC","#BA5A31","#111D4A","#FFCF99","#C9FBC6"].map((e=>{const r=document.createElement("div");return r.className="preloader-slide placeholder",r.style.backgroundColor=e,wrapEl.appendChild(r),r}))}else slides=q(".preloader-image");function updateMetrics(){maxW=preloader.clientWidth,maxVh=window.innerHeight}updateMetrics(),window.addEventListener("resize",updateMetrics);
+	function morphAndFade(t,e,o,{w:i,h:n},r=.8){const a=.2*r,u=.25*r;return gsap.timeline().to(o,{width:i,height:n,duration:r,ease:"power2.out"},0).to(o,{filter:"blur(2px)",duration:a,ease:"power2.inOut"},u).to(t,{opacity:0,duration:a,ease:"power2.inOut"},u).to(e,{opacity:1,duration:a,ease:"power2.inOut"},u).set(o,{filter:"none"},u+a)}
+	function runIntroTimeline(){return new Promise((t=>{titleEl._originalHTML=titleEl.innerHTML,gsap.set([titleEl,subEl,wrapEl,counter],{autoAlpha:0,visibility:"hidden"}),gsap.set(titleEl,{autoAlpha:1,visibility:"visible"});const i=splitAndMask(titleEl);gsap.timeline({onComplete(){safelyRevertSplit(i,titleEl),t()}}).to(titleEl,{height:titleEl.scrollHeight,duration:.8,ease:"power2.out"},0).to(i.lines,{yPercent:0,rotation:0,duration:.8,ease:"power2.out",stagger:.08},0).to(subEl,{autoAlpha:1,visibility:"visible",height:subEl.scrollHeight,paddingTop:"0.5rem",y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},"-=0.2").to(wrapEl,{autoAlpha:1,visibility:"visible",marginTop:"2rem",marginBottom:"2rem",duration:.8,ease:"power2.out"},"+=0.3").to(counter,{autoAlpha:1,visibility:"visible",height:counter.scrollHeight,filter:"blur(0)",duration:.6,ease:"power2.out"},"<")}))}
+	async function runPreloader(){if(preloader.style.display="flex",runPreloader._started)return;runPreloader._started=!0,slides.forEach(((t,e)=>t.style.opacity=0===e?1:0));const t=[{ratio:2.5/3,heightVh:40,hold:.05},{ratio:16/9,heightVh:50,hold:.05},{ratio:1,heightVh:34,hold:.05},{ratio:4/3,heightVh:50,hold:.05},{ratio:1.5,heightVh:40,hold:.6}],e=t.length;let a=0;const o=t.map(((t,o)=>{const r=Math.round((o+1)/e*100),i=Math.round(10*Math.random()-5),n=Math.min(100,Math.max(a+1,r+i));return a=n,n}));for(let e=0;e<slides.length;e++){const{ratio:a,heightVh:r,hold:i}=t[e];let n=maxVh*(r/100),h=n*a;h>maxW&&(h=maxW,n=h/a);const s=o[e],l=gsap.to(visual,{height:s+"%",duration:.8+i,ease:"power1.inOut"}),d={v:0===e?0:o[e-1]},u=gsap.to(d,{v:s,duration:.8+i,ease:"power1.inOut",onUpdate(){counter.textContent=Math.round(d.v)+"%"}});0===e?await gsap.to(wrapEl,{width:h,height:n,duration:.8,ease:"power2.out"}):await morphAndFade(slides[e-1],slides[e],wrapEl,{w:h,h:n},.8),await new Promise((t=>setTimeout(t,1e3*i))),await Promise.all([l,u])}await gsap.to(visual,{height:"100%",duration:.2,ease:"none"}),counter.textContent="100%",await new Promise((t=>setTimeout(t,200))),await gsap.to(preloader,{yPercent:-100,duration:.8,ease:"power2.inOut",onStart(){initAllYourInits()},onComplete(){sessionStorage.setItem("preloaderSeen","1"),preloader.remove()}})}
+	function coverIn(){const e=document.querySelector(".page-overlay"),t=e.querySelector(".page-overlay-tint");return e.style.display="block",e.style.pointerEvents="auto",gsap.set(e,{y:"100%",clipPath:"polygon(0% 0%, 100% 20%, 100% 100%, 0% 100%)",willChange:"transform,clip-path"}),gsap.set(t,{opacity:0,willChange:"opacity"}),gsap.timeline({defaults:{duration:1.35,ease:"power4.inOut"}}).to(e,{y:"0%"},0).to(e,{clipPath:"polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"},0).to(t,{opacity:1,ease:"none"},.6)}
+	function coverOut(){const e=document.querySelector(".page-overlay");if(!e)return gsap.timeline();const t=e.querySelector(".page-overlay-tint");return document.querySelectorAll(".nav-primary-wrap").forEach((e=>{e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow="",gsap.timeline({onStart(){e.style.pointerEvents="auto"},onComplete(){e.style.display="none",e.style.pointerEvents="none"}}).to(e,{duration:.6,ease:"power4.in",y:"-100%"},0).to(t,{duration:.6,ease:"none",opacity:1},0)}
+	function animateSelectedEntries(e=document){const t=e.querySelector(".selected-container"),r=t?.querySelector(".selected-content"),o=Array.from(e.querySelectorAll(".selected-item-outer")),l=gsap.timeline();if(!t||!r||!o.length)return l;o.forEach((e=>{if(e.__entryDone)return;const t=e.querySelector(".selected-visual"),r=e.querySelector(".selected-item-header .headline-m"),o=e.querySelector(".selected-item-details"),l=e.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:0,transformOrigin:"bottom center",opacity:0}),r&&gsap.set(r,{opacity:0}),o&&gsap.set(o,{opacity:0,height:0}),l.length&&gsap.set(l,{opacity:0,y:20,filter:"blur(10px)"})}));return(e=>{const o=()=>{requestAnimationFrame((()=>requestAnimationFrame(e)))};if(t.hasAttribute("data-loop-ready"))return o();const l=()=>{r.removeEventListener("selected:loop-ready",l,!0),o()};r.addEventListener("selected:loop-ready",l,!0),setTimeout((()=>{r.removeEventListener("selected:loop-ready",l,!0),o()}),600)})((()=>{const e=window.innerWidth||document.documentElement.clientWidth,t=window.innerHeight||document.documentElement.clientHeight,r=o.map((r=>{const o=r.getBoundingClientRect();return{o:r,r:o,area:Math.max(0,Math.min(o.right,e)-Math.max(o.left,0))*Math.max(0,Math.min(o.bottom,t)-Math.max(o.top,0)),center:.5*(o.left+o.right)}}));let a=r.filter((e=>e.area>1)).sort(((e,t)=>e.r.left-t.r.left));if(!a.length){const t=.5*e;a=r.slice().sort(((e,r)=>Math.abs(e.center-t)-Math.abs(r.center-t))).slice(0,2).sort(((e,t)=>e.r.left-t.r.left))}const n=new Set(a.map((e=>e.o)));r.forEach((e=>{if(e.o.__entryDone||n.has(e.o))return;const t=e.o.querySelector(".selected-visual"),r=e.o.querySelector(".selected-item-header .headline-m"),o=e.o.querySelector(".selected-item-details"),l=e.o.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:1,opacity:1}),r&&gsap.set(r,{opacity:1}),o&&gsap.set(o,{opacity:1,height:"auto"}),l.length&&gsap.set(l,{opacity:1,y:0,filter:"blur(0px)"}),e.o.__entryDone=!0}));a.forEach(((e,t)=>{const r=e.o;if(r.__entryDone)return;const o=r.querySelector(".selected-visual"),a=r.querySelector(".selected-item-header .headline-m"),n=r.querySelector(".selected-item-details"),i=r.querySelectorAll(".selected-item-details .body-s"),s=.15*t;o&&l.set(o,{opacity:1},s).to(o,{scaleY:1,duration:.8,ease:"power2.out"},s),a&&l.set(a,{opacity:1},s+.2).call((()=>{if(a.__splitRun)return;a.__splitRun=!0;const e=splitAndMask(a);gsap.delayedCall(.15,(()=>{animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,a)))}))}),null,s+.2),n&&l.to(n,{opacity:1,height:"auto",duration:.4,ease:"power2.out"},s+.6),i.length&&l.to(i,{opacity:1,y:0,filter:"blur(0px)",duration:.4,ease:"power2.out",stagger:.15},s+.6),r.__entryDone=!0}))})),l}
+	function animateCapabilitiesEntry(t,{delayHero:e=!1}={}){const a=gsap.timeline(),o=t.querySelector(".section-table-of-contents");o&&gsap.set(o,{autoAlpha:0});const r=t.querySelector(".approach-mask");r&&(gsap.set(r,{scale:0,transformOrigin:"0% 100%",willChange:"transform"}),a.to(r,{scale:1,duration:1.2,ease:"power2.out"},0));const l=t.querySelector(".section-hero .headline-lg");if(l){gsap.set(l,{autoAlpha:0});const t=e?.2:0;a.addLabel("heroStart",t).set(l,{autoAlpha:1},"heroStart").call((()=>{const t=splitAndMask(l);animateLines(t.lines).eventCallback("onComplete",(()=>safelyRevertSplit(t,l)))}),null,"heroStart")}const n=t.querySelector(".section-hero .button-primary");n&&(gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),a.fromTo(n,{autoAlpha:0,y:20,filter:"blur(10px)"},{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},"heroStart+=0.4"));const s=gsap.utils.toArray(t.querySelectorAll(".table-of-contents-item"));return s.length&&a.from(s,{autoAlpha:0,paddingTop:"6rem",paddingBottom:"6rem",duration:1,ease:"power2.out",stagger:.15},0),o&&a.to(o,{autoAlpha:1,duration:.6,ease:"power2.out"},0),a}
+	function animateInfoEntry(e){const t=gsap.timeline(),a=e.querySelectorAll(".section-scroll-track .w-layout-cell"),o=e.querySelector(".section-hero .subpage-intro h1"),l=e.querySelector(".section-hero .subpage-intro a");if(a.forEach((e=>gsap.set(e,{scaleY:0,transformOrigin:"bottom center"}))),t.to(a,{scaleY:1,duration:1,ease:"power2.out",stagger:{each:.15,from:"start"}},0),o){gsap.set(o,{autoAlpha:0});const e=splitAndMask(o);t.set(o,{autoAlpha:1},.35).call((()=>animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,o)))),null,.35)}return l&&(gsap.set(l,{autoAlpha:0,y:20,filter:"blur(10px)"}),t.to(l,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},.6)),t}
+	function animateCaseStudyEntry(e){const t=gsap.timeline(),l=e.querySelector(".cs-hero-image"),a=e.querySelector(".cs-headline"),n=e.querySelectorAll(".cs-titles-inner div");return l&&gsap.set(l,{autoAlpha:0,y:80,filter:"blur(10px)"}),a&&gsap.set(a,{autoAlpha:0}),n.length&&gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),l&&t.to(l,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},0),a&&t.addLabel("headline",.35).set(a,{autoAlpha:1,display:"block"},"headline").call((()=>{const e=splitAndMask(a);animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,a)))}),null,"headline"),n.length&&t.to(n,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out",stagger:.05},.6),t}
+	const entryConfigByNamespace={capabilities:{delayHero:!0,entryOffset:.1},index:{delayHero:!1,entryOffset:-.2},info:{delayHero:!1,entryOffset:-.2}};
+	function getEntryConfig(e){return entryConfigByNamespace[e.dataset.barbaNamespace]??{delayHero:!1,entryOffset:0}}
+	function runPageEntryAnimations(e){const{delayHero:t,entryOffset:a}=getEntryConfig(e),n=gsap.timeline();return"info"===e.dataset.barbaNamespace&&n.add(animateInfoEntry(e),0),e.querySelector(".section-table-of-contents")&&n.add(animateCapabilitiesEntry(e,{delayHero:t}),0),e.querySelector(".selected-item-outer")&&n.add(animateSelectedEntries(e),0),e.querySelector(".cs-hero-image")&&n.add(animateCaseStudyEntry(e),0),{tl:n,entryOffset:a}}
+	const waitForLayoutStability=()=>new Promise((t=>{requestAnimationFrame((()=>{requestAnimationFrame((()=>{setTimeout(t,30)}))}))}));
+	async function finalizeAfterEntry(i,r){await r.finished,await waitForLayoutStability(),initDynamicPortraitColumns(i),initPinnedSections(i),initServicesGallery(i),i.querySelector(".cs-hero-image")&&initCaseStudyBackgroundScroll(i),ScrollTrigger.refresh(!0),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
+	async function runEntryFlow(i,{withCoverOut:n=!1}={}){i.style.visibility="",n&&await coverOut().finished,await runSafeInit(i,{preserveServicePins:!0});const{tl:t,entryOffset:e}=runPageEntryAnimations(i);t.call((()=>finalizeAfterEntry(i,t)),null,e+t.duration()),await t.finished}
 
-					split.lines.forEach(line => {
-						const mask = document.createElement("div");
-						mask.classList.add("text-mask");
-						mask.style.display = "block";
-						mask.style.overflow = "hidden";
-						mask.style.height = `${line.getBoundingClientRect().height}px`;
-						line.parentNode.insertBefore(mask, line);
-						mask.appendChild(line);
-					});
-
-					gsap.set(split.lines, { yPercent: 100, willChange: "transform" });
-					return split.lines;
-				}
-
-				// — Animate an array of split lines —
-				function animateLines(lines) {
-					gsap.set(lines, { transformOrigin: "0 10%", rotation: 10, yPercent: 100 });
-					return gsap.to(lines, {
-						yPercent: 0,
-						rotation: 0,
-						duration: 1,
-						ease: "power2.out",
-						stagger: 0.1
-					});
-				}
-
-				// helper to trigger TA-ONE on a given element
-				function triggerTAOne(el) {
-					const lines = splitAndMask(el);
-					const tl = animateLines(lines);
-					tl.eventCallback("onComplete", () => {
-						el._split.revert();
-						delete el._split;
-						el.innerHTML = el._originalHTML;
-						delete el._originalHTML;
-					});
-				}
-
-						// Text Animation One — scroll-and-tab aware
-						function initTextAnimationOne(selector = ".ta-one") {
-							const observer = new IntersectionObserver((entries, obs) => {
-								entries.forEach(entry => {
-									if (!entry.isIntersecting) return;
-									triggerTAOne(entry.target);
-									obs.unobserve(entry.target);
-								});
-							}, {
-								root: null,
-								rootMargin: "0px 0px -5% 0px",
-								threshold: 0
-							});
-
-							// observe each target
-							gsap.utils.toArray(selector).forEach(el => observer.observe(el));
-
-							// also re-trigger when Webflow tabs show
-							document.querySelectorAll(".w-tab-pane").forEach(pane => {
-								new MutationObserver((mutations) => {
-									mutations.forEach(m => {
-										if (m.attributeName === "class" && pane.classList.contains("w--tab-active")) {
-											pane.querySelectorAll(selector).forEach(el => {
-												// reset & re-observe
-												el.innerHTML = el._originalHTML || el.innerHTML;
-												delete el._split;
-												delete el._originalHTML;
-												observer.observe(el);
-											});
-										}
-									});
-								}).observe(pane, { attributes: true, attributeFilter: ["class"] });
-							});
-						}
-
-						// Text Animation Two — scroll-and-tab aware, char-fill
-						function initTextAnimationTwo(selector = ".ta-two", highlightColor) {
-							const observer = new IntersectionObserver((entries, obs) => {
-								entries.forEach(entry => {
-									if (!entry.isIntersecting) return;
-
-									const el = entry.target;
-									el._originalHTML = el.innerHTML;
-
-									const baseColor = getComputedStyle(document.documentElement).getPropertyValue("--colors--border").trim();
-									const highColor = highlightColor || getComputedStyle(document.documentElement).getPropertyValue("--colors--primary").trim();
-
-									const split = new SplitText(el, {
-										type: "words,chars",
-										wordsClass: "word",
-										charsClass: "char"
-									});
-
-									// keep each word together
-									gsap.set(split.words, { display: "inline-block", whiteSpace: "nowrap" });
-									gsap.set(split.chars, { color: baseColor });
-
-									const tl = gsap.timeline({
-										scrollTrigger: {
-											trigger: el,
-											start:   "top 80%",
-											end:     "bottom 20%",
-											scrub:   0.5,
-											onLeave: self => {
-												// clean up after you scroll past
-												split.revert();
-												el.innerHTML = el._originalHTML;
-												delete el._originalHTML;
-												self.kill();
-											}
-										}
-									});
-
-									tl.to(split.chars, { color: highColor, stagger: 0.02, ease: "none" }, 0);
-
-									obs.unobserve(el);
-								});
-							}, {
-								root: null,
-								rootMargin: "0px 0px -10% 0px",
-								threshold: 0
-							});
-
-							// observe each target
-							gsap.utils.toArray(selector).forEach(el => observer.observe(el));
-
-							// re-trigger on tab switch
-							document.querySelectorAll(".w-tab-pane").forEach(pane => {
-								new MutationObserver((mutations) => {
-									mutations.forEach(m => {
-										if (m.attributeName === "class" && pane.classList.contains("w--tab-active")) {
-											pane.querySelectorAll(selector).forEach(el => {
-											observer.observe(el);
-											});
-										}
-									});
-								}).observe(pane, { attributes: true, attributeFilter: ["class"] });
-							});
-						}
-
-
-		//
-		// === Reparent data-child into matching data-parent ===
-		//
-		const initReparentChildren = () => {
-			document.querySelectorAll('[data-child]').forEach((child) => {
-				const id = child.getAttribute('data-child');
-				const parent = document.querySelector(`[data-parent="${id}"]`);
-				if (parent) parent.appendChild(child);
-			});
-		};
-        
-		//
-		// === Click-redirect mappings ===
-		//
-		const initLinkMappings = () => {
-			// your existing mappings…
-			const mappings = [
-				{ triggerId: 'selectedOpen',           targetId: 'selected'      },
-				{ triggerId: 'archiveOpen',            targetId: 'archive'       },
-				{ triggerId: 'resourcesOpen',          targetId: 'resources'     },
-				{ triggerId: 'resourcesOpenShortcut',  targetId: 'resources'     },
-			];
-		
-			// All four "recommendationsOpenX" → "recommendations"
-			for (let i = 1; i <= 4; i++) {
-				mappings.push({
-					triggerId: `recommendationsOpen${i}`,
-					targetId:  'recommendations'
-				});
-			}
-		
-			mappings.forEach(({ triggerId, targetId }) => {
-				const triggerEl = document.getElementById(triggerId);
-				const targetEl  = document.getElementById(targetId);
-				if (!triggerEl || !targetEl) return;
-				triggerEl.addEventListener('click', (e) => {
-					e.preventDefault();
-					targetEl.click();
-				});
-			});
-		};
-
-
-		//
-		// === Infinite Loop & Scroll ===
-		//
-		function horizontalLoop(items, config = {}) {
-			items = gsap.utils.toArray(items);
-			const tl = gsap.timeline({
-				repeat: config.repeat ?? 0,
-				paused: config.paused ?? false,
-				defaults: { ease: "none" },
-				onReverseComplete: () => tl.totalTime(tl.rawTime() + tl.duration() * 100)
-			});
-		
-			const length = items.length;
-			const startX = items[0].offsetLeft;
-			const times = [];
-			const widths = [];
-			const xPercents = [];
-			let curIndex = 0;
-			const pixelsPerSecond = (config.speed || 0.75) * 100;
-			const snap = config.snap === false ? v => v : gsap.utils.snap(config.snap || 1);
-		
-			// set initial xPercent for each item
-			gsap.set(items, {
-				xPercent: (i, el) => {
-					const w = widths[i] = parseFloat(gsap.getProperty(el, "width", "px"));
-					xPercents[i] = snap(
-						(parseFloat(gsap.getProperty(el, "x", "px")) / w * 100) +
-						gsap.getProperty(el, "xPercent")
-					);
-					return xPercents[i];
-				}
-			});
-			gsap.set(items, { x: 0 });
-		
-			// total width of one full pass
-			const totalWidth = items[length - 1].offsetLeft +
-			xPercents[length - 1] / 100 * widths[length - 1] -
-			startX +
-			items[length - 1].offsetWidth * gsap.getProperty(items[length - 1], "scaleX") +
-			(parseFloat(config.paddingRight) || 0);
-		
-			// build the timeline
-			for (let i = 0; i < length; i++) {
-				const item = items[i];
-				const curX = xPercents[i] / 100 * widths[i];
-				const distanceToStart = item.offsetLeft + curX - startX;
-				const distanceToLoop = distanceToStart + widths[i] * gsap.getProperty(item, "scaleX");
-			
-				tl.to(item, {
-					xPercent: snap((curX - distanceToLoop) / widths[i] * 100),
-					duration: distanceToLoop / pixelsPerSecond
-				}, 0)
-				.fromTo(item, {
-					xPercent: snap((curX - distanceToLoop + totalWidth) / widths[i] * 100)
-				}, {
-					xPercent: xPercents[i],
-					duration: (curX - distanceToLoop + totalWidth - curX) / pixelsPerSecond,
-					immediateRender: false
-				}, distanceToLoop / pixelsPerSecond)
-				.add("label" + i, distanceToStart / pixelsPerSecond);
-			
-				times[i] = distanceToStart / pixelsPerSecond;
-			}
-		
-			// helper to jump to a given index
-			function toIndex(index, vars = {}) {
-				if (Math.abs(index - curIndex) > length / 2) {
-					index += index > curIndex ? -length : length;
-				}
-				const newIndex = gsap.utils.wrap(0, length, index);
-				let time = times[newIndex];
-			
-				if ((time > tl.time()) !== (index > curIndex)) {
-					vars.modifiers = { time: gsap.utils.wrap(0, tl.duration()) };
-					time += tl.duration() * (index > curIndex ? 1 : -1);
-				}
-			
-				curIndex = newIndex;
-				vars.overwrite = true;
-				return tl.tweenTo(time, vars);
-			}
-		
-			tl.next     = vars => toIndex(curIndex + 1, vars);
-			tl.previous = vars => toIndex(curIndex - 1, vars);
-			tl.current  = ()   => curIndex;
-			tl.toIndex  = (i, v) => toIndex(i, v);
-			tl.times    = times;
-			tl.progress(1, true).progress(0, true);
-		
-			if (config.reversed) {
-				tl.vars.onReverseComplete();
-				tl.reverse();
-			}
-		
-			return tl;
-		}
-
-
-		//
-		// === Selected Work ===
-		//
-		const initSelectedWorkLoop = () => {
-			const itemsSelector = ".list-item-selected-work";
-			const observerTarget = ".selected-work-mask";
-		
-			// Check if the required elements exist before initializing the loop
-			const itemsExist = document.querySelectorAll(itemsSelector).length > 0;
-			const observerTargetExists = document.querySelector(observerTarget) !== null;
-		
-			// Only initialize the loop if both elements are found
-			if (!itemsExist || !observerTargetExists) {
-				return;
-			}
-		
-			const loop = horizontalLoop(itemsSelector, { repeat: -1 });
-			const slow = gsap.to(loop, { timeScale: 0, duration: 0.5 });
-			loop.timeScale(0);
-		
-			Observer.create({
-				target: observerTarget,
-				type: "pointer,touch,wheel",
-				wheelSpeed: -1,
-				onChange: (self) => {
-					const delta = Math.abs(self.deltaX) > Math.abs(self.deltaY) ? -self.deltaX : -self.deltaY;
-					loop.timeScale(delta);
-					slow.invalidate().restart();
-				}
-			});
-		};
-
-
-		//
-		// === Archive First Case Study ===
-		//
-		function openFirstArchiveProject() {
-			// 1) close any already–open items
-			document.querySelectorAll('.list-item-archive-project.open').forEach(el => el.classList.remove('open'));
-		
-			// 2) find & open the first _visible_ project
-			const first = Array.from(document.querySelectorAll('.list-item-archive-project')).find(el => el.offsetParent !== null);
-			if (!first) return;
-			first.classList.add('open');
-		
-			// 3) aggressively nudge scroll on everything Webflow might be observing:
-			setTimeout(() => {
-				// a) window scroll
-				window.scrollBy(0, 1);
-				window.scrollBy(0, -1);
-				window.dispatchEvent(new Event('scroll', { bubbles: true }));
-			
-				// b) documentElement scrollTop bump
-				const docEl = document.scrollingElement || document.documentElement;
-				docEl.scrollTop += 2;
-				docEl.scrollTop -= 2;
-				docEl.dispatchEvent(new Event('scroll', { bubbles: true }));
-			
-				// c) body scrollTop bump (just in case)
-				document.body.scrollTop += 2;
-				document.body.scrollTop -= 2;
-				document.body.dispatchEvent(new Event('scroll', { bubbles: true }));
-			}, 0);
-		}
-
-
-		//
-		// === Archive Filters ===
-		//
-		function initArchiveFilters() {
-			const tabs     = Array.from(document.querySelectorAll(".filters-tab"));
-			const projects = Array.from(document.querySelectorAll(".list-item-archive-project"));
-			const navItems = Array.from(document.querySelectorAll("[id^='nav-archive-filter-']"));
-		
-			// 1) normalize CMS categories once
-			projects.forEach(p => {
-				p._catsNorm = Array.from(
-					p.querySelectorAll(".archive-categories .cms-categories")
-				).map(el =>
-					el.textContent.trim().toLowerCase().replace(/[\W_]+/g, "")
-				);
-			});
-		
-			// 2) fill each filters-tab’s counter (unchanged)
-			tabs.forEach(tab => {
-				const key     = tab.id.replace("archive-filter-", "");
-				const keyNorm = key.replace(/[\W_]+/g, "");
-				const count   = key === "all" ? projects.length : projects.filter(p => p._catsNorm.includes(keyNorm)).length;
-				tab.querySelector(".filters-counter").textContent = `(${count})`;
-			});
-		
-			// 2a) fill each nav-filter’s counter (unchanged)
-			navItems.forEach(item => {
-				const badge = item.querySelector(".nav-counter-filters");
-				if (!badge) {
-					console.warn("nav badge not found for", item.id);
-					return;
-				}
-				const key   = item.id.replace("nav-archive-filter-", "");
-				const total = key === "all" ? projects.length : projects.filter(p => p._catsNorm.includes(key)).length;
-				badge.textContent = `(${total})`;
-			});
-		
-			// 3) “reveal+open” helper — NEW, tweens the counter properly
-			function animateAndOpen(keyNorm) {
-				// A) grab the counter element
-				const counterEl = document.getElementById("archive-results-counter");
-				if (!counterEl) return;
-
-				// B) parse the “old” value (before hiding/showing anything)
-				const rawText = counterEl.textContent || "";
-				const oldValue = parseInt(rawText.replace(/\D/g, ""), 10) || 0;
-
-				// C) hide/show the projects based on keyNorm
-				projects.forEach(p => {
-					p.style.display = (keyNorm === "all" || p._catsNorm.includes(keyNorm)) ? "" : "none";
-				});
-
-				// D) compute the new count (number of visible cards)
-				const visibleCards = projects.filter(p => p.style.display !== "none");
-				const newValue     = visibleCards.length;
-
-				// E) tween the counter from oldValue → newValue
-				gsap.to({ value: oldValue }, {
-					value: newValue,
-					duration: 0.5,
-					ease: "power1.out",
-					onUpdate: function() {
-						// Write back the rounded value into the counter
-						counterEl.textContent = Math.round(this.targets()[0].value);
+// Barba Init
+	function initBarba() {
+		barba.init({
+			debug: true,
+			transitions: [
+			// 1) first-load / preloader
+			// {
+				// name: "initial-preloader",
+				// once: async ({ next }) => {
+				// 	if (shouldShowPreloader()) {
+				// 		preloader.style.display = "flex";
+				// 		await runIntroTimeline();
+				// 		await runPreloader();
+				// 	}
+					
+				// 	next();
+				// 	initAllYourInits();
+				// 	initNavigation(document);
+				// }
+			// },
+				{
+					name: "initial-load",
+					once: async ({ next }) => {
+						await runEntryFlow(next.container);
+						markTabLinksForBarba(next.container);
+  						reinitWebflowModules();
+						initDynamicPortraitColumns(next.container);
 					}
-				});
-
-				openFirstArchiveProject();
-
-				// F) animate the visible cards in, then open the first visible project
-				if (visibleCards.length === 0) {
-					return;
-				}
-
-				const tl = gsap.timeline();
-				tl.set(visibleCards, { y: 100, opacity: 0, filter: "blur(10px)", willChange: "transform, opacity" })
-				.to(visibleCards, { y: 0, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "power2.out", stagger: 0.15 });
-			}
-		
-			// 4) on each filters-tab click…
-			tabs.forEach(tab => {
-				tab.addEventListener("click", e => {
-					e.preventDefault();
-					tabs.forEach(t => t.classList.remove("active"));
-					tab.classList.add("active");
-					const key     = tab.id.replace("archive-filter-", "").toLowerCase();
-					const keyNorm = key.replace(/[\W_]+/g, "");
-					animateAndOpen(keyNorm);
-				});
-			});
-		
-			// 5) initial “All” on page load
-			const defaultTab = document.getElementById("archive-filter-all");
-			if (defaultTab) {
-				defaultTab.classList.add("active");
-				animateAndOpen("all");
-			}
-		
-			// 6) re-trigger when the “Archive” tab‐pane becomes visible again
-			const archivePane = document.querySelector('.w-tab-pane[data-w-tab="Archive"]');
-			if (archivePane) {
-				new MutationObserver(mutations => {
-					mutations.forEach(m => {
-						if (
-							m.attributeName === 'class' &&
-							archivePane.classList.contains('w--tab-active')
-						) {
-							// re-activate “All” and re-run animateAndOpen
-							document.getElementById("archive-filter-all").classList.add("active");
-							animateAndOpen("all");
-						}
-					});
-				}).observe(archivePane, {
-					attributes: true,
-					attributeFilter: ['class']
-				});
-			}
-		}
-
-
-		//
-		// Nav: Filters -> Counters
-		//
-		function fillNavCounters() {
-			// re-grab the things in case Webflow injected them late
-			const projects = Array.from(document.querySelectorAll(".list-item-archive-project"));
-			const navItems  = Array.from(document.querySelectorAll("[id^='nav-archive-filter-']"));
-
-			navItems.forEach(item => {
-				const badge = item.querySelector(".nav-counter-filters");
-				if (!badge) return;         // guard against null
-				const key    = item.id.replace("nav-archive-filter-", "");
-				const norm   = key.replace(/[\W_]+/g, "");
-				const total  = key === "all" ? projects.length : projects.filter(p => p._catsNorm.includes(norm)).length;
-				badge.textContent = `(${total})`;
-			});
-		}
-		
-		
-		//
-		// === Navigation + Filters ===
-		//
-		function initNavigation() {
-			$(".nav-primary-wrap").each(function () {
-				const wrap        = $(this);
-				const navBtn      = wrap.find(".nav-button-menu");
-				const filterBtn   = wrap.find(".nav-button-filter");
-				const navText     = wrap.find(".nav-button-text");
-				const menuWrapper = wrap.find(".menu-wrapper");
-				const menu        = wrap.find(".menu-container");
-				const phone       = wrap.find(".phone-number");
-				const buttons     = wrap.find(".button-minimal-darkmode");
-				const links       = wrap.find(".menu-link");
-				const tuner       = wrap.find(".filter-tuner");
-				const line1       = wrap.find(".filter-line-1");
-				const line2       = wrap.find(".filter-line-2");
-				const container   = wrap.find(".filters-container");
-				const caption     = wrap.find(".modal-filters-caption");
-				const items       = wrap.find(".modal-filters-item");
-				const headlineEl  = wrap.find(".ta-one-menu")[0];
-			
-				let currentOpen = null;
-				const disableScroll = () => document.body.style.overflow = 'hidden';
-				const enableScroll  = () => document.body.style.overflow = '';
-		
-				// — initial hide —
-				gsap.set(menuWrapper, { display: "none" });
-				gsap.set(menu,        { display: "none" });
-				gsap.set(container,   { display: "none" });
-				gsap.set(filterBtn,   { display: "none", opacity: 0 });
-			
-				navText.data("orig", navText.text());
-		
-				const toggleButtonAnimation = (btn, _, open) => gsap.to(btn, { duration: open ? 0.3 : 0.2 });
-		
-				function checkTabActive() {
-					const isActive = $(".archive-tab.w--tab-active").length > 0;
-					console.log("Archive tab active?", isActive, { filterBtn });
-					if (isActive) {
-						filterBtn.css("display","flex");
-						gsap.to(filterBtn, { opacity: 1, duration: 0.2 });
-					} else {
-						gsap.to(filterBtn, {
-							opacity: 0,
-							duration: 0.2,
-							onComplete: () => filterBtn.css("display","none")
-						});
-					}
-				}
-				checkTabActive();
-				[".archive-tab", ".archive-tab-link"].forEach(sel =>
-					document.querySelectorAll(sel).forEach(el =>
-						new MutationObserver(checkTabActive).observe(el, { attributes: true, attributeFilter: ["class"] })
-					)
-				);
-				wrap.find("#archiveOpen, .archive-tab-link").on("click", () => setTimeout(checkTabActive, 50));
-		
-				// — MENU timeline (with H2 SplitText) —
-				const navTl = gsap.timeline({
-					paused: true,
-					onStart: () => {
-						disableScroll();
-						menuWrapper.css("display","flex");
-						menu.css("display","flex");
-						toggleButtonAnimation(navBtn, "menu", true);
+				},
+				{
+					name: "page-swipe",
+					leave: async ({ current }) => {
+						const tl = coverIn();
+						if (tl?.finished && typeof tl.finished.then === "function") { await tl.finished; } else { await new Promise((resolve) => tl.eventCallback("onComplete", resolve)); }
+						destroyAllYourInits();
+						current.container.remove();
 					},
-					onReverseStart: () => {
-						toggleButtonAnimation(navBtn, "menu", false);
-						if (headlineEl._split) {
-							gsap.to(headlineEl._split.lines, {
-							opacity: 0, duration: 0.3, stagger: 0.1, ease: "power2.inOut"
-							});
-						}
+					enter: async ({ next }) => {
+						resetWebflow({ next });
+						window.scrollTo(0, 0);
+						await runEntryFlow(next.container, { withCoverOut: true });
 					},
-					onReverseComplete: () => {
-						menu.hide();
-						menuWrapper.css("display","none");
-						enableScroll();
-						navText.text(navText.data("orig"));
-						if (headlineEl._split) {
-							headlineEl._split.revert();
-							delete headlineEl._split;
-						}
-						currentOpen = null;
-						checkTabActive();
+					afterEnter({ next }) {
+						window.scrollTo(0, 0);
+						markTabLinksForBarba(next.container);
+						requestAnimationFrame(() => reinitWebflowModules());
+						next.container.querySelectorAll("video[autoplay]").forEach(video => {video.muted = true; video.play().catch(() => {});});
+						setTimeout(() => {
+							initDynamicPortraitColumns(next.container);
+							ScrollTrigger.refresh(true);
+						}, 30);
 					}
-				})
-				.add(() => {
-					const lines = splitAndMask(headlineEl);
-					animateLines(lines);
-				})
-				.from(phone,   { opacity: 0, duration: 0.5 })
-				.from(buttons, { opacity: 0, duration: 0.5, stagger: 0.2 }, "<")
-				.from(links,   { opacity: 0, yPercent: 240, duration: 0.5, stagger: 0.2 }, "<")
-				.to(navText,   { text: "Close", duration: 0.3 }, "<");
-		
-				// — FILTER timeline —
-				const filterTl = gsap.timeline({
-					paused: true,
-					onStart: () => {
-						disableScroll();
-						menuWrapper.css("display","flex");
-						container.css("display","flex");
-						toggleButtonAnimation(filterBtn, "filter", true);
-					},
-					onReverseStart: () => {
-						toggleButtonAnimation(filterBtn, "filter", false);
-					},
-					onReverseComplete: () => {
-						container.hide();
-						menuWrapper.css("display","none");
-						enableScroll();
-						currentOpen = null;
-						checkTabActive();
-					}
-				})
-				.set(container, { display: "flex" })
-				.to(tuner, { opacity: 0, duration: 0.15 })
-				.to(line1, { rotation: 45, transformOrigin: "center", duration: 0.35 }, "<")
-				.to(line2, { rotation: -45, marginTop: "-4px", transformOrigin: "center", duration: 0.35 }, "<")
-				.from(caption,{ opacity: 0, duration: 0.5 }, "<")
-				.from(items,  { opacity: 0, duration: 0.8, stagger: 0.2 }, "<");
-		
-				// — OPEN / CLOSE HANDLERS —  
-				const openMenu = () => {
-					if (currentOpen === "filter") {
-						filterTl.pause(0);
-						toggleButtonAnimation(filterBtn, "filter", false);
-					}
-					currentOpen = "menu";
-					navTl.timeScale(1);
-					navTl.restart();
-				};
-			
-				const openFilter = () => {
-					if (currentOpen === "menu") {
-						navTl.pause(0);
-						toggleButtonAnimation(navBtn, "menu", false);
-						navText.text(navText.data("orig"));
-					}
-					currentOpen = "filter";
-					filterTl.timeScale(1);
-					filterTl.restart();
-				};
-		
-				const closeAll = () => {
-					if (currentOpen === "menu") {
-						toggleButtonAnimation(navBtn, "menu", false);
-						navTl.tweenTo(0, { duration: navTl.duration() * 0.5 });
-					}
-					else if (currentOpen === "filter") {
-						toggleButtonAnimation(filterBtn, "filter", false);
-						filterTl.tweenTo(0, { duration: filterTl.duration() * 0.5 });
-					}
-				};
-		
-				// — wire up clicks —
-				navBtn.on("click",    () => currentOpen === "menu"   ? closeAll() : openMenu());
-				filterBtn.on("click", () => {
-					if (currentOpen === "filter") closeAll();
-					else {
-						openFilter();
-						fillNavCounters();
-					}
-				});
-		
-				// — filter-item click: close then navigate —
-				items.on("click", function(e) {
-					e.preventDefault();
-				
-					// 1) Find & click the matching filters-tab
-					const navId = this.id;
-					const key   = navId.replace("nav-archive-filter-", "");
-					const tab   = document.getElementById(`archive-filter-${key}`);
-					if (tab) {
-						tab.click();
-					}
-				
-					// 2) Speed up the “reverse” just for this click:
-					filterTl.timeScale(3);            // 3× speed (tweak “3” as desired)
-					const revTween = filterTl.reverse(); 
-				
-					// 3) Once _that_ reverse Tween finishes, restore normal speed:
-					revTween.eventCallback("onComplete", () => {
-						filterTl.timeScale(1);
-					});
-				
-					currentOpen = null;
-				});
-			});
-		}
-
-		
-		//
-		// === Menu Link Hover Effect ===
-		//
-		
-				
-		//
-		// === Menu Filters Hover Effect ===
-		//
-		const initMenuFilter = () => {
-			const cursor = document.querySelector(".menu-filter-hover");
-			const cursorMedias = document.querySelectorAll(".menu-filter-image");
-			const navLinks = document.querySelectorAll(".modal-filters-item");
-
-			if (!cursor || !cursorMedias || !navLinks) return;
-
-			gsap.set(cursor, { xPercent: -50, yPercent: -50, scale: 0 });
-			const setX = gsap.quickTo(cursor, "x", { duration: 2.6, ease: "expo" });
-			const setY = gsap.quickTo(cursor, "y", { duration: 2.6, ease: "expo" });
-
-			window.addEventListener("mousemove", (e) => {
-				setX(e.pageX);
-				setY(e.pageY);
-			});
-
-			const tl = gsap.timeline({ paused: true }).to(cursor, {
-				scale: 1,
-				opacity: 1,
-				rotation: 0,
-				duration: 0.5,
-				ease: "power1.inOut"
-			});
-
-			navLinks.forEach((link, i) => {
-				link.addEventListener("mouseover", () => {
-					cursorMedias[i]?.classList.add("active");
-					tl.play();
-				});
-				link.addEventListener("mouseout", () => {
-					tl.reverse();
-					cursorMedias[i]?.classList.remove("active");
-				});
-			});
-		};
-
-		
-		//
-		// === Services Pinned ===
-		//
-		const initServicesPin = () => {
-			const panels = Array.from(document.querySelectorAll(".section-single-service"));
-
-			panels.forEach((panel, index) => {
-				const isLast = index === panels.length - 1;
-				const panelIsShort = panel.offsetHeight < window.innerHeight;
-
-				gsap.timeline({
-					scrollTrigger: {
-						trigger: panel,
-						start: panelIsShort ? "top top" : "bottom bottom",
-						pin: true,
-						pinType: "transform",
-						pinSpacing: false,
-						scrub: 1
-					},
-				}).to(
-					panel,
-					{
-						ease: "none",
-						startAt: { filter: "contrast(100%) blur(0px)" },
-						filter: isLast ? "none" : "contrast(10%) blur(10px)",
-					},
-					0
-				);
-			});
-		};
-
-
-		//
-		// === Services Gallery Infinite Loop ===
-		//
-		const initServicesGallery = () => {
-			const scrollers = document.querySelectorAll(".infinite-gallery");
-			if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-		
-			scrollers.forEach(scroller => {
-				const wrapper   = scroller.querySelector(".infinite-gallery-wrapper");
-				const originals = Array.from(wrapper.children);
-				const scrollerW = scroller.offsetWidth;
-		
-				// read the flex-gap so we can pad the loop end to match
-				const style = getComputedStyle(wrapper);
-				const gap   = parseFloat(style.gap || style.columnGap || 0);
-			
-				// clone *three* full passes for a big invisible buffer
-				for (let pass = 0; pass < 2; pass++) {
-					originals.forEach(el => {
-						const clone = el.cloneNode(true);
-						clone.setAttribute("aria-hidden", "true");
-						wrapper.appendChild(clone);
-					});
 				}
-			
-				// grab *all* items now (original + clones)
-				const items = wrapper.querySelectorAll(".service-visual-wrapper");
-				const dirRight = scroller.dataset.direction === "right";
-				const speed    = parseFloat(scroller.dataset.speed) || 1;
-		
-				// create the infinite horizontal loop
-				horizontalLoop(items, {
-					repeat:       -1,
-					speed:         speed,
-					snap:         false,
-					paddingRight: gap,
-					reversed:     dirRight
-				});
-		
-				// parallax on the visuals
-				wrapper.querySelectorAll(".service-visual").forEach(vis => {
-					gsap.to(vis, {
-						xPercent: dirRight ? -20 : 20,
-						ease:     "none",
-						duration: 40,
-						repeat:   -1,
-						modifiers:{
-							xPercent: gsap.utils.wrap(-10, 10)
-						}
-					});
-				});
-		
-				// entry grow-from-bottom
-				const cards = wrapper.querySelectorAll(".service-visual-wrapper");
-				gsap.set(cards, { scaleY: 0, transformOrigin: "bottom center" });
-				ScrollTrigger.batch(cards, {
-					start:   "top 125%",
-					onEnter: batch => {
-						gsap.to(batch, {
-							scaleY:   1,
-							duration: 1,
-							ease:     "power2.out",
-						});
-					},
-					once: true
-				});
-			});
-		};
-
-		
-		//
-		// === Accordions with Group Behavior ===
-		//
-		const initAccordions = () => {
-			let refreshTimeout;
-			const safeRefresh = () => {
-				clearTimeout(refreshTimeout);
-				refreshTimeout = setTimeout(() => {
-					ScrollTrigger.refresh();
-				}, 150);
-			};
-
-			$(".accordion-list").each(function () {
-				const group = $(this);
-				const accordions = group.find(".accordion-subservice, .accordion-mindset, .accordion-quote");
-
-				accordions.each(function () {
-					const el = $(this);
-					const header = el.find(".accordion-header");
-					const icon = el.find(".cross-line-animating");
-					const content = el.find(".accordion-content");
-					const quoteIcon = el.find(".accordion-icon-quote");
-					const isQuote = el.hasClass("accordion-quote");
-
-					// Ensure content is hidden initially
-					gsap.set(content, {
-						maxHeight: 0,
-						opacity: 0,
-						paddingBottom: 0,
-						paddingTop: isQuote ? 0 : undefined
-					});
-
-					// Timeline
-					const tl = gsap.timeline({ paused: true });
-
-					tl.to(header, { paddingTop: "2rem", duration: 0.4, ease: "power2.out" });
-					tl.to(icon, { rotation: 0, duration: 0.4, ease: "power2.out" }, "<");
-
-					tl.to(content, {
-						maxHeight: 600,
-						opacity: 1,
-						paddingBottom: "2rem",
-						paddingTop: isQuote ? "2rem" : undefined,
-						duration: 0.5,
-						ease: "power2.out",
-						onUpdate: () => {
-							safeRefresh();
-						},
-						onComplete: () => {
-							gsap.set(content, { maxHeight: "none" });
-						}
-					}, "<");
-
-					if (isQuote && quoteIcon.length) {
-						tl.from(quoteIcon, {
-							opacity: 0,
-							duration: 0.4,
-							ease: "power2.out"
-						}, "<");
-					}
-
-					el.data("accordion-timeline", tl);
-
-					const toggleAccordion = (open) => {
-						if (!tl.isActive()) {
-							if (!open) {
-								const currentHeight = content.outerHeight();
-								gsap.set(content, { maxHeight: currentHeight });
-								tl.eventCallback("onReverseComplete", () => {
-									safeRefresh();
-								});
-							} else {
-								gsap.set(content, { maxHeight: 0 });
-							}
-							open ? tl.play() : tl.reverse();
-							header.toggleClass("accordion-active", open);
-						}
-					};
-
-					header.on("click", function () {
-						const isActive = header.hasClass("accordion-active");
-
-						// Find currently active accordion
-						const openAccordion = accordions.filter(function () {
-							return $(this).find(".accordion-header").hasClass("accordion-active");
-						}).not(el);
-
-						const openIsQuote = openAccordion.hasClass("accordion-quote");
-						const needsDelay = openIsQuote || isQuote;
-
-						// Close the currently open one
-						openAccordion.each(function () {
-							const other = $(this);
-							const otherHeader = other.find(".accordion-header");
-							const otherTl = other.data("accordion-timeline");
-
-							if (!otherTl.isActive()) {
-								otherHeader.removeClass("accordion-active");
-								otherTl.reverse();
-							}
-						});
-
-						// Toggle clicked accordion with optional delay
-						if (!isActive) {
-							const delayTime = needsDelay ? 0.4 : 0;
-							gsap.delayedCall(delayTime, () => toggleAccordion(true));
-						} else {
-							toggleAccordion(false);
-						}
-					});
-				});
-			});
-		};
-
-		
-		//
-		// === Counters ===
-		//
-		function initCounters() {
-			const counters = [
-				{ id: "work-counter-selected",   selector: ".list-item-selected-work"    },
-				{ id: "work-counter-archive",    selector: ".list-item-archive-project"  },
-				{ id: "work-counter-resources",  selector: ".list-item-resource"         },
-				{ id: "archive-results-counter", selector: ".list-item-archive-project"  }
-			];
-		
-			counters.forEach(({ id, selector }) => {
-				const newCount = document.querySelectorAll(selector).length;
-				const el       = document.getElementById(id);
-				if (!el) return;
-
-				if (id === "archive-results-counter") {
-					const rawText = el.textContent || "";
-					const prev = parseInt(rawText.replace(/\D/g, ""), 10) || 0;
-
-					const obj = { value: prev };
-					gsap.to(obj, {
-						value: newCount,
-						duration: 0.5,
-						ease: "power1.out",
-						onUpdate: () => {
-							el.textContent = Math.round(obj.value);
-						}
-					});
-				} else {
-					el.textContent = `(${newCount})`;
-				}
-			});
-		}
-
-
-		//
-		// === Appear-in-Line Staggered Fade+Blur From Bottom ===
-		//
-		function initAppearInLine(selector = ".appear-in-line", childSelector = ":scope > *") {
-			// helper to hide & reset a container
-			function hideItems(el) {
-				const items = el.querySelectorAll(childSelector);
-				gsap.set(items, {
-					y: 100,
-					opacity: 0,
-					filter: "blur(10px)",
-					willChange: "transform, opacity"
-				});
-				el._appeared = false;
-			}
-		
-			const containers = gsap.utils.toArray(selector);
-			containers.forEach(hideItems); // hide everything up-front
-		
-			// observer to animate on enter
-			const observer = new IntersectionObserver((entries) => {
-				entries.forEach(entry => {
-					const el = entry.target;
-					if (entry.isIntersecting && !el._appeared) {
-						el._appeared = true;
-						const items = Array.from(el.querySelectorAll(childSelector));
-						gsap.to(items, {
-							y: 0,
-							opacity: 1,
-							filter: "blur(0px)",
-							duration: 0.8,
-							ease: "power2.out",
-							stagger: 0.2
-						});
-					}
-				});
-			}, {
-				root: null,
-				rootMargin: "0px 0px -10% 0px",
-				threshold: 0
-			});
-		
-			// start observing each container
-			containers.forEach(el => observer.observe(el));
-		
-			// watch for Webflow tab‐pane activations
-			document.querySelectorAll(".w-tab-pane").forEach(pane => {
-				new MutationObserver((mutations, obs) => {
-					mutations.forEach(m => {
-						if (m.attributeName === "class") {
-							const becameActive = pane.classList.contains("w--tab-active");
-							if (becameActive) {
-								// for each appear-in-line inside this pane, reset + re-observe
-								containers
-								.filter(c => pane.contains(c))
-								.forEach(c => {
-									hideItems(c);
-									observer.observe(c);
-								});
-							}
-						}
-					});
-				}).observe(pane, { attributes: true, attributeFilter: ["class"] });
-			});
-		}
-
-		// Run All Initializers
-		initTextAnimationOne(".ta-one");
-		initTextAnimationTwo(".ta-two");
-		initReparentChildren();
-		initLinkMappings();
-		initSelectedWorkLoop();
-		initArchiveFilters();
-		initNavigation();
-		initMenuFilter();
-		initServicesPin();
-		initServicesGallery();
-		initAccordions();
-		initCounters();
-		initAppearInLine(".appear-in-line");
-	});
-
-
-	//
-	// === Approach Scroll Animation ===
-	//
-	window.addEventListener("load", () => {
-		// ─── Grab all the elements ───────────────────────────────────────────────────────
-		const approachSection = document.querySelector(".section-approach");
-		if (!approachSection) return;
-
-		const overlay = approachSection.querySelector(".scroll-overlay");
-		const content = approachSection.querySelector(".approach-content");
-		const visual  = approachSection.querySelector(".approach-visual");
-		const caption = document.querySelector(".table-caption");
-		if (!caption || !overlay || !content || !visual) return;
-
-		// We'll pin the approachSection itself (its parent is still in flow)
-		const pinSpacer = approachSection.parentNode;
-
-		// ─── Measure the caption + 16×9 ─────────────────────────────────────────────────
-		function measureInitial() {
-			const cRect  = caption.getBoundingClientRect();
-			const w16by9 = cRect.width * (9 / 16);
-
-			approachSection.dataset.capWidth   = cRect.width;
-			approachSection.dataset.capLeft    = cRect.left;
-			approachSection.dataset.capTop     = cRect.top;
-			approachSection.dataset.capHeight  = w16by9;
-			approachSection.dataset.capBottom  = cRect.bottom;
-		}
-
-		// Run it once now, and again on every ScrollTrigger.refreshInit:
-		measureInitial();
-		ScrollTrigger.addEventListener("refreshInit", measureInitial);
-
-		// ─── Only hide the overlay + content on load (DO NOT move the section itself) ───
-		gsap.set(overlay, { autoAlpha: 0 });
-		gsap.set(content, { autoAlpha: 0, y: 50 });
-		// (leave `visual` alone—its sizing/position will be handled by the timeline)
-
-		// ─── Build the scroll timeline ─────────────────────────────────────────────────
-		const tl = gsap.timeline({
-			scrollTrigger: {
-			trigger:      approachSection,
-			start:        "top 85%",                         // when section top hits 85% of viewport
-			end:          () => "+=" + (window.innerHeight * 2),
-			scrub:        true,
-			pin:          approachSection,                   // pin the actual section
-			pinSpacing:   true,                              // preserve its space in the flow
-			markers:      true,  // remove when you’re happy with positions
-			anticipatePin: 1,
-			onRefresh: self => {
-				// recalc end in case the viewport height changed
-				tl.scrollTrigger.end = "+=" + (window.innerHeight * 2);
-			}
-			}
+			]
 		});
+	}
+initBarba();
 
-		// ─── Step 3: As soon as the pin “activates,” size + position the section into its 16×9 box ───
-		tl.call(() => {
-			const cW = Number(approachSection.dataset.capWidth);
-			const cH = Number(approachSection.dataset.capHeight);
-			const cL = Number(approachSection.dataset.capLeft);
-			const cB = Number(approachSection.dataset.capBottom);
-
-			gsap.set(approachSection, {
-			position: "relative",    // keep it in normal flow so siblings stay below
-			width:    cW + "px",
-			height:   cH + "px",
-			x:        cL + "px",     // x-position = caption.left
-			y:        (cB - cH) + "px", // y so bottom = caption.bottom
-			overflow: "hidden"
-			});
-		}, null, 0);
-
-		// ─── Slide that 16×9 box from “bottom-of-caption” → y:0 ──────────────────────────────
-		tl.to(approachSection, {
-			y:    0,
-			ease: "none"
-		}, 0);
-
-		// ─── Expand from 16×9 → full viewport ───────────────────────────────────────────────
-		tl.to(approachSection, {
-			width:  () => window.innerWidth + "px",
-			height: () => window.innerHeight + "px",
-			x:      0,
-			ease:   "none"
-		}, 0.001);
-
-		// ─── Fade in overlay → fade+move in content → move visual ───────────────────────────
-		tl.to(overlay,  { autoAlpha: 1,           ease: "none"       }, 0.1);
-		tl.to(content,  { autoAlpha: 1, y: 0,     ease: "power2.out" }, 0.25);
-		tl.to(visual,   { y:       -100,          ease: "none"       }, 0);
-
-		// ─── Clean up if ScrollTrigger ever gets destroyed ────────────────────────────────
-		ScrollTrigger.addEventListener("destroy", () => tl.kill());
-		});
-
+// Run All Initializers
+let _firstLoadDone = false;
+function initAllYourInits(root = document) {
+	initReparentChildren(root);
+	markTabLinksForBarba(root);
+	initTextAnimationOne(root);
+	initLinkMappings(root);
+	initSelectedWorkLoop(root);
+	initArchiveFilters(root);
+	initNavigation(root);
+	initMenuLinkHover(root);
+	initResourcesScroll(root);
+	initAccordions(root);
+	initCounters(root);
+	initAppearInLine(root);
+	initCustomCursor();
+	initThemeSwitch(root);
+	initOverscrollBehavior(root);
+	requestAnimationFrame(() => reinitWebflowModules());
+}
 </script>
