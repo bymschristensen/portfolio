@@ -1,6 +1,7 @@
-<script src="https://unpkg.com/@barba/core@2/dist/barba.umd.js"></script>
-<script>
+// Theme Switch
 	function initTheme(){const t=localStorage.getItem("theme")||"light";document.documentElement.setAttribute("data-theme",t)}initTheme();
+
+// GSAP
 	gsap.registerPlugin(ScrollTrigger,Flip,SplitText,TextPlugin,Observer);
 	const DEBUG = false; if (DEBUG && window.ScrollTrigger) { ScrollTrigger.config({ log: true }); }
 
@@ -119,26 +120,36 @@
 			]
 		});
 	}
-initBarba();
+	initBarba();
 
-// Run All Initializers
-let _firstLoadDone = false;
-function initAllYourInits(root = document) {
-	initReparentChildren(root);
-	markTabLinksForBarba(root);
-	initTextAnimationOne(root);
-	initLinkMappings(root);
-	initSelectedWorkLoop(root);
-	initArchiveFilters(root);
-	initNavigation(root);
-	initMenuLinkHover(root);
-	initResourcesScroll(root);
-	initAccordions(root);
-	initCounters(root);
-	initAppearInLine(root);
-	initCustomCursor();
-	initThemeSwitch(root);
-	initOverscrollBehavior(root);
-	requestAnimationFrame(() => reinitWebflowModules());
-}
-</script>
+// Run All Initialisers
+	let _firstLoadDone = false;
+	function initAllYourInits(root = document) {
+		initReparentChildren(root);
+		markTabLinksForBarba(root);
+		initTextAnimationOne(root);
+		initLinkMappings(root);
+		initSelectedWorkLoop(root);
+		initArchiveFilters(root);
+		initNavigation(root);
+		initMenuLinkHover(root);
+		initResourcesScroll(root);
+		initAccordions(root);
+		initCounters(root);
+		initAppearInLine(root);
+		initCustomCursor();
+		initThemeSwitch(root);
+		initOverscrollBehavior(root);
+		requestAnimationFrame(() => reinitWebflowModules());
+	}
+
+// Expose to global scope
+	if (typeof initBarba === "function") window.initBarba = initBarba;
+	if (typeof initAllYourInits === "function") window.initAllYourInits = initAllYourInits;
+
+// Self-bootstrap (so no inline code needed in Webflow)
+	(function(){
+	  function boot(){ if(window.initBarba) window.initBarba(); }
+	  if(document.readyState!=="loading") boot();
+	  else document.addEventListener("DOMContentLoaded", boot, {once:true});
+	})();
