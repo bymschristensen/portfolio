@@ -72,6 +72,7 @@
     const isLast = card.classList.contains('last-resource-item');
     const isShort = card.offsetHeight < window.innerHeight;
     const visual = card.querySelector('.resource-visual');
+    const block  = card.querySelector('.resource-block');
     const title  = card.querySelector('h2');
 
     gsap.set(card, {
@@ -101,6 +102,7 @@
     const tl = gsap.timeline({ scrollTrigger: st });
 
     if (visual) tl.fromTo(visual, { y: 0 }, { y: -480, duration: 1 }, 0);
+    if (block)  tl.fromTo(block,  { y: 0 }, { y: -300, duration: 1 }, 0);
     if (title)  tl.fromTo(title,  { y: 0 }, { y:   20, duration: 1 }, 0);
 
     tl.to(card, {
