@@ -68,9 +68,10 @@
 
   pane.__resourcesInited = true;
 
-  items.forEach((card) => {
-    const isLast = card.classList.contains('last-resource-item');
+  items.forEach((card, idx) => {
+    const isLast = card.classList.contains('last-resource-item') || idx === items.length - 1;
     const isShort = card.offsetHeight < window.innerHeight;
+
     const visual = card.querySelector('.resource-visual');
     const block  = card.querySelector('.resource-block');
     const title  = card.querySelector('h2');
@@ -79,13 +80,14 @@
       backgroundColor: 'rgba(0,0,0,0)',
       backdropFilter: 'blur(0px)',
       webkitBackdropFilter: 'blur(0px)',
-      willChange: 'backdrop-filter, background-color'
+      willChange: 'transform, backdrop-filter, background-color'
     });
 
-    const st = isLast
+    const stMain = isLast
       ? {
           trigger: card,
-          start: 'top top+=15%',
+          start: 'top bottom',
+          end: 'bottom top',
           scrub: 1,
           invalidateOnRefresh: true
         }
@@ -99,18 +101,30 @@
           invalidateOnRefresh: true
         };
 
-    const tl = gsap.timeline({ scrollTrigger: st });
+    const tl = gsap.timeline({ scrollTrigger: stMain });
 
-    if (visual) tl.fromTo(visual, { y: 0 }, { y: -480, duration: 1 }, 0);
-    if (block)  tl.fromTo(block,  { y: 0 }, { y: -300, duration: 1 }, 0);
-    if (title)  tl.fromTo(title,  { y: 0 }, { y:   20, duration: 1 }, 0);
+    if (visual) tl.fromTo(visual, { y: 0 }, { y: -240, duration: 1 }, 0);
+    if (title)  tl.fromTo(title,  { y: 0 }, { y:  60, duration: 1 }, 0);
+    if (block)  tl.fromTo(block,  { y: 0 }, { y: -220, duration: 1 }, 0);
 
-    tl.to(card, {
-      backgroundColor: 'rgba(0,0,0,0.32)',
-      backdropFilter: 'blur(12px)',
-      webkitBackdropFilter: 'blur(12px)',
-      duration: 1
-    }, 0);
+    if (!isLast) {
+      const next = items[idx + 1];
+      if (next) {
+        gsap.to(card, {
+          backgroundColor: 'rgba(0,0,0,0.35)',
+          backdropFilter: 'blur(12px)',
+          webkitBackdropFilter: 'blur(12px)',
+          ease: 'none',
+          scrollTrigger: {
+            trigger: next,
+            start: 'top bottom-=35%',
+            end: 'top bottom',
+            scrub: 1,
+            invalidateOnRefresh: true
+          }
+        });
+      }
+    }
   });
 
   ScrollTrigger.refresh(true);
