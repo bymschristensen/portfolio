@@ -41,51 +41,54 @@
 	function initResourcesPinnedSections(root=document){
   if(!window.ScrollTrigger) return;
   const pane=root.querySelector('.w-tab-pane[data-w-tab="Resources"]')||root;
+  if(pane.__resourcesInited) return;
+
   const section=pane.querySelector('.section-resources');
   const items=section?Array.from(section.querySelectorAll('.resource-item')):[];
-  if(!items.length) return;
+  if(!items.length){
+    const resPane=root.querySelector('.w-tab-pane[data-w-tab="Resources"]');
+    if(resPane&&!resPane.classList.contains('w--tab-active')&&!pane.__resourcesObserver){
+      const mo=new MutationObserver(()=>{if(resPane.classList.contains('w--tab-active')){mo.disconnect();pane.__resourcesObserver=null;initResourcesPinnedSections(root);}});
+      mo.observe(resPane,{attributes:true,attributeFilter:['class']});
+      pane.__resourcesObserver=mo;
+    }
+    return;
+  }
+
+  pane.__resourcesInited=true;
 
   items.forEach((card,idx)=>{
-    const visual=card.querySelector('.resource-visual');
-    const title=card.querySelector('.resource-title');
-    const block=card.querySelector('.resource-block');
+    const isLast=card.classList.contains('last-resource-item')||idx===items.length-1;
+    const isShort=card.offsetHeight<(window.innerHeight||document.documentElement.clientHeight);
+    const startVal=isShort?'top top':'bottom bottom';
     const overlay=card.querySelector('.resource-overlay');
 
-    const isLast=card.classList.contains('last-resource-item')||idx===items.length-1;
-    const isShort=card.offsetHeight<window.innerHeight;
-
-    if(visual) gsap.set(visual,{y:-60});
-    if(overlay) gsap.set(overlay,{opacity:0,backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'});
-
-    const tl=gsap.timeline({defaults:{ease:'none'}});
-    if(visual) tl.to(visual,{y:-240,duration:1},0);
-    if(title)  tl.fromTo(title,{y:0},{y:80,duration:1},0.15);
-    if(block)  tl.fromTo(block,{y:0},{y:-200,duration:1},0.10);
-    if(overlay && !isLast){
-      tl.fromTo(
-        overlay,
-        {opacity:0,backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'},
-        {opacity:1,backdropFilter:'blur(10px)',webkitBackdropFilter:'blur(10px)',duration:0.35},
-        0.65
-      );
-    }
-
-    ScrollTrigger.create({
-      trigger:card,
-      start:isShort?'top top':'top bottom',
-      end:'bottom top',
-      scrub:1,
-      pin:!isLast,
-      pinSpacing:false,
-      anticipatePin:1,
-      invalidateOnRefresh:true,
-      animation:tl,
-      onRefreshInit:()=>{
-        gsap.set(card,{clearProps:'position,top,left,right,bottom,transform'});
-        const spacer=card.parentNode;
-        if(spacer&&spacer.classList&&spacer.classList.contains('pin-spacer')) spacer.style.cssText='';
+    if(!isLast){
+      const tl=gsap.timeline({
+        scrollTrigger:{
+          trigger:card,
+          start:startVal,
+          pin:true,
+          pinSpacing:false,
+          pinReparent:true,
+          pinType:'transform',
+          scrub:1,
+          anticipatePin:1,
+          invalidateOnRefresh:true
+        }
+      });
+      if(overlay){
+        const s=0.65, d=0.35;
+        tl.fromTo(overlay,
+          {opacity:0,backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'},
+          {opacity:1,backdropFilter:'blur(10px)',webkitBackdropFilter:'blur(10px)'},
+          s
+        ).to(overlay,{},s+d);
       }
-    });
+    }else{
+      if(overlay) gsap.set(overlay,{opacity:0,backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'});
+      ScrollTrigger.create({trigger:card,start:'top bottom',end:'bottom top',scrub:1,invalidateOnRefresh:true});
+    }
   });
 
   ScrollTrigger.refresh(true);
