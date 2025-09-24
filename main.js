@@ -72,16 +72,25 @@
     const isLast = card.classList.contains('last-resource-item') || idx === items.length - 1;
     const isShort = card.offsetHeight < window.innerHeight;
 
+    let ovl = card.querySelector(':scope > .resource-ovl');
+    if (!ovl) {
+      ovl = document.createElement('div');
+      ovl.className = 'resource-ovl';
+      ovl.style.position = 'absolute';
+      ovl.style.inset = '0';
+      ovl.style.pointerEvents = 'none';
+      ovl.style.opacity = '0';
+      ovl.style.background = 'rgba(13,27,30,0)';
+      ovl.style.backdropFilter = 'blur(0px)';
+      ovl.style.webkitBackdropFilter = 'blur(0px)';
+      ovl.style.zIndex = '2';
+      if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+      card.appendChild(ovl);
+    }
+
     const visual = card.querySelector('.resource-visual');
     const block  = card.querySelector('.resource-block');
     const title  = card.querySelector('h2');
-
-    gsap.set(card, {
-      backgroundColor: 'rgba(0,0,0,0)',
-      backdropFilter: 'blur(0px)',
-      webkitBackdropFilter: 'blur(0px)',
-      willChange: 'transform, backdrop-filter, background-color'
-    });
 
     const stMain = isLast
       ? {
@@ -93,7 +102,7 @@
         }
       : {
           trigger: card,
-          start: isShort ? 'top top' : 'bottom bottom',
+          start: isShort ? 'top top' : 'top bottom',
           pin: true,
           pinSpacing: false,
           scrub: 1,
@@ -104,14 +113,15 @@
     const tl = gsap.timeline({ scrollTrigger: stMain });
 
     if (visual) tl.fromTo(visual, { y: 0 }, { y: -240, duration: 1 }, 0);
-    if (title)  tl.fromTo(title,  { y: 0 }, { y:  60, duration: 1 }, 0);
-    if (block)  tl.fromTo(block,  { y: 0 }, { y: -220, duration: 1 }, 0);
+    if (title)  tl.fromTo(title,  { y: 0 }, { y: 600,  duration: 1 }, 0);
+    if (block)  tl.fromTo(block,  { y: 0 }, { y: -600, duration: 1 }, 0);
 
     if (!isLast) {
       const next = items[idx + 1];
       if (next) {
-        gsap.to(card, {
-          backgroundColor: 'rgba(0,0,0,0.35)',
+        gsap.to(ovl, {
+          opacity: 1,
+          background: 'rgba(13,27,30,0.35)',
           backdropFilter: 'blur(12px)',
           webkitBackdropFilter: 'blur(12px)',
           ease: 'none',
@@ -129,7 +139,6 @@
 
   ScrollTrigger.refresh(true);
 }
-
 
 
 
