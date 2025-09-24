@@ -143,13 +143,6 @@
 		requestAnimationFrame(() => reinitWebflowModules());
 	}
 
-// Expose to global scope
-	if (typeof initBarba === "function") window.initBarba = initBarba;
-	if (typeof initAllYourInits === "function") window.initAllYourInits = initAllYourInits;
-
-// Self-bootstrap (so no inline code needed in Webflow)
-	(function(){
-	  function boot(){ if(window.initBarba) window.initBarba(); }
-	  if(document.readyState!=="loading") boot();
-	  else document.addEventListener("DOMContentLoaded", boot, {once:true});
-	})();
+if(typeof initBarba==="function")window.initBarba=initBarba;
+if(typeof initAllYourInits==="function")window.initAllYourInits=initAllYourInits;
+(function(){function boot(){if(window.initBarba)window.initBarba()}if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot,{once:true})})();
