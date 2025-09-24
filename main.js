@@ -80,7 +80,7 @@
       ovl.style.inset = '0';
       ovl.style.pointerEvents = 'none';
       ovl.style.opacity = '0';
-      ovl.style.background = 'rgba(13,27,30,0)';
+      ovl.style.background = 'rgba(0,0,0,0)';
       ovl.style.backdropFilter = 'blur(0px)';
       ovl.style.webkitBackdropFilter = 'blur(0px)';
       ovl.style.zIndex = '2';
@@ -113,15 +113,15 @@
     const tl = gsap.timeline({ scrollTrigger: stMain });
 
     if (visual) tl.fromTo(visual, { y: 0 }, { y: -240, duration: 1 }, 0);
-    if (title)  tl.fromTo(title,  { y: 0 }, { y: 480,  duration: 1 }, 0);
-    if (block)  tl.fromTo(block,  { y: 0 }, { y: -480, duration: 1 }, 0);
+    if (title)  tl.fromTo(title,  { y: 0 }, { y:  80,  duration: 1 }, 0);
+    if (block)  tl.fromTo(block,  { y: 0 }, { y: -200, duration: 1 }, 0);
 
     if (!isLast) {
       const next = items[idx + 1];
       if (next) {
         gsap.to(ovl, {
           opacity: 1,
-          background: 'rgba(13,27,30,0.35)',
+          background: 'rgba(0,0,0,0.35)',
           backdropFilter: 'blur(12px)',
           webkitBackdropFilter: 'blur(12px)',
           ease: 'none',
@@ -139,7 +139,6 @@
 
   ScrollTrigger.refresh(true);
 }
-
 
 
 
