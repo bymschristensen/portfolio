@@ -68,8 +68,8 @@
         opacity: 1,
         backdropFilter: 'blur(10px)',
         webkitBackdropFilter: 'blur(10px)',
-        duration: 0.35
-      }, 0.65);
+        duration: 1
+      }, 0.50);
     }
 
     ScrollTrigger.create({
