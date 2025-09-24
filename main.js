@@ -47,21 +47,20 @@
     null;
 
   const pane = resPane || root;
-  if (pane.__resourcesInited) return;
+  if (!pane || pane.__resourcesInited) return;
 
-  const section = pane.querySelector(".section-resources");
-  const items = section ? Array.from(section.querySelectorAll(".resource-item")) : [];
-
+  const section = pane.querySelector('.section-resources');
+  const items = section ? Array.from(section.querySelectorAll('.resource-item')) : [];
   if (!section || !items.length) {
-    if (resPane && !resPane.classList.contains("w--tab-active") && !pane.__resourcesObserver) {
+    if (resPane && !resPane.classList.contains('w--tab-active') && !pane.__resourcesObserver) {
       const mo = new MutationObserver(() => {
-        if (resPane.classList.contains("w--tab-active")) {
+        if (resPane.classList.contains('w--tab-active')) {
           mo.disconnect();
           pane.__resourcesObserver = null;
           initResourcesPinnedSections(root);
         }
       });
-      mo.observe(resPane, { attributes: true, attributeFilter: ["class"] });
+      mo.observe(resPane, { attributes: true, attributeFilter: ['class'] });
       pane.__resourcesObserver = mo;
     }
     return;
@@ -69,29 +68,63 @@
 
   pane.__resourcesInited = true;
 
-  items.forEach((card) => {
-    const isShort = card.offsetHeight < window.innerHeight;
+  const vh = () => window.innerHeight || document.documentElement.clientHeight;
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: card,
-        start: isShort ? "top top" : "bottom bottom",
-        pin: true,
-        pinSpacing: false,
-        scrub: 1,
-        invalidateOnRefresh: true
-      }
+  items.forEach((card, idx) => {
+    const isLast = card.classList.contains('last-resource-item');
+    const visual = card.querySelector('.resource-visual');
+    const title  = card.querySelector('h2');
+
+    gsap.set(card, {
+      backgroundColor: 'rgba(0,0,0,0)',
+      backdropFilter: 'blur(0px)',
+      webkitBackdropFilter: 'blur(0px)',
+      willChange: 'backdrop-filter, background-color, filter'
     });
 
-    tl.to(card, { ease: "none", startAt: { filter: "contrast(100%) blur(0px)" }, filter: "contrast(10%) blur(10px)" }, 0);
+    const tl = gsap.timeline({ defaults: { ease: 'none' } });
 
-    const title = card.querySelector(".resource-title, .resource-heading, .headline-m, h2");
-    const block = card.querySelector(".resource-block, .resource-content");
-    const visual = card.querySelector(".resource-visual, .resource-image, img");
+    if (visual) {
+      tl.fromTo(visual, { y: 0 }, { y: -480, duration: 1 }, 0);
+    }
 
-    if (title) tl.fromTo(title, { y: 0 }, { y: 20, duration: 1, ease: "none" }, 0);
-    if (block) tl.fromTo(block, { y: 0 }, { y: -300, duration: 1, ease: "none" }, 0);
-    if (visual) tl.fromTo(visual, { y: 0 }, { y: -480, duration: 1, ease: "none" }, 0);
+    if (title) {
+      tl.fromTo(title, { y: 0 }, { y: 20, duration: 1 }, 0);
+    }
+
+    tl.to(card, {
+      backgroundColor: 'rgba(0,0,0,0.28)',
+      backdropFilter: 'blur(12px)',
+      webkitBackdropFilter: 'blur(12px)',
+      duration: 0.9
+    }, 0);
+
+    const next = items[idx + 1] || null;
+
+    if (!isLast && next) {
+      ScrollTrigger.create({
+        trigger: card,
+        start: 'top top',
+        endTrigger: next,
+        end: 'top top',
+        scrub: 0.95,
+        pin: true,
+        pinSpacing: false,
+        anticipatePin: 1,
+        animation: tl,
+        invalidateOnRefresh: true
+      });
+    } else {
+      const dist = Math.max(1, (card.scrollHeight || card.offsetHeight) - vh());
+      ScrollTrigger.create({
+        trigger: card,
+        start: 'top top+=15%',
+        end: `+=${dist}`,
+        scrub: 0.85,
+        animation: tl,
+        invalidateOnRefresh: true
+      });
+    }
   });
 
   ScrollTrigger.refresh(true);
