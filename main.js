@@ -40,10 +40,8 @@
 	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
 	function initResourcesPinnedSections(root=document){
   if(!window.ScrollTrigger) return;
-
   const pane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]') || root;
   if(!pane || pane.__resourcesInited) return;
-
   const section = pane.querySelector('.section-resources');
   const items = section ? Array.from(section.querySelectorAll('.resource-item')) : [];
   if(!items.length){
@@ -55,7 +53,6 @@
     }
     return;
   }
-
   pane.__resourcesInited = true;
 
   const hasTransformedAncestor = el => {
@@ -67,32 +64,31 @@
     }
     return false;
   };
-
   const pinType = hasTransformedAncestor(pane) ? 'transform' : 'fixed';
 
   items.forEach((card, idx)=>{
     const visual = card.querySelector('.resource-visual');
     const title  = card.querySelector('h2, .resource-title, .resource-heading, .resource-title h2');
     const block  = card.querySelector('.resource-block');
-
-    const last = card.classList.contains('last-resource-item') || idx === items.length - 1;
+    const last   = card.classList.contains('last-resource-item') || idx === items.length - 1;
 
     const tl = gsap.timeline({ defaults:{ ease:'none' } });
     if(visual) tl.fromTo(visual,{ y:0 },{ y:-240, duration:1 }, 0);
     if(title)  tl.fromTo(title, { y:0 },{ y:  80, duration:1 }, 0);
     if(block)  tl.fromTo(block, { y:0 },{ y:-200, duration:1 }, 0);
 
-    const ovlStart = 0.35; // begin overlay when next card is ~35% from bottom
-    tl.fromTo(card, { '--res-ovl': 0 }, { '--res-ovl': last ? 0 : 1, duration:(1-ovlStart) }, ovlStart);
+    const ovlStart = 0.35;
+    tl.fromTo(card,{ '--res-ovl':0 },{ '--res-ovl': last?0:1, duration:(1-ovlStart) }, ovlStart);
 
     card.style.setProperty('--res-ovl','0');
     card.style.setProperty('backdrop-filter','blur(calc(var(--res-ovl) * 12px))');
     card.style.setProperty('-webkit-backdrop-filter','blur(calc(var(--res-ovl) * 12px))');
     card.style.setProperty('box-shadow','inset 0 0 0 9999px rgba(0,0,0,'+(last?0:'calc(0.22 * var(--res-ovl))')+')');
 
+    const isShort = card.offsetHeight < window.innerHeight;
     ScrollTrigger.create({
       trigger: card,
-      start: 'top top',
+      start: isShort ? 'top top' : 'top bottom',
       end: 'bottom top',
       scrub: 1,
       pin: !last,
@@ -101,16 +97,12 @@
       anticipatePin: 1,
       invalidateOnRefresh: true,
       animation: tl,
-      onRefreshInit: self => {
-        // reset any inline position/top that might have lingered
-        gsap.set(card, { clearProps: 'position,top,left,bottom,right' });
-      }
+      onRefreshInit: () => gsap.set(card, { clearProps: 'position,top,left,bottom,right' })
     });
   });
 
   ScrollTrigger.refresh(true);
 }
-
 
 
 
