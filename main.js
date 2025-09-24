@@ -42,6 +42,7 @@
   if(!window.ScrollTrigger) return;
   const pane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]') || root;
   if(!pane || pane.__resourcesInited) return;
+
   const section = pane.querySelector('.section-resources');
   const items = section ? Array.from(section.querySelectorAll('.resource-item')) : [];
   if(!items.length){
@@ -55,12 +56,12 @@
   }
   pane.__resourcesInited = true;
 
-  const hasTransformedAncestor = el => {
-    let n = el.parentElement;
-    while(n && n !== document.body){
-      const cs = getComputedStyle(n);
-      if(cs.transform && cs.transform !== 'none') return true;
-      n = n.parentElement;
+  const hasTransformedAncestor = el=>{
+    let n=el.parentElement;
+    while(n && n!==document.body){
+      const cs=getComputedStyle(n);
+      if(cs.transform && cs.transform!=='none') return true;
+      n=n.parentElement;
     }
     return false;
   };
@@ -70,12 +71,12 @@
     const visual = card.querySelector('.resource-visual');
     const title  = card.querySelector('h2, .resource-title, .resource-heading, .resource-title h2');
     const block  = card.querySelector('.resource-block');
-    const last   = card.classList.contains('last-resource-item') || idx === items.length - 1;
+    const last   = card.classList.contains('last-resource-item') || idx===items.length-1;
 
-    const tl = gsap.timeline({ defaults:{ ease:'none' } });
-    if(visual) tl.fromTo(visual,{ y:0 },{ y:-240, duration:1 }, 0);
-    if(title)  tl.fromTo(title, { y:0 },{ y:  80, duration:1 }, 0);
-    if(block)  tl.fromTo(block, { y:0 },{ y:-200, duration:1 }, 0);
+    const tl = gsap.timeline({defaults:{ease:'none'}});
+    if(visual) tl.fromTo(visual,{y:0},{y:-240,duration:1},0);
+    if(title)  tl.fromTo(title, {y:0},{y:  80,duration:1},0);
+    if(block)  tl.fromTo(block, {y:0},{y:-200,duration:1},0);
 
     const ovlStart = 0.35;
     tl.fromTo(card,{ '--res-ovl':0 },{ '--res-ovl': last?0:1, duration:(1-ovlStart) }, ovlStart);
@@ -83,21 +84,34 @@
     card.style.setProperty('--res-ovl','0');
     card.style.setProperty('backdrop-filter','blur(calc(var(--res-ovl) * 12px))');
     card.style.setProperty('-webkit-backdrop-filter','blur(calc(var(--res-ovl) * 12px))');
-    card.style.setProperty('box-shadow','inset 0 0 0 9999px rgba(0,0,0,'+(last?0:'calc(0.22 * var(--res-ovl))')+')');
+    card.style.setProperty('box-shadow','inset 0 0 0 9999px ' + (last ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,calc(0.22 * var(--res-ovl)))'));
 
     const isShort = card.offsetHeight < window.innerHeight;
+
     ScrollTrigger.create({
       trigger: card,
-      start: isShort ? 'top top' : 'top bottom',
+      start: isShort ? 'top top' : 'bottom bottom',
       end: 'bottom top',
       scrub: 1,
       pin: !last,
       pinSpacing: false,
       pinType,
+      pinReparent: true,
       anticipatePin: 1,
       invalidateOnRefresh: true,
       animation: tl,
-      onRefreshInit: () => gsap.set(card, { clearProps: 'position,top,left,bottom,right' })
+      onRefreshInit: () => {
+        gsap.set(card, { clearProps: 'position,top,left,right,bottom,transform' });
+        const p = card.parentNode;
+        if(p && p.classList && p.classList.contains('pin-spacer')) {
+          p.style.transform = '';
+          p.style.top = '';
+          p.style.left = '';
+          p.style.right = '';
+          p.style.bottom = '';
+          p.style.position = '';
+        }
+      }
     });
   });
 
