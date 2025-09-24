@@ -40,76 +40,53 @@
 	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
 	function initResourcesPinnedSections(root=document){
   if(!window.ScrollTrigger) return;
-  const pane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]') || root;
-  if(!pane || pane.__resourcesInited) return;
 
+  const pane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]') || root;
   const section = pane.querySelector('.section-resources');
   const items = section ? Array.from(section.querySelectorAll('.resource-item')) : [];
-  if(!items.length){
-    const resPane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]');
-    if(resPane && !resPane.classList.contains('w--tab-active') && !pane.__resourcesObserver){
-      const mo=new MutationObserver(()=>{ if(resPane.classList.contains('w--tab-active')){ mo.disconnect(); pane.__resourcesObserver=null; initResourcesPinnedSections(root);} });
-      mo.observe(resPane,{attributes:true,attributeFilter:['class']});
-      pane.__resourcesObserver=mo;
-    }
-    return;
-  }
-  pane.__resourcesInited = true;
-
-  const hasTransformedAncestor = el=>{
-    let n=el.parentElement;
-    while(n && n!==document.body){
-      const cs=getComputedStyle(n);
-      if(cs.transform && cs.transform!=='none') return true;
-      n=n.parentElement;
-    }
-    return false;
-  };
-  const pinType = hasTransformedAncestor(pane) ? 'transform' : 'fixed';
+  if(!items.length) return;
 
   items.forEach((card, idx)=>{
-    const visual = card.querySelector('.resource-visual');
-    const title  = card.querySelector('h2, .resource-title, .resource-heading, .resource-title h2');
-    const block  = card.querySelector('.resource-block');
-    const last   = card.classList.contains('last-resource-item') || idx===items.length-1;
+    const visual   = card.querySelector('.resource-visual');
+    const title    = card.querySelector('h2, .resource-title, .resource-title h2');
+    const block    = card.querySelector('.resource-block');
+    const overlay  = card.querySelector('.resource-overlay');
 
-    const tl = gsap.timeline({defaults:{ease:'none'}});
-    if(visual) tl.fromTo(visual,{y:0},{y:-240,duration:1},0);
-    if(title)  tl.fromTo(title, {y:0},{y:  80,duration:1},0);
-    if(block)  tl.fromTo(block, {y:0},{y:-200,duration:1},0);
+    const isLast   = card.classList.contains('last-resource-item') || idx === items.length - 1;
+    const isShort  = card.offsetHeight < window.innerHeight;
 
-    const ovlStart = 0.35;
-    tl.fromTo(card,{ '--res-ovl':0 },{ '--res-ovl': last?0:1, duration:(1-ovlStart) }, ovlStart);
+    if(visual) gsap.set(visual, { y:-60 });
 
-    card.style.setProperty('--res-ovl','0');
-    card.style.setProperty('backdrop-filter','blur(calc(var(--res-ovl) * 12px))');
-    card.style.setProperty('-webkit-backdrop-filter','blur(calc(var(--res-ovl) * 12px))');
-    card.style.setProperty('box-shadow','inset 0 0 0 9999px ' + (last ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,calc(0.22 * var(--res-ovl)))'));
+    const tl = gsap.timeline({ defaults:{ ease:'none' } });
 
-    const isShort = card.offsetHeight < window.innerHeight;
+    if(visual)  tl.to(visual, { y:-240, duration:1 }, 0.00);
+    if(title)   tl.fromTo(title, { y:0 }, { y:80, duration:1 }, 0.15);
+    if(block)   tl.fromTo(block, { y:0 }, { y:-200, duration:1 }, 0.10);
+
+    if(overlay && !isLast){
+      tl.to(overlay, {
+        opacity: 1,
+        backdropFilter: 'blur(10px)',
+        webkitBackdropFilter: 'blur(10px)',
+        duration: 0.35
+      }, 0.65);
+    }
 
     ScrollTrigger.create({
       trigger: card,
       start: isShort ? 'top top' : 'bottom bottom',
       end: 'bottom top',
       scrub: 1,
-      pin: !last,
+      pin: !isLast,
       pinSpacing: false,
-      pinType,
-      pinReparent: true,
       anticipatePin: 1,
       invalidateOnRefresh: true,
       animation: tl,
       onRefreshInit: () => {
-        gsap.set(card, { clearProps: 'position,top,left,right,bottom,transform' });
-        const p = card.parentNode;
-        if(p && p.classList && p.classList.contains('pin-spacer')) {
-          p.style.transform = '';
-          p.style.top = '';
-          p.style.left = '';
-          p.style.right = '';
-          p.style.bottom = '';
-          p.style.position = '';
+        gsap.set(card, { clearProps:'position,top,left,right,bottom,transform' });
+        const spacer = card.parentNode;
+        if(spacer && spacer.classList && spacer.classList.contains('pin-spacer')){
+          spacer.style.cssText = '';
         }
       }
     });
