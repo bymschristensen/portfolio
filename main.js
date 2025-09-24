@@ -38,103 +38,74 @@
 	function initNavigation(root = document) {initMenuNavigation(root);initFilterNavigation(root);initNavigationTriggers(root);}
 	function initMenuLinkHover(e=document){window.matchMedia("(hover: hover) and (min-width: 1024px)").matches&&e.querySelectorAll(".menu-link").forEach((e=>{let t=e.querySelector(".menu-link-bg");t||(t=document.createElement("div"),t.classList.add("menu-link-bg"),e.appendChild(t)),e.addEventListener("mouseenter",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:1,duration:.3,ease:"power2.out"})})),e.addEventListener("mouseleave",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:0,duration:.3,ease:"power2.in"})}))}))}
 	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
-	function initResourcesPinnedSections(root = document) {
-  if (!window.ScrollTrigger) return;
+	function initResourcesPinnedSections(root=document){
+  if(!window.ScrollTrigger) return;
 
-  const resPane =
-    root.querySelector('.w-tab-pane[data-w-tab="Resources"]') ||
-    root.querySelector('.wrapper-resources')?.closest('.w-tab-pane') ||
-    null;
-
-  const pane = resPane || root;
-  if (!pane || pane.__resourcesInited) return;
+  const pane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]') || root;
+  if(!pane || pane.__resourcesInited) return;
 
   const section = pane.querySelector('.section-resources');
   const items = section ? Array.from(section.querySelectorAll('.resource-item')) : [];
-  if (!section || !items.length) {
-    if (resPane && !resPane.classList.contains('w--tab-active') && !pane.__resourcesObserver) {
-      const mo = new MutationObserver(() => {
-        if (resPane.classList.contains('w--tab-active')) {
-          mo.disconnect();
-          pane.__resourcesObserver = null;
-          initResourcesPinnedSections(root);
-        }
-      });
-      mo.observe(resPane, { attributes: true, attributeFilter: ['class'] });
-      pane.__resourcesObserver = mo;
+  if(!items.length){
+    const resPane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]');
+    if(resPane && !resPane.classList.contains('w--tab-active') && !pane.__resourcesObserver){
+      const mo=new MutationObserver(()=>{ if(resPane.classList.contains('w--tab-active')){ mo.disconnect(); pane.__resourcesObserver=null; initResourcesPinnedSections(root);} });
+      mo.observe(resPane,{attributes:true,attributeFilter:['class']});
+      pane.__resourcesObserver=mo;
     }
     return;
   }
 
   pane.__resourcesInited = true;
 
-  items.forEach((card, idx) => {
-    const isLast = card.classList.contains('last-resource-item') || idx === items.length - 1;
-    const isShort = card.offsetHeight < window.innerHeight;
-
-    let ovl = card.querySelector(':scope > .resource-ovl');
-    if (!ovl) {
-      ovl = document.createElement('div');
-      ovl.className = 'resource-ovl';
-      ovl.style.position = 'absolute';
-      ovl.style.inset = '0';
-      ovl.style.pointerEvents = 'none';
-      ovl.style.opacity = '0';
-      ovl.style.background = 'rgba(0,0,0,0)';
-      ovl.style.backdropFilter = 'blur(0px)';
-      ovl.style.webkitBackdropFilter = 'blur(0px)';
-      ovl.style.zIndex = '2';
-      if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
-      card.appendChild(ovl);
+  const hasTransformedAncestor = el => {
+    let n = el.parentElement;
+    while(n && n !== document.body){
+      const cs = getComputedStyle(n);
+      if(cs.transform && cs.transform !== 'none') return true;
+      n = n.parentElement;
     }
+    return false;
+  };
 
+  const pinType = hasTransformedAncestor(pane) ? 'transform' : 'fixed';
+
+  items.forEach((card, idx)=>{
     const visual = card.querySelector('.resource-visual');
+    const title  = card.querySelector('h2, .resource-title, .resource-heading, .resource-title h2');
     const block  = card.querySelector('.resource-block');
-    const title  = card.querySelector('h2');
 
-    const stMain = isLast
-      ? {
-          trigger: card,
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: 1,
-          invalidateOnRefresh: true
-        }
-      : {
-          trigger: card,
-          start: isShort ? 'top top' : 'top bottom',
-          pin: true,
-          pinSpacing: false,
-          scrub: 1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true
-        };
+    const last = card.classList.contains('last-resource-item') || idx === items.length - 1;
 
-    const tl = gsap.timeline({ scrollTrigger: stMain });
+    const tl = gsap.timeline({ defaults:{ ease:'none' } });
+    if(visual) tl.fromTo(visual,{ y:0 },{ y:-240, duration:1 }, 0);
+    if(title)  tl.fromTo(title, { y:0 },{ y:  80, duration:1 }, 0);
+    if(block)  tl.fromTo(block, { y:0 },{ y:-200, duration:1 }, 0);
 
-    if (visual) tl.fromTo(visual, { y: 0 }, { y: -240, duration: 1 }, 0);
-    if (title)  tl.fromTo(title,  { y: 0 }, { y:  80,  duration: 1 }, 0);
-    if (block)  tl.fromTo(block,  { y: 0 }, { y: -200, duration: 1 }, 0);
+    const ovlStart = 0.35; // begin overlay when next card is ~35% from bottom
+    tl.fromTo(card, { '--res-ovl': 0 }, { '--res-ovl': last ? 0 : 1, duration:(1-ovlStart) }, ovlStart);
 
-    if (!isLast) {
-      const next = items[idx + 1];
-      if (next) {
-        gsap.to(ovl, {
-          opacity: 1,
-          background: 'rgba(0,0,0,0.35)',
-          backdropFilter: 'blur(12px)',
-          webkitBackdropFilter: 'blur(12px)',
-          ease: 'none',
-          scrollTrigger: {
-            trigger: next,
-            start: 'top bottom-=35%',
-            end: 'top bottom',
-            scrub: 1,
-            invalidateOnRefresh: true
-          }
-        });
+    card.style.setProperty('--res-ovl','0');
+    card.style.setProperty('backdrop-filter','blur(calc(var(--res-ovl) * 12px))');
+    card.style.setProperty('-webkit-backdrop-filter','blur(calc(var(--res-ovl) * 12px))');
+    card.style.setProperty('box-shadow','inset 0 0 0 9999px rgba(0,0,0,'+(last?0:'calc(0.22 * var(--res-ovl))')+')');
+
+    ScrollTrigger.create({
+      trigger: card,
+      start: 'top top',
+      end: 'bottom top',
+      scrub: 1,
+      pin: !last,
+      pinSpacing: false,
+      pinType,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      animation: tl,
+      onRefreshInit: self => {
+        // reset any inline position/top that might have lingered
+        gsap.set(card, { clearProps: 'position,top,left,bottom,right' });
       }
-    }
+    });
   });
 
   ScrollTrigger.refresh(true);
