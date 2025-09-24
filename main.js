@@ -113,8 +113,8 @@
     const tl = gsap.timeline({ scrollTrigger: stMain });
 
     if (visual) tl.fromTo(visual, { y: 0 }, { y: -240, duration: 1 }, 0);
-    if (title)  tl.fromTo(title,  { y: 0 }, { y: 600,  duration: 1 }, 0);
-    if (block)  tl.fromTo(block,  { y: 0 }, { y: -600, duration: 1 }, 0);
+    if (title)  tl.fromTo(title,  { y: 0 }, { y: 480,  duration: 1 }, 0);
+    if (block)  tl.fromTo(block,  { y: 0 }, { y: -480, duration: 1 }, 0);
 
     if (!isLast) {
       const next = items[idx + 1];
