@@ -38,74 +38,64 @@
 	function initNavigation(root = document) {initMenuNavigation(root);initFilterNavigation(root);initNavigationTriggers(root);}
 	function initMenuLinkHover(e=document){window.matchMedia("(hover: hover) and (min-width: 1024px)").matches&&e.querySelectorAll(".menu-link").forEach((e=>{let t=e.querySelector(".menu-link-bg");t||(t=document.createElement("div"),t.classList.add("menu-link-bg"),e.appendChild(t)),e.addEventListener("mouseenter",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:1,duration:.3,ease:"power2.out"})})),e.addEventListener("mouseleave",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:0,duration:.3,ease:"power2.in"})}))}))}
 	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
-	function initResourcesPinnedSections(root=document){
+	function initResourcesPinnedSections(root = document) {
   if (!window.ScrollTrigger) return;
 
-  const resPane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]') || root.querySelector('.wrapper-resources')?.closest('.w-tab-pane') || null;
+  const resPane =
+    root.querySelector('.w-tab-pane[data-w-tab="Resources"]') ||
+    root.querySelector('.wrapper-resources')?.closest('.w-tab-pane') ||
+    null;
+
   const pane = resPane || root;
-  if (!pane || pane.__resourcesInited) return;
+  if (pane.__resourcesInited) return;
 
   const section = pane.querySelector(".section-resources");
   const items = section ? Array.from(section.querySelectorAll(".resource-item")) : [];
+
   if (!section || !items.length) {
-    // If the pane exists but isn't active yet, arm an observer so we init when it becomes active.
     if (resPane && !resPane.classList.contains("w--tab-active") && !pane.__resourcesObserver) {
-      const mo = new MutationObserver(()=>{
+      const mo = new MutationObserver(() => {
         if (resPane.classList.contains("w--tab-active")) {
           mo.disconnect();
           pane.__resourcesObserver = null;
           initResourcesPinnedSections(root);
         }
       });
-      mo.observe(resPane,{attributes:true,attributeFilter:["class"]});
+      mo.observe(resPane, { attributes: true, attributeFilter: ["class"] });
       pane.__resourcesObserver = mo;
     }
     return;
   }
 
-  // Only initialize once per pane
   pane.__resourcesInited = true;
 
-  const vh = ()=>window.innerHeight||document.documentElement.clientHeight;
+  items.forEach((card) => {
+    const isShort = card.offsetHeight < window.innerHeight;
 
-  items.forEach((card, idx)=>{
-    let ovl = card.querySelector(':scope > .resource-ovl');
-    if (!ovl) {
-      ovl = document.createElement("div");
-      ovl.className = "resource-ovl";
-      ovl.style.cssText = "position:absolute;inset:0;pointer-events:none;opacity:0;background:rgba(0,0,0,.22);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);z-index:2;";
-      if (getComputedStyle(card).position === "static") card.style.position = "relative";
-      card.appendChild(ovl);
-    }
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: card,
+        start: isShort ? "top top" : "bottom bottom",
+        pin: true,
+        pinSpacing: false,
+        scrub: 1,
+        invalidateOnRefresh: true
+      }
+    });
 
-    let inner = card.querySelector(':scope > .resource-scroll-inner');
-    if (!inner) {
-      inner = document.createElement("div");
-      inner.className = "resource-scroll-inner";
-      inner.style.position = "relative";
-      inner.style.willChange = "transform";
-      const kids = [];
-      card.childNodes.forEach(n=>{ if (n.nodeType===1 && !n.classList.contains("resource-ovl")) kids.push(n); });
-      kids.forEach(n=>inner.appendChild(n));
-      card.appendChild(inner);
-    }
+    tl.to(card, { ease: "none", startAt: { filter: "contrast(100%) blur(0px)" }, filter: "contrast(10%) blur(10px)" }, 0);
 
-    const dist = Math.max(1,(inner.scrollHeight||inner.offsetHeight||card.offsetHeight)-vh());
-    const tl = gsap.timeline({defaults:{ease:"none"}});
-    tl.fromTo(inner,{y:0},{y:-dist,duration:1},0)
-      .fromTo(ovl,{opacity:0,backdropFilter:"blur(0px)",webkitBackdropFilter:"blur(0px)"},{opacity:1,backdropFilter:"blur(12px)",webkitBackdropFilter:"blur(12px)",duration:0.2},0.8);
+    const title = card.querySelector(".resource-title, .resource-heading, .headline-m, h2");
+    const block = card.querySelector(".resource-block, .resource-content");
+    const visual = card.querySelector(".resource-visual, .resource-image, img");
 
-    const next = items[idx+1];
-    const cfg = next
-      ? {trigger:card,start:"top top",endTrigger:next,end:"top top",scrub:0.9,pin:true,pinSpacing:false,animation:tl,anticipatePin:1,invalidateOnRefresh:true}
-      : {trigger:card,start:"top bottom",end:"bottom top",scrub:0.8,animation:tl,invalidateOnRefresh:true};
-
-    ScrollTrigger.create(cfg);
+    if (title) tl.fromTo(title, { y: 0 }, { y: 20, duration: 1, ease: "none" }, 0);
+    if (block) tl.fromTo(block, { y: 0 }, { y: -300, duration: 1, ease: "none" }, 0);
+    if (visual) tl.fromTo(visual, { y: 0 }, { y: -480, duration: 1, ease: "none" }, 0);
   });
 
   ScrollTrigger.refresh(true);
 }
-
 
 
 
