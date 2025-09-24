@@ -38,166 +38,73 @@
 	function initNavigation(root = document) {initMenuNavigation(root);initFilterNavigation(root);initNavigationTriggers(root);}
 	function initMenuLinkHover(e=document){window.matchMedia("(hover: hover) and (min-width: 1024px)").matches&&e.querySelectorAll(".menu-link").forEach((e=>{let t=e.querySelector(".menu-link-bg");t||(t=document.createElement("div"),t.classList.add("menu-link-bg"),e.appendChild(t)),e.addEventListener("mouseenter",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:1,duration:.3,ease:"power2.out"})})),e.addEventListener("mouseleave",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:0,duration:.3,ease:"power2.in"})}))}))}
 	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
-	window.initPinnedSections = function initPinnedSections(root = document) {
-  const tag = "[initPinnedSections]";
-  const hasGSAP = !!(window.gsap && window.ScrollTrigger);
-  console.log(tag, "start", { rootIsDocument: root === document, hasGSAP });
+	function initResourcesPinnedSections(root=document){
+  if (!window.ScrollTrigger) return;
 
-  if (!hasGSAP) {
-    console.warn(tag, "GSAP/ScrollTrigger missing — aborting.");
+  const resPane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]') || root.querySelector('.wrapper-resources')?.closest('.w-tab-pane') || null;
+  const pane = resPane || root;
+  if (!pane || pane.__resourcesInited) return;
+
+  const section = pane.querySelector(".section-resources");
+  const items = section ? Array.from(section.querySelectorAll(".resource-item")) : [];
+  if (!section || !items.length) {
+    // If the pane exists but isn't active yet, arm an observer so we init when it becomes active.
+    if (resPane && !resPane.classList.contains("w--tab-active") && !pane.__resourcesObserver) {
+      const mo = new MutationObserver(()=>{
+        if (resPane.classList.contains("w--tab-active")) {
+          mo.disconnect();
+          pane.__resourcesObserver = null;
+          initResourcesPinnedSections(root);
+        }
+      });
+      mo.observe(resPane,{attributes:true,attributeFilter:["class"]});
+      pane.__resourcesObserver = mo;
+    }
     return;
   }
 
-  // --- SERVICES (Capabilities-style) ---
-  const serviceSections = Array.from(root.querySelectorAll(".section-single-service"));
-  console.log(tag, "services found:", serviceSections.length);
-  serviceSections.forEach((section, i) => {
-    const shortPanel = section.offsetHeight < window.innerHeight;
-    const st = gsap.timeline({
-      scrollTrigger: {
-        trigger: section,
-        start: shortPanel ? "top top" : "bottom bottom",
-        pin: true,
-        pinSpacing: false,
-        scrub: 1,
-        onToggle: self => console.log(tag, "service toggle", i, self.isActive),
-        onRefresh: self => console.log(tag, "service refreshed", i, { start: self.start, end: self.end })
-      }
-    }).to(section, { ease: "none", startAt: { filter: "contrast(100%) blur(0px)" }, filter: "contrast(10%) blur(10px)" }, 0);
+  // Only initialize once per pane
+  pane.__resourcesInited = true;
+
+  const vh = ()=>window.innerHeight||document.documentElement.clientHeight;
+
+  items.forEach((card, idx)=>{
+    let ovl = card.querySelector(':scope > .resource-ovl');
+    if (!ovl) {
+      ovl = document.createElement("div");
+      ovl.className = "resource-ovl";
+      ovl.style.cssText = "position:absolute;inset:0;pointer-events:none;opacity:0;background:rgba(0,0,0,.22);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);z-index:2;";
+      if (getComputedStyle(card).position === "static") card.style.position = "relative";
+      card.appendChild(ovl);
+    }
+
+    let inner = card.querySelector(':scope > .resource-scroll-inner');
+    if (!inner) {
+      inner = document.createElement("div");
+      inner.className = "resource-scroll-inner";
+      inner.style.position = "relative";
+      inner.style.willChange = "transform";
+      const kids = [];
+      card.childNodes.forEach(n=>{ if (n.nodeType===1 && !n.classList.contains("resource-ovl")) kids.push(n); });
+      kids.forEach(n=>inner.appendChild(n));
+      card.appendChild(inner);
+    }
+
+    const dist = Math.max(1,(inner.scrollHeight||inner.offsetHeight||card.offsetHeight)-vh());
+    const tl = gsap.timeline({defaults:{ease:"none"}});
+    tl.fromTo(inner,{y:0},{y:-dist,duration:1},0)
+      .fromTo(ovl,{opacity:0,backdropFilter:"blur(0px)",webkitBackdropFilter:"blur(0px)"},{opacity:1,backdropFilter:"blur(12px)",webkitBackdropFilter:"blur(12px)",duration:0.2},0.8);
+
+    const next = items[idx+1];
+    const cfg = next
+      ? {trigger:card,start:"top top",endTrigger:next,end:"top top",scrub:0.9,pin:true,pinSpacing:false,animation:tl,anticipatePin:1,invalidateOnRefresh:true}
+      : {trigger:card,start:"top bottom",end:"bottom top",scrub:0.8,animation:tl,invalidateOnRefresh:true};
+
+    ScrollTrigger.create(cfg);
   });
 
-  // --- RESOURCES (inside tab) ---
-  const resourcesPane =
-    root.querySelector('.w-tab-pane[data-w-tab="Resources"]') ||
-    root.querySelector(".wrapper-resources")?.closest(".w-tab-pane") ||
-    root.querySelector(".wrapper-resources") || // fallback if not inside Webflow tabs
-    null;
-
-  console.log(tag, "resources pane candidate:", resourcesPane);
-
-  if (!resourcesPane) {
-    console.warn(tag, "No resources pane/container found. Expected .w-tab-pane[data-w-tab='Resources'] or .wrapper-resources");
-    ScrollTrigger.refresh(true);
-    return;
-  }
-
-  // If it's a Webflow tab pane and not active yet, wait, then build.
-  const paneEl = resourcesPane.classList?.contains?.("w-tab-pane") ? resourcesPane : null;
-  const paneIsActive = paneEl ? paneEl.classList.contains("w--tab-active") : true;
-  console.log(tag, "resources pane active now?", paneIsActive);
-
-  const buildResources = () => {
-    if (resourcesPane.__resourcesInited) {
-      console.log(tag, "resources already inited → skipping");
-      return;
-    }
-    resourcesPane.__resourcesInited = true;
-
-    const items = Array.from(resourcesPane.querySelectorAll(".section-resources .resource-item, .resource-item"));
-    console.log(tag, "resource items found:", items.length, items);
-
-    if (!items.length) {
-      console.warn(tag, "No .resource-item found under resources pane");
-      return;
-    }
-
-    items.forEach((item, idx) => {
-      // Ensure overlay exists
-      let overlay = item.querySelector(".resource-ovl");
-      if (!overlay) {
-        overlay = document.createElement("div");
-        overlay.className = "resource-ovl";
-        overlay.style.cssText =
-          "position:absolute;inset:0;pointer-events:none;opacity:0;background:rgba(0,0,0,.22);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);z-index:2;";
-        if (getComputedStyle(item).position === "static") item.style.position = "relative";
-        item.appendChild(overlay);
-        console.log(tag, "overlay injected for item", idx);
-      }
-
-      const block = item.querySelector(".resource-block");
-      const visual = item.querySelector(".resource-visual");
-      const heading = item.querySelector("h2");
-
-      const tl = gsap.timeline({ defaults: { ease: "none" } });
-      if (block) tl.fromTo(block, { y: 0 }, { y: -300, duration: 1 }, 0);
-      if (visual) tl.fromTo(visual, { y: 0 }, { y: -480, duration: 1 }, 0);
-      if (heading) tl.fromTo(heading, { y: 0 }, { y: 20, duration: 1 }, 0);
-
-      tl.set(item, { filter: "contrast(100%) blur(0px)" }, 0)
-        .to(item, { filter: "contrast(65%) blur(0px)", duration: 0.85 }, 0)
-        .fromTo(
-          overlay,
-          { opacity: 0, backdropFilter: "blur(0px)", webkitBackdropFilter: "blur(0px)" },
-          { opacity: 1, backdropFilter: "blur(12px)", webkitBackdropFilter: "blur(12px)", duration: 0.15 },
-          0.85
-        );
-
-      const hasNext = !!items[idx + 1];
-      const st = ScrollTrigger.create({
-        trigger: item,
-        start: "top top",
-        endTrigger: items[idx + 1] || item,
-        end: hasNext ? "top top" : "bottom top",
-        scrub: 0.95,
-        pin: hasNext,          // pin until next one reaches top
-        pinSpacing: hasNext,   // leave spacing so stack effect shows
-        animation: tl,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onToggle: self => console.log(tag, "resource toggle", idx, self.isActive),
-        onRefresh: self => console.log(tag, "resource refreshed", idx, { start: self.start, end: self.end })
-      });
-
-      console.log(tag, "ScrollTrigger created for resource", idx, st);
-    });
-
-    // Images often affect height → refresh after they decode
-    const imgs = Array.from(resourcesPane.querySelectorAll("img"));
-    const decodePromises = imgs.map(img => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()));
-    Promise.allSettled(decodePromises).then(() => {
-      console.log(tag, "images decoded (or ignored) → refreshing ST");
-      ScrollTrigger.refresh(true);
-      setTimeout(() => ScrollTrigger.refresh(true), 30);
-    });
-
-    // Initial refresh just in case
-    ScrollTrigger.refresh(true);
-    console.log(tag, "resources setup complete. Total ST:", ScrollTrigger.getAll().length);
-  };
-
-  if (paneIsActive) {
-    console.log(tag, "pane is active → build now");
-    // build after a couple rAFs so layout has settled
-    requestAnimationFrame(() => requestAnimationFrame(buildResources));
-  } else if (paneEl) {
-    console.log(tag, "pane not active → attach MutationObserver and wait");
-    const mo = new MutationObserver(muts => {
-      const becameActive = paneEl.classList.contains("w--tab-active");
-      if (becameActive) {
-        console.log(tag, "pane became active → building resources");
-        mo.disconnect();
-        requestAnimationFrame(() => requestAnimationFrame(buildResources));
-      }
-    });
-    mo.observe(paneEl, { attributes: true, attributeFilter: ["class"] });
-
-    // Also wire tab links to force a later refresh
-    const tabLink = (root.querySelector('[data-w-tab="Resources"].w-tab-link') ||
-                      root.querySelector('.w-tab-link[href="#Resources"]') ||
-                      root.querySelector('#resourcesOpen') ||
-                      null);
-    if (tabLink) {
-      tabLink.addEventListener("click", () => {
-        console.log(tag, "resources tab link clicked → will refresh after activation");
-        setTimeout(() => ScrollTrigger.refresh(true), 60);
-      });
-    }
-  }
-
-  // Final global refresh
   ScrollTrigger.refresh(true);
-  console.log(tag, "end — total ScrollTriggers now:", ScrollTrigger.getAll().length);
-};
+}
 
 
 
@@ -208,7 +115,7 @@
 
 
 
-
+	function initServicesPinnedSections(t=document){const e=Array.from(t.querySelectorAll(".section-single-service"));e.length&&window.ScrollTrigger&&e.forEach((t=>{const e=t.offsetHeight<window.innerHeight;gsap.timeline({scrollTrigger:{trigger:t,start:e?"top top":"bottom bottom",pin:!0,pinSpacing:!1,scrub:1}}).to(t,{ease:"none",startAt:{filter:"contrast(100%) blur(0px)"},filter:"contrast(10%) blur(10px)"},0)}))}
 	function initServicesGallery(e=document){const t=e.querySelectorAll(".infinite-gallery");t.length&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches&&t.forEach((e=>{const t=e.querySelector(".infinite-gallery-wrapper");if(!t||t.__inited)return;t.__inited=!0,e.setAttribute("data-armed","0");const r=Array.from(t.querySelectorAll(".service-visual-wrapper"));if(!r.length)return void e.setAttribute("data-armed","1");e.setAttribute("data-armed","measure");const i=new Set;r.forEach(((e,t)=>{e.style.height="";const r=e.getBoundingClientRect().width,i=parseFloat(getComputedStyle(e).height)||e.getBoundingClientRect().height||0;e.dataset.key=String(t),e.dataset.targetH=String(i),e.style.minWidth=r+"px",e.style.maxWidth=r+"px",e.style.height="0px",e.style.overflow="hidden",e.dataset.revealed="0"}));const a="right"===(e.dataset.direction||"left").toLowerCase(),n=parseFloat(e.dataset.speed)||.6,l=parseFloat(getComputedStyle(t).gap||0)||0,o=e=>e.getBoundingClientRect().width+l;function s(){r.forEach((e=>{const r=e.cloneNode(!0),a=e.dataset.key||"",n=+e.dataset.targetH||0;r.setAttribute("data-clone","1"),r.dataset.key=a,r.style.minWidth=e.style.minWidth,r.style.maxWidth=e.style.maxWidth,r.style.height=i.has(a)?n+"px":"0px",r.style.overflow="hidden",t.appendChild(r)}))}function d(){let e=0;return t.childNodes.forEach((t=>{1===t.nodeType&&(e+=o(t))})),e}function c(){Array.from(t.querySelectorAll(".service-visual-wrapper[data-clone]")).forEach((e=>e.remove())),s(),s();let e=0;for(;d()<3*t.clientWidth&&e++<8;)s()}c(),e.setAttribute("data-armed","1");let h=0,u=!1,g=0;function f(e){if(!u)return void cancelAnimationFrame(h);if(e-g<80)return void(h=requestAnimationFrame(f));g=e||performance.now();const r=window.innerWidth,a=-.05*r,n=1.05*r,l=Array.from(t.querySelectorAll(".service-visual-wrapper")).filter((e=>{const t=e.getBoundingClientRect();return t.right>a&&t.left<n})).filter((e=>"1"!==e.dataset.revealed&&"1"!==e.dataset.revealing)).sort(((e,t)=>e.getBoundingClientRect().left-t.getBoundingClientRect().left));if(l.length){const e=gsap.timeline();l.forEach(((r,a)=>{const n=+r.dataset.targetH||0,l=r.dataset.key||"";r.dataset.revealing="1",e.to(r,{height:n,duration:.9,ease:"power2.out",onComplete:()=>{r.style.height="",r.dataset.revealed="1",r.dataset.revealing="",i.add(l),t.querySelectorAll('.service-visual-wrapper[data-clone][data-key="'+l+'"]').forEach((e=>{e.style.height=n+"px"}))}},.12*a)}))}h=requestAnimationFrame(f)}new IntersectionObserver((t=>{t.forEach((t=>{t.target===e&&(t.isIntersecting?u||(u=!0,cancelAnimationFrame(h),h=requestAnimationFrame(f)):(u=!1,cancelAnimationFrame(h)))}))}),{root:null,threshold:0,rootMargin:"0px 0px -5% 0px"}).observe(e);let p=0,m=a?-1:1,y=60*n;gsap.ticker.add(((e,r)=>{p-=m*y*(r/1e3);let i=t.firstElementChild,a=0;for(;i&&p<-o(i)&&(p+=o(i),t.appendChild(i),i=t.firstElementChild,!(++a>50)););let n=t.lastElementChild;for(a=0;n&&p>0&&(p-=o(n),t.insertBefore(n,t.firstElementChild),n=t.lastElementChild,!(++a>50)););gsap.set(t,{x:p});const l=window.innerWidth/2;t.querySelectorAll(".service-visual").forEach((e=>{const t=e.closest(".service-visual-wrapper");if(!t)return;const r=t.getBoundingClientRect(),i=(l-(r.left+r.width/2))/window.innerWidth;e.style.setProperty("--drift",40*i+"px")}))})),new ResizeObserver((()=>{c()})).observe(t)}))}
 	function initAccordions(e=document){const o=e.querySelectorAll(".accordion-list");if(!o.length)return;let t;const i=()=>{clearTimeout(t),t=setTimeout((()=>ScrollTrigger.refresh()),100)};o.forEach((e=>{const o=e.querySelectorAll(".accordion-subservice, .accordion-mindset, .accordion-quote");o.length&&o.forEach((e=>{const t=e.querySelector(".accordion-header"),c=e.querySelector(".cross-line-animating"),r=e.querySelector(".accordion-content"),a=e.querySelector(".accordion-icon-quote"),n=e.classList.contains("accordion-quote");if(!t||!c||!r)return;gsap.set(r,{maxHeight:0,opacity:0,paddingBottom:0,paddingTop:n?0:void 0});const s=gsap.timeline({paused:!0,defaults:{ease:"power2.out"}}).to(t,{paddingTop:"2rem",duration:.4},0).to(c,{rotation:0,duration:.4},0).to(r,{maxHeight:600,opacity:1,paddingBottom:n?"0rem":"2rem",paddingTop:n?"2rem":void 0,duration:.5,onUpdate:i,onComplete:()=>gsap.set(r,{maxHeight:"none"})},0);n&&a&&s.from(a,{opacity:0,duration:.4},0),e._accordionTimeline=s,e.addEventListener("click",(()=>{if(s.isActive())return;const c=t.classList.contains("accordion-active");o.forEach((o=>{if(o!==e){const e=o.querySelector(".accordion-header"),t=o._accordionTimeline;e.classList.contains("accordion-active")&&!t.isActive()&&(e.classList.remove("accordion-active"),t.reverse())}})),c?(gsap.set(r,{maxHeight:r.offsetHeight}),s.eventCallback("onReverseComplete",i),s.reverse()):(gsap.set(r,{maxHeight:0}),s.play()),t.classList.toggle("accordion-active",!c)}))}))}))}
 	function initAppearInLine(e=document,t=".appear-in-line",r=":scope > *"){const o=.15,a=.8;e.querySelectorAll(t).forEach((e=>{const t=[],s=[],n=Array.from(e.querySelectorAll(r));e.getBoundingClientRect(),n.forEach((e=>{const r=getComputedStyle(e),o=parseInt(r.columnCount,10)||1,a=e.getBoundingClientRect();if(o>1){const r=new SplitText(e,{type:"lines",linesClass:"split-line"});t.push(r);const n=a.width/o,i=Array.from({length:o},(()=>[]));r.lines.forEach((e=>{const t=e.getBoundingClientRect().left-a.left,r=Math.min(Math.floor(t/n),o-1);i[r].push(e),gsap.set(e,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"})})),i.forEach((e=>s.push(e)))}else gsap.set(e,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"}),s.push([e])})),e._appearData={splits:t,groups:s};const i=registerObserver(new IntersectionObserver(((e,t)=>{e.forEach((e=>{if(!e.isIntersecting)return;t.unobserve(e.target);const{splits:r,groups:s}=e.target._appearData;s.forEach(((e,t)=>{gsap.to(e,{y:0,opacity:1,filter:"blur(0px)",duration:a,ease:"power2.out",delay:t*o})}));const n=(s.length-1)*o+a;gsap.delayedCall(n+.05,(()=>{r.forEach((e=>e.revert()))}))}))}),{root:null,rootMargin:"0px 0px -10% 0px",threshold:0}));e._appearObserver=i,i.observe(e);const l=e.getBoundingClientRect();if(l.top<window.innerHeight&&l.bottom>0){i.unobserve(e);const{splits:t,groups:r}=e._appearData;r.forEach(((e,t)=>{gsap.to(e,{y:0,opacity:1,filter:"blur(0px)",duration:a,ease:"power2.out",delay:t*o})}));const s=(r.length-1)*o+a;gsap.delayedCall(s+.05,(()=>t.forEach((e=>e.revert()))))}const p=e.closest(".w-tab-pane");if(p){registerObserver(new MutationObserver((()=>{p.classList.contains("w--tab-active")&&requestAnimationFrame((()=>requestAnimationFrame((()=>i.observe(e)))))}))).observe(p,{attributes:!0,attributeFilter:["class"]})}}))}
@@ -230,7 +137,7 @@
 	function getEntryConfig(e){return entryConfigByNamespace[e.dataset.barbaNamespace]??{delayHero:!1,entryOffset:0}}
 	function runPageEntryAnimations(e){const{delayHero:t,entryOffset:a}=getEntryConfig(e),n=gsap.timeline();return"info"===e.dataset.barbaNamespace&&n.add(animateInfoEntry(e),0),e.querySelector(".section-table-of-contents")&&n.add(animateCapabilitiesEntry(e,{delayHero:t}),0),e.querySelector(".selected-item-outer")&&n.add(animateSelectedEntries(e),0),e.querySelector(".cs-hero-image")&&n.add(animateCaseStudyEntry(e),0),{tl:n,entryOffset:a}}
 	const waitForLayoutStability=()=>new Promise((t=>{requestAnimationFrame((()=>{requestAnimationFrame((()=>{setTimeout(t,30)}))}))}));
-	async function finalizeAfterEntry(i,r){await r.finished,await waitForLayoutStability(),initDynamicPortraitColumns(i),initPinnedSections(i),initServicesGallery(i),i.querySelector(".cs-hero-image")&&initCaseStudyBackgroundScroll(i),ScrollTrigger.refresh(!0),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
+	async function finalizeAfterEntry(i,e){await e.finished,await waitForLayoutStability(),initDynamicPortraitColumns(i),initServicesPinnedSections(i),initServicesGallery(i),i.querySelector(".cs-hero-image")&&initCaseStudyBackgroundScroll(i),initResourcesPinnedSections(i),ScrollTrigger.refresh(!0),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
 	async function runEntryFlow(i,{withCoverOut:n=!1}={}){i.style.visibility="",n&&await coverOut().finished,await runSafeInit(i,{preserveServicePins:!0});const{tl:t,entryOffset:e}=runPageEntryAnimations(i);t.call((()=>finalizeAfterEntry(i,t)),null,e+t.duration()),await t.finished}
 
 // Barba Init
@@ -303,6 +210,7 @@
 		initArchiveFilters(root);
 		initNavigation(root);
 		initMenuLinkHover(root);
+		initResourcesPinnedSections(root);
 		initAccordions(root);
 		initCounters(root);
 		initAppearInLine(root);
