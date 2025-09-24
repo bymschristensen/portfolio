@@ -40,54 +40,50 @@
 	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
 	function initResourcesPinnedSections(root=document){
   if(!window.ScrollTrigger) return;
-
-  const pane = root.querySelector('.w-tab-pane[data-w-tab="Resources"]') || root;
-  const section = pane.querySelector('.section-resources');
-  const items = section ? Array.from(section.querySelectorAll('.resource-item')) : [];
+  const pane=root.querySelector('.w-tab-pane[data-w-tab="Resources"]')||root;
+  const section=pane.querySelector('.section-resources');
+  const items=section?Array.from(section.querySelectorAll('.resource-item')):[];
   if(!items.length) return;
 
-  items.forEach((card, idx)=>{
-    const visual   = card.querySelector('.resource-visual');
-    const title    = card.querySelector('h2, .resource-title, .resource-title h2');
-    const block    = card.querySelector('.resource-block');
-    const overlay  = card.querySelector('.resource-overlay');
+  items.forEach((card,idx)=>{
+    const visual=card.querySelector('.resource-visual');
+    const title=card.querySelector('.resource-title');
+    const block=card.querySelector('.resource-block');
+    const overlay=card.querySelector('.resource-overlay');
 
-    const isLast   = card.classList.contains('last-resource-item') || idx === items.length - 1;
-    const isShort  = card.offsetHeight < window.innerHeight;
+    const isLast=card.classList.contains('last-resource-item')||idx===items.length-1;
+    const isShort=card.offsetHeight<window.innerHeight;
 
-    if(visual) gsap.set(visual, { y:-60 });
+    if(visual) gsap.set(visual,{y:-60});
+    if(overlay) gsap.set(overlay,{opacity:0,backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'});
 
-    const tl = gsap.timeline({ defaults:{ ease:'none' } });
-
-    if(visual)  tl.to(visual, { y:-240, duration:1 }, 0.00);
-    if(title)   tl.fromTo(title, { y:0 }, { y:80, duration:1 }, 0.15);
-    if(block)   tl.fromTo(block, { y:0 }, { y:-200, duration:1 }, 0.10);
-
+    const tl=gsap.timeline({defaults:{ease:'none'}});
+    if(visual) tl.to(visual,{y:-240,duration:1},0);
+    if(title)  tl.fromTo(title,{y:0},{y:80,duration:1},0.15);
+    if(block)  tl.fromTo(block,{y:0},{y:-200,duration:1},0.10);
     if(overlay && !isLast){
-      tl.to(overlay, {
-        opacity: 1,
-        backdropFilter: 'blur(10px)',
-        webkitBackdropFilter: 'blur(10px)',
-        duration: 1
-      }, 0.50);
+      tl.fromTo(
+        overlay,
+        {opacity:0,backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'},
+        {opacity:1,backdropFilter:'blur(10px)',webkitBackdropFilter:'blur(10px)',duration:0.35},
+        0.65
+      );
     }
 
     ScrollTrigger.create({
-      trigger: card,
-      start: isShort ? 'top top' : 'bottom bottom',
-      end: 'bottom top',
-      scrub: 1,
-      pin: !isLast,
-      pinSpacing: false,
-      anticipatePin: 1,
-      invalidateOnRefresh: true,
-      animation: tl,
-      onRefreshInit: () => {
-        gsap.set(card, { clearProps:'position,top,left,right,bottom,transform' });
-        const spacer = card.parentNode;
-        if(spacer && spacer.classList && spacer.classList.contains('pin-spacer')){
-          spacer.style.cssText = '';
-        }
+      trigger:card,
+      start:isShort?'top top':'top bottom',
+      end:'bottom top',
+      scrub:1,
+      pin:!isLast,
+      pinSpacing:false,
+      anticipatePin:1,
+      invalidateOnRefresh:true,
+      animation:tl,
+      onRefreshInit:()=>{
+        gsap.set(card,{clearProps:'position,top,left,right,bottom,transform'});
+        const spacer=card.parentNode;
+        if(spacer&&spacer.classList&&spacer.classList.contains('pin-spacer')) spacer.style.cssText='';
       }
     });
   });
