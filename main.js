@@ -53,7 +53,7 @@
     const tl=gsap.timeline({
       scrollTrigger:{
         trigger:card,
-        start:isShort?'top top':'bottom bottom',
+        start:isShort?'top top':'top bottom',
         pin:!isLast,
         pinSpacing:false,
         scrub:1,
@@ -66,9 +66,14 @@
     const block=card.querySelector('.resource-block');
     const overlay=card.querySelector('.resource-overlay');
 
-    if(visual) tl.fromTo(visual,{y:0,filter:'blur(0px)'},{y:-240,filter:'blur(10px)',duration:1},0);
-    if(title)  tl.fromTo(title,{y:0},{y:80,duration:1},0);
-    if(block)  tl.fromTo(block,{y:0},{y:-200,duration:1},0);
+    tl.fromTo(card,{filter:'contrast(100%)'},{filter:'contrast(10%)',duration:0.85},0);
+
+    if(visual){
+      tl.fromTo(visual,{y:0,filter:'blur(0px)'},{y:-240,filter:'blur(10px)',duration:1},0)
+        .to(visual,{scale:1.06,duration:0.35},0.35);
+    }
+    if(title) tl.fromTo(title,{y:0},{y:80,duration:1},0);
+    if(block) tl.fromTo(block,{y:0},{y:-200,duration:1},0);
     if(!isLast && overlay) tl.fromTo(overlay,{opacity:0},{opacity:1,duration:0.35},0.35);
   });
 
