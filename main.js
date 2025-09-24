@@ -68,10 +68,9 @@
 
   pane.__resourcesInited = true;
 
-  const vh = () => window.innerHeight || document.documentElement.clientHeight;
-
-  items.forEach((card, idx) => {
+  items.forEach((card) => {
     const isLast = card.classList.contains('last-resource-item');
+    const isShort = card.offsetHeight < window.innerHeight;
     const visual = card.querySelector('.resource-visual');
     const title  = card.querySelector('h2');
 
@@ -79,52 +78,37 @@
       backgroundColor: 'rgba(0,0,0,0)',
       backdropFilter: 'blur(0px)',
       webkitBackdropFilter: 'blur(0px)',
-      willChange: 'backdrop-filter, background-color, filter'
+      willChange: 'backdrop-filter, background-color'
     });
 
-    const tl = gsap.timeline({ defaults: { ease: 'none' } });
+    const st = isLast
+      ? {
+          trigger: card,
+          start: 'top top+=15%',
+          scrub: 1,
+          invalidateOnRefresh: true
+        }
+      : {
+          trigger: card,
+          start: isShort ? 'top top' : 'bottom bottom',
+          pin: true,
+          pinSpacing: false,
+          scrub: 1,
+          anticipatePin: 1,
+          invalidateOnRefresh: true
+        };
 
-    if (visual) {
-      tl.fromTo(visual, { y: 0 }, { y: -480, duration: 1 }, 0);
-    }
+    const tl = gsap.timeline({ scrollTrigger: st });
 
-    if (title) {
-      tl.fromTo(title, { y: 0 }, { y: 20, duration: 1 }, 0);
-    }
+    if (visual) tl.fromTo(visual, { y: 0 }, { y: -480, duration: 1 }, 0);
+    if (title)  tl.fromTo(title,  { y: 0 }, { y:   20, duration: 1 }, 0);
 
     tl.to(card, {
-      backgroundColor: 'rgba(0,0,0,0.28)',
+      backgroundColor: 'rgba(0,0,0,0.32)',
       backdropFilter: 'blur(12px)',
       webkitBackdropFilter: 'blur(12px)',
-      duration: 0.9
+      duration: 1
     }, 0);
-
-    const next = items[idx + 1] || null;
-
-    if (!isLast && next) {
-      ScrollTrigger.create({
-        trigger: card,
-        start: 'top top',
-        endTrigger: next,
-        end: 'top top',
-        scrub: 0.95,
-        pin: true,
-        pinSpacing: false,
-        anticipatePin: 1,
-        animation: tl,
-        invalidateOnRefresh: true
-      });
-    } else {
-      const dist = Math.max(1, (card.scrollHeight || card.offsetHeight) - vh());
-      ScrollTrigger.create({
-        trigger: card,
-        start: 'top top+=15%',
-        end: `+=${dist}`,
-        scrub: 0.85,
-        animation: tl,
-        invalidateOnRefresh: true
-      });
-    }
   });
 
   ScrollTrigger.refresh(true);
