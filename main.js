@@ -72,28 +72,25 @@
           pinSpacing:false,
           pinReparent:true,
           pinType:'transform',
-          scrub:1,
-          anticipatePin:1,
+          scrub:0.6,
+          anticipatePin:2,
+          fastScrollEnd:true,
           invalidateOnRefresh:true
         }
       });
       if(overlay){
-        const s=0.65, d=0.35;
-        tl.fromTo(overlay,
-          {opacity:0,backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'},
-          {opacity:1,backdropFilter:'blur(10px)',webkitBackdropFilter:'blur(10px)'},
-          s
-        ).to(overlay,{},s+d);
+        gsap.set(overlay,{opacity:0,backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'});
+        tl.fromTo(overlay,{opacity:0},{opacity:1,duration:0.55},0.35)
+          .fromTo(overlay,{backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'},{backdropFilter:'blur(10px)',webkitBackdropFilter:'blur(10px)',duration:0.25},0.7);
       }
     }else{
       if(overlay) gsap.set(overlay,{opacity:0,backdropFilter:'blur(0px)',webkitBackdropFilter:'blur(0px)'});
-      ScrollTrigger.create({trigger:card,start:'top bottom',end:'bottom top',scrub:1,invalidateOnRefresh:true});
+      ScrollTrigger.create({trigger:card,start:'top bottom',end:'bottom top',scrub:0.6,invalidateOnRefresh:true});
     }
   });
 
   ScrollTrigger.refresh(true);
 }
-
 
 
 
