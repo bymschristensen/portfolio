@@ -133,7 +133,6 @@
 		initArchiveFilters(root);
 		initNavigation(root);
 		initMenuLinkHover(root);
-		initResourcesScroll(root);
 		initAccordions(root);
 		initCounters(root);
 		initAppearInLine(root);
