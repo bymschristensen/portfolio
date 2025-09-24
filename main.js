@@ -38,8 +38,166 @@
 	function initNavigation(root = document) {initMenuNavigation(root);initFilterNavigation(root);initNavigationTriggers(root);}
 	function initMenuLinkHover(e=document){window.matchMedia("(hover: hover) and (min-width: 1024px)").matches&&e.querySelectorAll(".menu-link").forEach((e=>{let t=e.querySelector(".menu-link-bg");t||(t=document.createElement("div"),t.classList.add("menu-link-bg"),e.appendChild(t)),e.addEventListener("mouseenter",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:1,duration:.3,ease:"power2.out"})})),e.addEventListener("mouseleave",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:0,duration:.3,ease:"power2.in"})}))}))}
 	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
-	window.initPinnedSections=function(e=document){Array.from(e.querySelectorAll(".section-single-service")).forEach(t=>{const r=t.offsetHeight<window.innerHeight;gsap.timeline({scrollTrigger:{trigger:t,start:r?"top top":"bottom bottom",pin:!0,pinSpacing:!1,scrub:1}}).to(t,{ease:"none",startAt:{filter:"contrast(100%) blur(0px)"},filter:"contrast(10%) blur(10px)"},0)});Array.from(e.querySelectorAll(".resource-item")).forEach((t,r,a)=>{const n=t.offsetHeight<window.innerHeight;let o=t.querySelector(".resource-ovl");o||(o=document.createElement("div"),o.className="resource-ovl",o.style.cssText="position:absolute;inset:0;pointer-events:none;opacity:0;background:rgba(0,0,0,.22);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);z-index:2;",getComputedStyle(t).position==="static"&&(t.style.position="relative"),t.appendChild(o));const i=t.querySelector(".resource-block"),c=t.querySelector(".resource-visual"),l=t.querySelector("h2"),s=gsap.timeline({defaults:{ease:"none"}});i&&s.fromTo(i,{y:0},{y:-300,duration:1},0);c&&s.fromTo(c,{y:0},{y:-480,duration:1},0);l&&s.fromTo(l,{y:0},{y:20,duration:1},0);s.set(t,{filter:"contrast(100%) blur(0px)"},0).to(t,{filter:"contrast(65%) blur(0px)",duration:.85},0).fromTo(o,{opacity:0,backdropFilter:"blur(0px)",webkitBackdropFilter:"blur(0px)"},{opacity:1,backdropFilter:"blur(12px)",webkitBackdropFilter:"blur(12px)",duration:.15},.85);ScrollTrigger.create({trigger:t,start:"top top",endTrigger:a[r+1]||t,end:a[r+1]?"top top":"bottom top",scrub:.95,pin:!!a[r+1],pinSpacing:!!a[r+1],animation:s,anticipatePin:1,invalidateOnRefresh:!0})});ScrollTrigger.refresh(!0)};
+	window.initPinnedSections = function initPinnedSections(root = document) {
+  const tag = "[initPinnedSections]";
+  const hasGSAP = !!(window.gsap && window.ScrollTrigger);
+  console.log(tag, "start", { rootIsDocument: root === document, hasGSAP });
 
+  if (!hasGSAP) {
+    console.warn(tag, "GSAP/ScrollTrigger missing — aborting.");
+    return;
+  }
+
+  // --- SERVICES (Capabilities-style) ---
+  const serviceSections = Array.from(root.querySelectorAll(".section-single-service"));
+  console.log(tag, "services found:", serviceSections.length);
+  serviceSections.forEach((section, i) => {
+    const shortPanel = section.offsetHeight < window.innerHeight;
+    const st = gsap.timeline({
+      scrollTrigger: {
+        trigger: section,
+        start: shortPanel ? "top top" : "bottom bottom",
+        pin: true,
+        pinSpacing: false,
+        scrub: 1,
+        onToggle: self => console.log(tag, "service toggle", i, self.isActive),
+        onRefresh: self => console.log(tag, "service refreshed", i, { start: self.start, end: self.end })
+      }
+    }).to(section, { ease: "none", startAt: { filter: "contrast(100%) blur(0px)" }, filter: "contrast(10%) blur(10px)" }, 0);
+  });
+
+  // --- RESOURCES (inside tab) ---
+  const resourcesPane =
+    root.querySelector('.w-tab-pane[data-w-tab="Resources"]') ||
+    root.querySelector(".wrapper-resources")?.closest(".w-tab-pane") ||
+    root.querySelector(".wrapper-resources") || // fallback if not inside Webflow tabs
+    null;
+
+  console.log(tag, "resources pane candidate:", resourcesPane);
+
+  if (!resourcesPane) {
+    console.warn(tag, "No resources pane/container found. Expected .w-tab-pane[data-w-tab='Resources'] or .wrapper-resources");
+    ScrollTrigger.refresh(true);
+    return;
+  }
+
+  // If it's a Webflow tab pane and not active yet, wait, then build.
+  const paneEl = resourcesPane.classList?.contains?.("w-tab-pane") ? resourcesPane : null;
+  const paneIsActive = paneEl ? paneEl.classList.contains("w--tab-active") : true;
+  console.log(tag, "resources pane active now?", paneIsActive);
+
+  const buildResources = () => {
+    if (resourcesPane.__resourcesInited) {
+      console.log(tag, "resources already inited → skipping");
+      return;
+    }
+    resourcesPane.__resourcesInited = true;
+
+    const items = Array.from(resourcesPane.querySelectorAll(".section-resources .resource-item, .resource-item"));
+    console.log(tag, "resource items found:", items.length, items);
+
+    if (!items.length) {
+      console.warn(tag, "No .resource-item found under resources pane");
+      return;
+    }
+
+    items.forEach((item, idx) => {
+      // Ensure overlay exists
+      let overlay = item.querySelector(".resource-ovl");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.className = "resource-ovl";
+        overlay.style.cssText =
+          "position:absolute;inset:0;pointer-events:none;opacity:0;background:rgba(0,0,0,.22);backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);z-index:2;";
+        if (getComputedStyle(item).position === "static") item.style.position = "relative";
+        item.appendChild(overlay);
+        console.log(tag, "overlay injected for item", idx);
+      }
+
+      const block = item.querySelector(".resource-block");
+      const visual = item.querySelector(".resource-visual");
+      const heading = item.querySelector("h2");
+
+      const tl = gsap.timeline({ defaults: { ease: "none" } });
+      if (block) tl.fromTo(block, { y: 0 }, { y: -300, duration: 1 }, 0);
+      if (visual) tl.fromTo(visual, { y: 0 }, { y: -480, duration: 1 }, 0);
+      if (heading) tl.fromTo(heading, { y: 0 }, { y: 20, duration: 1 }, 0);
+
+      tl.set(item, { filter: "contrast(100%) blur(0px)" }, 0)
+        .to(item, { filter: "contrast(65%) blur(0px)", duration: 0.85 }, 0)
+        .fromTo(
+          overlay,
+          { opacity: 0, backdropFilter: "blur(0px)", webkitBackdropFilter: "blur(0px)" },
+          { opacity: 1, backdropFilter: "blur(12px)", webkitBackdropFilter: "blur(12px)", duration: 0.15 },
+          0.85
+        );
+
+      const hasNext = !!items[idx + 1];
+      const st = ScrollTrigger.create({
+        trigger: item,
+        start: "top top",
+        endTrigger: items[idx + 1] || item,
+        end: hasNext ? "top top" : "bottom top",
+        scrub: 0.95,
+        pin: hasNext,          // pin until next one reaches top
+        pinSpacing: hasNext,   // leave spacing so stack effect shows
+        animation: tl,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        onToggle: self => console.log(tag, "resource toggle", idx, self.isActive),
+        onRefresh: self => console.log(tag, "resource refreshed", idx, { start: self.start, end: self.end })
+      });
+
+      console.log(tag, "ScrollTrigger created for resource", idx, st);
+    });
+
+    // Images often affect height → refresh after they decode
+    const imgs = Array.from(resourcesPane.querySelectorAll("img"));
+    const decodePromises = imgs.map(img => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()));
+    Promise.allSettled(decodePromises).then(() => {
+      console.log(tag, "images decoded (or ignored) → refreshing ST");
+      ScrollTrigger.refresh(true);
+      setTimeout(() => ScrollTrigger.refresh(true), 30);
+    });
+
+    // Initial refresh just in case
+    ScrollTrigger.refresh(true);
+    console.log(tag, "resources setup complete. Total ST:", ScrollTrigger.getAll().length);
+  };
+
+  if (paneIsActive) {
+    console.log(tag, "pane is active → build now");
+    // build after a couple rAFs so layout has settled
+    requestAnimationFrame(() => requestAnimationFrame(buildResources));
+  } else if (paneEl) {
+    console.log(tag, "pane not active → attach MutationObserver and wait");
+    const mo = new MutationObserver(muts => {
+      const becameActive = paneEl.classList.contains("w--tab-active");
+      if (becameActive) {
+        console.log(tag, "pane became active → building resources");
+        mo.disconnect();
+        requestAnimationFrame(() => requestAnimationFrame(buildResources));
+      }
+    });
+    mo.observe(paneEl, { attributes: true, attributeFilter: ["class"] });
+
+    // Also wire tab links to force a later refresh
+    const tabLink = (root.querySelector('[data-w-tab="Resources"].w-tab-link') ||
+                      root.querySelector('.w-tab-link[href="#Resources"]') ||
+                      root.querySelector('#resourcesOpen') ||
+                      null);
+    if (tabLink) {
+      tabLink.addEventListener("click", () => {
+        console.log(tag, "resources tab link clicked → will refresh after activation");
+        setTimeout(() => ScrollTrigger.refresh(true), 60);
+      });
+    }
+  }
+
+  // Final global refresh
+  ScrollTrigger.refresh(true);
+  console.log(tag, "end — total ScrollTriggers now:", ScrollTrigger.getAll().length);
+};
 
 
 
