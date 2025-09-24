@@ -38,43 +38,76 @@
 	function initNavigation(root = document) {initMenuNavigation(root);initFilterNavigation(root);initNavigationTriggers(root);}
 	function initMenuLinkHover(e=document){window.matchMedia("(hover: hover) and (min-width: 1024px)").matches&&e.querySelectorAll(".menu-link").forEach((e=>{let t=e.querySelector(".menu-link-bg");t||(t=document.createElement("div"),t.classList.add("menu-link-bg"),e.appendChild(t)),e.addEventListener("mouseenter",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:1,duration:.3,ease:"power2.out"})})),e.addEventListener("mouseleave",(n=>{const{top:o,height:i}=e.getBoundingClientRect(),r=n.clientY-o<i/2;t.style.transformOrigin=r?"top center":"bottom center",gsap.to(t,{scaleY:0,duration:.3,ease:"power2.in"})}))}))}
 	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
-	function initResourcesPinnedSections(root=document){
-  if(!window.ScrollTrigger)return;
-  const pane=root.querySelector('.w-tab-pane[data-w-tab="Resources"]')||root;
-  const section=pane.querySelector('.section-resources');
-  if(!section)return;
-  const items=[...section.querySelectorAll('.resource-item')];
-  if(!items.length)return;
+	function initResourcesPinnedSections(root = document) {
+  if (!window.gsap || !window.ScrollTrigger) return;
 
-  items.forEach((card,idx)=>{
-    const isLast=card.classList.contains('last-resource-item')||idx===items.length-1;
-    const isShort=card.offsetHeight<window.innerHeight;
+  const cards = Array.from(root.querySelectorAll(".section-resources .resource-item"));
+  if (!cards.length) return;
 
-    const tl=gsap.timeline({
-      scrollTrigger:{
-        trigger:card,
-        start:isShort?'top top':'top bottom',
-        pin:!isLast,
-        pinSpacing:false,
-        scrub:1,
-        invalidateOnRefresh:true
-      }
-    });
+  cards.forEach((card, idx) => {
+    const visual = card.querySelector(".resource-visual");
+    const title  = card.querySelector(".resource-title");
+    const block  = card.querySelector(".resource-block");
+    const isLast = idx === cards.length - 1;
 
-    const visual=card.querySelector('.resource-visual');
-    const title=card.querySelector('.resource-title');
-    const block=card.querySelector('.resource-block');
-    const overlay=card.querySelector('.resource-overlay');
-
-    tl.fromTo(card,{filter:'contrast(100%)'},{filter:'contrast(10%)',duration:0.85},0);
-
-    if(visual){
-      tl.fromTo(visual,{y:0,filter:'blur(0px)'},{y:-240,filter:'blur(10px)',duration:1},0)
-        .to(visual,{scale:1.06,duration:0.35},0.35);
+    if (visual) {
+      ScrollTrigger.create({
+        trigger: card,
+        start: "top 85%",
+        end: "bottom top",
+        scrub: true,
+        onUpdate: self => {
+          const p = self.progress;
+          gsap.set(visual, { y: -240 * p, filter: `blur(${6 * p}px)` });
+        }
+      });
     }
-    if(title) tl.fromTo(title,{y:0},{y:80,duration:1},0);
-    if(block) tl.fromTo(block,{y:0},{y:-200,duration:1},0);
-    if(!isLast && overlay) tl.fromTo(overlay,{opacity:0},{opacity:1,duration:0.35},0.35);
+
+    if (title) {
+      ScrollTrigger.create({
+        trigger: card,
+        start: "top 70%",
+        end: "bottom top",
+        scrub: true,
+        onUpdate: self => {
+          const p = self.progress;
+          gsap.set(title, { y: 80 * p });
+        }
+      });
+    }
+
+    if (block) {
+      ScrollTrigger.create({
+        trigger: card,
+        start: "top 75%",
+        end: "bottom top",
+        scrub: true,
+        onUpdate: self => {
+          const p = self.progress;
+          gsap.set(block, { y: -200 * p });
+        }
+      });
+    }
+
+    if (!isLast) {
+      const next = cards[idx + 1] || null;
+      const isShort = card.offsetHeight < window.innerHeight;
+
+      gsap.timeline({
+        scrollTrigger: {
+          trigger: card,
+          start: isShort ? "top top" : "bottom bottom",
+          endTrigger: next || card,
+          end: next ? "top top" : "bottom top",
+          pin: true,
+          pinSpacing: false,
+          scrub: 1,
+          anticipatePin: 1,
+          invalidateOnRefresh: true
+        }
+      })
+      .fromTo(card, { filter: "contrast(100%)" }, { filter: "contrast(10%)", duration: 0.85 }, 0);
+    }
   });
 
   ScrollTrigger.refresh(true);
