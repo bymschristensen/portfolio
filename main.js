@@ -83,7 +83,7 @@
     if (block) {
       ScrollTrigger.create({
         trigger: card,
-        start: "bottom 115%",
+        start: "bottom 120%",
         end: "bottom top",
         scrub: true,
         onUpdate: self => {
