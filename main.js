@@ -63,32 +63,35 @@
       });
     }
 
-    const next = items[i + 1];
-	const isShort = card.offsetHeight < window.innerHeight;
-	
-	if (title) {
-	  ScrollTrigger.create({
-	    trigger: card,
-	    start: isShort ? "top top" : "top bottom",
-	    end: () => {
-	      const d = next
-	        ? next.getBoundingClientRect().top - card.getBoundingClientRect().top
-	        : Math.max(window.innerHeight, card.offsetHeight);
-	      return "+=" + Math.max(1, d);
-	    },
-	    scrub: true,
-	    anticipatePin: 1,
-	    invalidateOnRefresh: true,
-	    onUpdate: self => {
-	      gsap.set(title, { y: 560 * self.progress });
-	    }
-	  });
-	}
-	
+    if (title) {
+      const next = cards[idx + 1];
+      const range = () => {
+        const dist = next ? (next.offsetTop - card.offsetTop)
+                          : Math.max(window.innerHeight, card.offsetHeight);
+        return "+=" + Math.max(1, dist);
+      };
+
+      gsap.to(title, {
+        y: 560,
+        ease: "none",
+        force3D: true,
+        overwrite: "auto",
+        scrollTrigger: {
+          trigger: card,
+          start: "top top",
+          end: range,
+          scrub: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          refreshPriority: 1
+        }
+      });
+    }
+
     if (block) {
       ScrollTrigger.create({
         trigger: card,
-        start: "bottom 120%",
+        start: "bottom 115%",
         end: "bottom top",
         scrub: true,
         onUpdate: self => {
