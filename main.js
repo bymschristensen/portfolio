@@ -64,19 +64,22 @@
     }
 
     if (title) {
-      ScrollTrigger.create({
-        trigger: card,
-        start: "top 70%",
-        end: "bottom top",
-        scrub: true,
-		invalidateOnRefresh: true,
-        onUpdate: self => {
-          const p = self.progress;
-          gsap.set(title, { y: 560 * p, overwrite: true, force3D: true });
-        }
-      });
-    }
-
+	  gsap.to(title, {
+	    y: 560,
+	    ease: "none",
+	    overwrite: "auto",
+	    force3D: true,
+	    scrollTrigger: {
+	      trigger: card,
+	      start: "top 85%",
+	      end: "top 25%",
+	      scrub: true,
+	      anticipatePin: 1,
+	      invalidateOnRefresh: true
+	    }
+	  });
+	}
+	
     if (block) {
       ScrollTrigger.create({
         trigger: card,
