@@ -40,16 +40,43 @@
 	function fillNavCounters(e=document){const r=Array.from(e.querySelectorAll(".list-item-archive-project")),t=Array.from(e.querySelectorAll('[id^="nav-archive-filter-"]'));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))})),t.forEach((e=>{const t=e.querySelector(".nav-counter-filters");if(!t)return;const o=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),c="all"===o?r.length:r.filter((e=>e._catsNorm.includes(o))).length;t.textContent=`(${c})`}))}
 	function initResourcesPinnedSections(root=document){
   if(!window.gsap||!window.ScrollTrigger)return;
+
   const cards=[...root.querySelectorAll(".section-resources .resource-item")];
   if(!cards.length)return;
 
-  cards.forEach((card,i)=>{
+  cards.forEach((card,idx)=>{
     const visual=card.querySelector(".resource-visual");
-    const title=card.querySelector(".resource-title");
-    const block=card.querySelector(".resource-block");
-    const next=cards[i+1]||null;
-    const isLast=i===cards.length-1;
+    const title =card.querySelector(".resource-title");
+    const block =card.querySelector(".resource-block");
+    const next  =cards[idx+1]||null;
+    const isLast=idx===cards.length-1;
     const isShort=card.offsetHeight<window.innerHeight;
+
+    if(visual){
+      ScrollTrigger.create({
+        trigger:card,
+        start:"top 85%",
+        end:"bottom top",
+        scrub:true,
+        onUpdate:self=>{
+          const p=self.progress;
+          gsap.set(visual,{y:-320*p,filter:`blur(${6*p}px)`});
+        }
+      });
+    }
+
+    if(block){
+      ScrollTrigger.create({
+        trigger:card,
+        start:"bottom 115%",
+        end:"bottom top",
+        scrub:true,
+        onUpdate:self=>{
+          const p=self.progress;
+          gsap.set(block,{y:-240*p});
+        }
+      });
+    }
 
     if(!isLast){
       ScrollTrigger.create({
@@ -62,31 +89,28 @@
         scrub:1,
         anticipatePin:1,
         invalidateOnRefresh:true,
-        onUpdate(self){
+        onUpdate:self=>{
           const p=self.progress;
-          if(visual) gsap.set(visual,{y:-320*p,filter:`blur(${6*p}px)`});
-          if(title){const tp=gsap.utils.clamp(0,1,(p-0.10)/0.90);gsap.set(title,{y:560*tp,force3D:true,overwrite:"auto"});}
-          if(block){const bp=gsap.utils.clamp(0,1,(p-0.15)/0.85);gsap.set(block,{y:-240*bp});}
           gsap.set(card,{filter:`contrast(${100-90*p}%)`});
+          if(title){
+            const tp=gsap.utils.clamp(0,1,(p-0.10)/0.90);
+            gsap.set(title,{y:800*tp,force3D:true,overwrite:"auto"});
+          }
         }
       });
     }else{
-      if(visual){
-        gsap.to(visual,{
-          y:-320,filter:"blur(6px)",ease:"none",
-          scrollTrigger:{trigger:card,start:"top 85%",end:"bottom top",scrub:true}
-        });
-      }
       if(title){
         gsap.to(title,{
-          y:560,ease:"none",force3D:true,overwrite:"auto",
-          scrollTrigger:{trigger:card,start:"top 70%",end:"bottom bottom",scrub:true}
-        });
-      }
-      if(block){
-        gsap.to(block,{
-          y:-240,ease:"none",
-          scrollTrigger:{trigger:card,start:"bottom 120%",end:"bottom top",scrub:true}
+          y:800,
+          ease:"none",
+          force3D:true,
+          overwrite:"auto",
+          scrollTrigger:{
+            trigger:card,
+            start:"top 70%",
+            end:"bottom bottom",
+            scrub:true
+          }
         });
       }
     }
