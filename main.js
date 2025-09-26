@@ -63,15 +63,20 @@
       });
     }
 
-    if (title) {
-	  gsap.to(title, {
-	    yPercent: 400,
-	    ease: "none",
-	    scrollTrigger: {
-	      trigger: card,
-	      start: "top 70%",
-	      end: "bottom bottom",
-	      scrub: true
+    const next = items[i + 1];
+	const isShort = card.offsetHeight < window.innerHeight;
+	if (title) {
+	  ScrollTrigger.create({
+	    trigger: card,
+	    start: isShort ? "top top" : "top bottom",
+	    endTrigger: next || card,
+	    end: next ? "top top" : () => "+=" + Math.max(window.innerHeight, card.offsetHeight),
+	    scrub: true,
+	    anticipatePin: 1,
+	    invalidateOnRefresh: true,
+	    onUpdate: self => {
+	      const p = self.progress;
+	      gsap.set(title, { y: 560 * p });
 	    }
 	  });
 	}
