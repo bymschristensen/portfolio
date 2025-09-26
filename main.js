@@ -69,9 +69,10 @@
         start: "top 70%",
         end: "bottom top",
         scrub: true,
+		invalidateOnRefresh: true,
         onUpdate: self => {
           const p = self.progress;
-          gsap.set(title, { y: 560 * p });
+          gsap.set(title, { y: 560 * p, overwrite: true, force3D: true });
         }
       });
     }
@@ -84,7 +85,7 @@
         scrub: true,
         onUpdate: self => {
           const p = self.progress;
-          gsap.set(block, { y: -200 * p });
+          gsap.set(block, { y: -240 * p });
         }
       });
     }
