@@ -65,18 +65,22 @@
 
     const next = items[i + 1];
 	const isShort = card.offsetHeight < window.innerHeight;
+	
 	if (title) {
 	  ScrollTrigger.create({
 	    trigger: card,
 	    start: isShort ? "top top" : "top bottom",
-	    endTrigger: next || card,
-	    end: next ? "top top" : () => "+=" + Math.max(window.innerHeight, card.offsetHeight),
+	    end: () => {
+	      const d = next
+	        ? next.getBoundingClientRect().top - card.getBoundingClientRect().top
+	        : Math.max(window.innerHeight, card.offsetHeight);
+	      return "+=" + Math.max(1, d);
+	    },
 	    scrub: true,
 	    anticipatePin: 1,
 	    invalidateOnRefresh: true,
 	    onUpdate: self => {
-	      const p = self.progress;
-	      gsap.set(title, { y: 560 * p });
+	      gsap.set(title, { y: 560 * self.progress });
 	    }
 	  });
 	}
