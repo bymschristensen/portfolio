@@ -70,7 +70,7 @@
 	    scrollTrigger: {
 	      trigger: card,
 	      start: "top 70%",
-	      end: "bottom top",
+	      end: "bottom bottom",
 	      scrub: true
 	    }
 	  });
