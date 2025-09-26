@@ -65,16 +65,13 @@
 
     if (title) {
 	  gsap.to(title, {
-	    yPercent: 500,
+	    yPercent: 400,
 	    ease: "none",
-	    overwrite: "auto",
-	    force3D: true,
 	    scrollTrigger: {
 	      trigger: card,
 	      start: "top 70%",
-	      end: () => "+=" + Math.round(window.innerHeight * 1.6),
-	      scrub: true,
-	      invalidateOnRefresh: true
+	      end: "bottom top",
+	      scrub: true
 	    }
 	  });
 	}
