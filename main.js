@@ -71,7 +71,7 @@
         scrub: true,
         onUpdate: self => {
           const p = self.progress;
-          gsap.set(title, { y: 320 * p });
+          gsap.set(title, { y: 560 * p });
         }
       });
     }
@@ -79,12 +79,12 @@
     if (block) {
       ScrollTrigger.create({
         trigger: card,
-        start: "bottom 110%",
+        start: "bottom 115%",
         end: "bottom top",
         scrub: true,
         onUpdate: self => {
           const p = self.progress;
-          gsap.set(block, { y: -240 * p });
+          gsap.set(block, { y: -200 * p });
         }
       });
     }
