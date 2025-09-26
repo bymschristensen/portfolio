@@ -71,10 +71,9 @@
 	    force3D: true,
 	    scrollTrigger: {
 	      trigger: card,
-	      start: "top 85%",
-	      end: "top 25%",
+	      start: "top 70%",
+	      end: () => "+=" + Math.round(window.innerHeight * 1.6),
 	      scrub: true,
-	      anticipatePin: 1,
 	      invalidateOnRefresh: true
 	    }
 	  });
