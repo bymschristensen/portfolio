@@ -65,7 +65,7 @@
 
     if (title) {
 	  gsap.to(title, {
-	    y: 560,
+	    yPercent: 500,
 	    ease: "none",
 	    overwrite: "auto",
 	    force3D: true,
