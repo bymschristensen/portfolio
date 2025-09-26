@@ -72,7 +72,7 @@
       };
 
       gsap.to(title, {
-        y: 560,
+        y: 1200,
         ease: "none",
         force3D: true,
         overwrite: "auto",
