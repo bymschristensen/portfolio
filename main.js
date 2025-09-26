@@ -50,62 +50,11 @@
     const block  = card.querySelector(".resource-block");
     const isLast = idx === cards.length - 1;
 
-    if (visual) {
-      ScrollTrigger.create({
-        trigger: card,
-        start: "top 85%",
-        end: "bottom top",
-        scrub: true,
-        onUpdate: self => {
-          const p = self.progress;
-          gsap.set(visual, { y: -320 * p, filter: `blur(${6 * p}px)` });
-        }
-      });
-    }
-
-    if (title) {
-      const next = cards[idx + 1];
-      const range = () => {
-        const dist = next ? (next.offsetTop - card.offsetTop)
-                          : Math.max(window.innerHeight, card.offsetHeight);
-        return "+=" + Math.max(1, dist);
-      };
-
-      gsap.to(title, {
-        y: 1200,
-        ease: "none",
-        force3D: true,
-        overwrite: "auto",
-        scrollTrigger: {
-          trigger: card,
-          start: "top top",
-          end: range,
-          scrub: true,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          refreshPriority: 1
-        }
-      });
-    }
-
-    if (block) {
-      ScrollTrigger.create({
-        trigger: card,
-        start: "bottom 115%",
-        end: "bottom top",
-        scrub: true,
-        onUpdate: self => {
-          const p = self.progress;
-          gsap.set(block, { y: -240 * p });
-        }
-      });
-    }
-
     if (!isLast) {
-      const next = cards[idx + 1] || null;
+      const next    = cards[idx + 1] || null;
       const isShort = card.offsetHeight < window.innerHeight;
 
-      gsap.timeline({
+      const pinTL = gsap.timeline({
         scrollTrigger: {
           trigger: card,
           start: isShort ? "top top" : "bottom bottom",
@@ -117,8 +66,50 @@
           anticipatePin: 1,
           invalidateOnRefresh: true
         }
-      })
-      .fromTo(card, { filter: "contrast(100%)" }, { filter: "contrast(10%)", duration: 0.85 }, 0);
+      });
+
+      pinTL.fromTo(card, { filter: "contrast(100%)" }, { filter: "contrast(10%)", duration: 0.85 }, 0);
+
+      if (visual) pinTL.to(visual, { y: -320, filter: "blur(6px)" }, 0);
+      if (title)  pinTL.to(title,  { y:  560 }, 0);
+      if (block)  pinTL.to(block,  { y: -240 }, 0.15);
+    } else {
+      if (visual) {
+        ScrollTrigger.create({
+          trigger: card,
+          start: "top 85%",
+          end: "bottom top",
+          scrub: true,
+          onUpdate: self => {
+            const p = self.progress;
+            gsap.set(visual, { y: -320 * p, filter: `blur(${6 * p}px)` });
+          }
+        });
+      }
+      if (title) {
+        ScrollTrigger.create({
+          trigger: card,
+          start: "top 70%",
+          end: "bottom top",
+          scrub: true,
+          onUpdate: self => {
+            const p = self.progress;
+            gsap.set(title, { y: 560 * p });
+          }
+        });
+      }
+      if (block) {
+        ScrollTrigger.create({
+          trigger: card,
+          start: "bottom 115%",
+          end: "bottom top",
+          scrub: true,
+          onUpdate: self => {
+            const p = self.progress;
+            gsap.set(block, { y: -240 * p });
+          }
+        });
+      }
     }
   });
 
