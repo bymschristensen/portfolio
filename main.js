@@ -49,21 +49,48 @@
     const title  = card.querySelector(".resource-item h2");
     const block  = card.querySelector(".resource-block");
     const isLast = idx === cards.length - 1;
+    const next   = cards[idx + 1] || null;
+    const isShort = card.offsetHeight < window.innerHeight;
+    const phase = (p, start = 0, end = 1) => {
+      const span = Math.max(0.0001, end - start);
+      return Math.min(1, Math.max(0, (p - start) / span));
+    };
 
-    if (visual) {
-      ScrollTrigger.create({
+    if (!isLast) {
+      const st = ScrollTrigger.create({
         trigger: card,
-        start: "top 85%",
-        end: "bottom top",
-        scrub: true,
+        start: isShort ? "top top" : "bottom bottom",
+        endTrigger: next || card,
+        end: next ? "top top" : "bottom top",
+        pin: true,
+        pinSpacing: false,
+        scrub: 1,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
         onUpdate: self => {
           const p = self.progress;
-          gsap.set(visual, { y: -320 * p, filter: `blur(${6 * p}px)` });
+
+          if (visual) {
+            const pv = phase(p, 0.0, 1.0);
+            gsap.set(visual, { y: -320 * pv, filter: `blur(${6 * pv}px)` });
+          }
+
+          if (title) {
+            const pt = phase(p, 0.10, 0.95);
+            gsap.set(title, { y: 320 * pt });
+          }
+
+          if (block) {
+            const pb = phase(p, 0.25, 1.0);
+            gsap.set(block, { y: -240 * pb });
+          }
+
+          const pc = phase(p, 0.0, 0.85);
+          const contrast = 100 + (10 - 100) * pc; // 100 → 10
+          gsap.set(card, { filter: `contrast(${contrast}%)` });
         }
       });
-    }
-
-    if (title) {
+    } else {
       ScrollTrigger.create({
         trigger: card,
         start: "top 70%",
@@ -71,42 +98,23 @@
         scrub: true,
         onUpdate: self => {
           const p = self.progress;
-          gsap.set(title, { y: 320 * p });
+
+          if (visual) {
+            gsap.set(visual, { y: -320 * p, filter: `blur(${6 * p}px)` });
+          }
+          if (title) {
+            const pt = phase(p, 0.10, 0.95);
+            gsap.set(title, { y: 320 * pt });
+          }
+          if (block) {
+            const pb = phase(p, 0.25, 1.0);
+            gsap.set(block, { y: -240 * pb });
+          }
+          const pc = phase(p, 0.0, 0.85);
+          const contrast = 100 + (10 - 100) * pc;
+          gsap.set(card, { filter: `contrast(${contrast}%)` });
         }
       });
-    }
-
-    if (block) {
-      ScrollTrigger.create({
-        trigger: card,
-        start: "bottom 115%",
-        end: "bottom top",
-        scrub: true,
-        onUpdate: self => {
-          const p = self.progress;
-          gsap.set(block, { y: -240 * p });
-        }
-      });
-    }
-
-    if (!isLast) {
-      const next = cards[idx + 1] || null;
-      const isShort = card.offsetHeight < window.innerHeight;
-
-      gsap.timeline({
-        scrollTrigger: {
-          trigger: card,
-          start: isShort ? "top top" : "bottom bottom",
-          endTrigger: next || card,
-          end: next ? "top top" : "bottom top",
-          pin: true,
-          pinSpacing: false,
-          scrub: 1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true
-        }
-      })
-      .fromTo(card, { filter: "contrast(100%)" }, { filter: "contrast(10%)", duration: 0.85 }, 0);
     }
   });
 
