@@ -44,78 +44,109 @@
   const cards = Array.from(root.querySelectorAll(".section-resources .resource-item"));
   if (!cards.length) return;
 
+  const isMobile = window.matchMedia("(max-width: 767px)").matches;
+
+  const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+  const phase = (p, a, b) => clamp01((p - a) / Math.max(0.0001, b - a));
+
+  const CFG = {
+    first: {
+      prePortion: 0.35,
+      visual: { start: 0.00, end: 1.00, dist: -320, blur: 6 },
+      title:  { start: 0.05, end: 0.95, dist:  320 },
+      block:  { start: 0.25, end: 1.00, dist: -240 },
+      contrast: { start: 0.00, end: 0.85, from: 100, to: 10, enabled: true }
+    },
+    middle: {
+      prePortion: 0,
+      visual: { start: 0.00, end: 1.00, dist: -320, blur: 6 },
+      title:  { start: 0.10, end: 0.95, dist:  320 },
+      block:  { start: 0.25, end: 1.00, dist: -240 },
+      contrast: { start: 0.00, end: 0.85, from: 100, to: 10, enabled: true }
+    },
+    last: {
+      prePortion: 0,
+      visual: { start: 0.00, end: 1.00, dist: -320, blur: 6 },
+      title:  { start: 0.10, end: 0.95, dist:  320 },
+      block:  { start: 0.25, end: 1.00, dist: -240 },
+      contrast: { enabled: false }
+    }
+  };
+
   cards.forEach((card, idx) => {
     const visual = card.querySelector(".resource-visual");
     const title  = card.querySelector(".resource-item h2");
     const block  = card.querySelector(".resource-block");
-    const isLast = idx === cards.length - 1;
-    const next   = cards[idx + 1] || null;
+
+    const isFirst = idx === 0;
+    const isLast  = idx === cards.length - 1;
+    const type    = isFirst ? "first" : (isLast ? "last" : "middle");
+    const cfg     = CFG[type];
+
+    const next    = cards[idx + 1] || null;
     const isShort = card.offsetHeight < window.innerHeight;
-    const phase = (p, start = 0, end = 1) => {
-      const span = Math.max(0.0001, end - start);
-      return Math.min(1, Math.max(0, (p - start) / span));
+    const pinStart = isShort ? "top top" : "bottom bottom";
+
+    const apply = (p) => {
+      if (visual) {
+        const pv = phase(p, cfg.visual.start, cfg.visual.end);
+        const blur = (cfg.visual.blur || 0) * pv;
+        gsap.set(visual, { y: cfg.visual.dist * pv, filter: `blur(${blur}px)` });
+      }
+      if (!isMobile) {
+        if (title) {
+          const pt = phase(p, cfg.title.start, cfg.title.end);
+          gsap.set(title, { y: cfg.title.dist * pt });
+        }
+        if (block) {
+          const pb = phase(p, cfg.block.start, cfg.block.end);
+          gsap.set(block, { y: cfg.block.dist * pb });
+        }
+      }
+      if (cfg.contrast?.enabled) {
+        const pc = phase(p, cfg.contrast.start, cfg.contrast.end);
+        const val = cfg.contrast.from + (cfg.contrast.to - cfg.contrast.from) * pc;
+        gsap.set(card, { filter: `contrast(${val}%)` });
+      }
     };
 
-    if (!isLast) {
-      const st = ScrollTrigger.create({
-        trigger: card,
-        start: isShort ? "top top" : "bottom bottom",
-        endTrigger: next || card,
-        end: next ? "top top" : "bottom top",
-        pin: true,
-        pinSpacing: false,
-        scrub: 1,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-        onUpdate: self => {
-          const p = self.progress;
-
-          if (visual) {
-            const pv = phase(p, 0.0, 1.0);
-            gsap.set(visual, { y: -320 * pv, filter: `blur(${6 * pv}px)` });
-          }
-
-          if (title) {
-            const pt = phase(p, 0.10, 0.95);
-            gsap.set(title, { y: 320 * pt });
-          }
-
-          if (block) {
-            const pb = phase(p, 0.25, 1.0);
-            gsap.set(block, { y: -240 * pb });
-          }
-
-          const pc = phase(p, 0.0, 0.85);
-          const contrast = 100 + (10 - 100) * pc; // 100 → 10
-          gsap.set(card, { filter: `contrast(${contrast}%)` });
-        }
-      });
-    } else {
+    if (isLast) {
       ScrollTrigger.create({
         trigger: card,
         start: "top 70%",
         end: "bottom top",
         scrub: true,
-        onUpdate: self => {
-          const p = self.progress;
+        onUpdate: self => apply(self.progress)
+      });
+      return;
+    }
 
-          if (visual) {
-            gsap.set(visual, { y: -320 * p, filter: `blur(${6 * p}px)` });
-          }
-          if (title) {
-            const pt = phase(p, 0.10, 0.95);
-            gsap.set(title, { y: 320 * pt });
-          }
-          if (block) {
-            const pb = phase(p, 0.25, 1.0);
-            gsap.set(block, { y: -240 * pb });
-          }
-          const pc = phase(p, 0.0, 0.85);
-          const contrast = 100 + (10 - 100) * pc;
-          gsap.set(card, { filter: `contrast(${contrast}%)` });
-        }
+    if (isFirst && cfg.prePortion > 0) {
+      ScrollTrigger.create({
+        trigger: card,
+        start: "top 100%",
+        end: pinStart,
+        scrub: true,
+        onUpdate: self => apply(cfg.prePortion * self.progress)
       });
     }
+
+    ScrollTrigger.create({
+      trigger: card,
+      start: pinStart,
+      endTrigger: next || card,
+      end: next ? "top top" : "bottom top",
+      pin: true,
+      pinSpacing: false,
+      scrub: 1,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate: self => {
+        const base = cfg.prePortion || 0;
+        const p = base + (1 - base) * self.progress;
+        apply(p);
+      }
+    });
   });
 
   ScrollTrigger.refresh(true);
