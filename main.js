@@ -46,30 +46,24 @@
 
   const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
-  const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
-  const phase = (p, a, b) => clamp01((p - a) / Math.max(0.0001, b - a));
-
   const CFG = {
     first: {
-      prePortion: 0.35,
-      visual: { start: 0.00, end: 1.00, dist: -320, blur: 6 },
-      title:  { start: 0.05, end: 0.95, dist:  320 },
-      block:  { start: 0.25, end: 1.00, dist: -240 },
-      contrast: { start: 0.00, end: 0.85, from: 100, to: 10, enabled: true }
+      visual: { start: "top 85%",   end: "bottom top", dist: -320, blur: 6 },
+      title:  { start: "top 55%",   end: "bottom top", dist: 560 },
+      block:  { start: "bottom 115%", end: "bottom top", dist: -240 },
+      contrastEnabled: true
     },
     middle: {
-      prePortion: 0,
-      visual: { start: 0.00, end: 1.00, dist: -320, blur: 6 },
-      title:  { start: 0.10, end: 0.95, dist:  320 },
-      block:  { start: 0.25, end: 1.00, dist: -240 },
-      contrast: { start: 0.00, end: 0.85, from: 100, to: 10, enabled: true }
+      visual: { start: "top 85%",   end: "bottom top", dist: -320, blur: 6 },
+      title:  { start: "top 70%",   end: "bottom top", dist: 560 },
+      block:  { start: "bottom 115%", end: "bottom top", dist: -240 },
+      contrastEnabled: true
     },
     last: {
-      prePortion: 0,
-      visual: { start: 0.00, end: 1.00, dist: -320, blur: 6 },
-      title:  { start: 0.10, end: 0.95, dist:  320 },
-      block:  { start: 0.25, end: 1.00, dist: -240 },
-      contrast: { enabled: false }
+      visual: { start: "top 85%",   end: "bottom top", dist: -320, blur: 6 },
+      title:  { start: "top 70%",   end: "bottom top", dist: 560 },
+      block:  { start: "bottom 115%", end: "bottom top", dist: -200 },
+      contrastEnabled: false
     }
   };
 
@@ -83,70 +77,79 @@
     const type    = isFirst ? "first" : (isLast ? "last" : "middle");
     const cfg     = CFG[type];
 
-    const next    = cards[idx + 1] || null;
-    const isShort = card.offsetHeight < window.innerHeight;
-    const pinStart = isShort ? "top top" : "bottom bottom";
-
-    const apply = (p) => {
-      if (visual) {
-        const pv = phase(p, cfg.visual.start, cfg.visual.end);
-        const blur = (cfg.visual.blur || 0) * pv;
-        gsap.set(visual, { y: cfg.visual.dist * pv, filter: `blur(${blur}px)` });
-      }
-      if (!isMobile) {
-        if (title) {
-          const pt = phase(p, cfg.title.start, cfg.title.end);
-          gsap.set(title, { y: cfg.title.dist * pt });
-        }
-        if (block) {
-          const pb = phase(p, cfg.block.start, cfg.block.end);
-          gsap.set(block, { y: cfg.block.dist * pb });
-        }
-      }
-      if (cfg.contrast?.enabled) {
-        const pc = phase(p, cfg.contrast.start, cfg.contrast.end);
-        const val = cfg.contrast.from + (cfg.contrast.to - cfg.contrast.from) * pc;
-        gsap.set(card, { filter: `contrast(${val}%)` });
-      }
-    };
-
-    if (isLast) {
+    if (visual) {
       ScrollTrigger.create({
         trigger: card,
-        start: "top 70%",
-        end: "bottom top",
+        start: cfg.visual.start,
+        end: cfg.visual.end,
         scrub: true,
-        onUpdate: self => apply(self.progress)
-      });
-      return;
-    }
-
-    if (isFirst && cfg.prePortion > 0) {
-      ScrollTrigger.create({
-        trigger: card,
-        start: "top 100%",
-        end: pinStart,
-        scrub: true,
-        onUpdate: self => apply(cfg.prePortion * self.progress)
+        onUpdate: self => {
+          const p = self.progress;
+          gsap.set(visual, { y: cfg.visual.dist * p, filter: `blur(${(cfg.visual.blur || 0) * p}px)` });
+        }
       });
     }
 
-    ScrollTrigger.create({
-      trigger: card,
-      start: pinStart,
-      endTrigger: next || card,
-      end: next ? "top top" : "bottom top",
-      pin: true,
-      pinSpacing: false,
-      scrub: 1,
-      anticipatePin: 1,
-      invalidateOnRefresh: true,
-      onUpdate: self => {
-        const base = cfg.prePortion || 0;
-        const p = base + (1 - base) * self.progress;
-        apply(p);
-      }
-    });
+    if (!isMobile && title) {
+      gsap.to(title, {
+        y: cfg.title.dist,
+        ease: "none",
+        overwrite: "auto",
+        force3D: true,
+        scrollTrigger: {
+          trigger: card,
+          start: cfg.title.start,
+          end: cfg.title.end,
+          scrub: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true
+        }
+      });
+    }
+
+    if (!isMobile && block) {
+      ScrollTrigger.create({
+        trigger: card,
+        start: cfg.block.start,
+        end: cfg.block.end,
+        scrub: true,
+        onUpdate: self => {
+          const p = self.progress;
+          gsap.set(block, { y: cfg.block.dist * p });
+        }
+      });
+    }
+
+    if (!isLast) {
+	  const next = cards[idx + 1] || null;
+	  const isShort = card.offsetHeight < window.innerHeight;
+	
+	  gsap.timeline({
+	    scrollTrigger: {
+	      trigger: card,
+	      start: isShort ? "top top" : "bottom bottom",
+	      endTrigger: next || card,
+	      end: next ? "top top" : "bottom top",
+	      pin: true,
+	      pinSpacing: false,
+	      scrub: 1,
+	      anticipatePin: 1,
+	      invalidateOnRefresh: true,
+	      onUpdate(self) {
+	        if (!cfg.contrastEnabled) {
+	          gsap.set(card, { filter: "contrast(100%)" });
+	          return;
+	        }
+	        const p = self.progress;
+	        const start = 0.25;
+	        const end   = 0.90;
+	        const pc = Math.max(0, Math.min(1, (p - start) / (end - start)));
+	        const val = 100 + (10 - 100) * pc;
+	        gsap.set(card, { filter: `contrast(${val}%)` });
+	      }
+	    }
+	  });
+	}
   });
 
   ScrollTrigger.refresh(true);
