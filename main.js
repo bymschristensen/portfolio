@@ -49,19 +49,19 @@
   const CFG = {
     first: {
       visual: { start: "top 85%",   end: "bottom top", dist: -320, blur: 6 },
-      title:  { start: "top 55%",   end: "bottom top", dist: 560 },
+      title:  { start: "top 55%",   end: "bottom top", dist: 360 },
       block:  { start: "bottom 115%", end: "bottom top", dist: -240 },
       contrastEnabled: true
     },
     middle: {
       visual: { start: "top 85%",   end: "bottom top", dist: -320, blur: 6 },
-      title:  { start: "top 70%",   end: "bottom top", dist: 560 },
+      title:  { start: "top 70%",   end: "bottom top", dist: 360 },
       block:  { start: "bottom 115%", end: "bottom top", dist: -240 },
       contrastEnabled: true
     },
     last: {
       visual: { start: "top 85%",   end: "bottom top", dist: -320, blur: 6 },
-      title:  { start: "top 70%",   end: "bottom top", dist: 560 },
+      title:  { start: "top 70%",   end: "bottom top", dist: 360 },
       block:  { start: "bottom 115%", end: "bottom top", dist: -200 },
       contrastEnabled: false
     }
@@ -141,7 +141,7 @@
 	          return;
 	        }
 	        const p = self.progress;
-	        const start = 0.25;
+	        const start = 0.10;
 	        const end   = 0.90;
 	        const pc = Math.max(0, Math.min(1, (p - start) / (end - start)));
 	        const val = 100 + (10 - 100) * pc;
