@@ -50,19 +50,19 @@
     first: {
       visual: { start: "top 85%",   end: "bottom top", dist: -320, blur: 6 },
       title:  { start: "top 55%",   end: "bottom top", dist: 320 },
-      block:  { start: "bottom 115%", end: "bottom top", dist: -320 },
+      block:  { start: "bottom 115%", end: "bottom top", dist: -480 },
       contrastEnabled: true
     },
     middle: {
       visual: { start: "top 85%",   end: "bottom top", dist: -320, blur: 6 },
       title:  { start: "top 70%",   end: "bottom top", dist: 320 },
-      block:  { start: "bottom 115%", end: "bottom top", dist: -320 },
+      block:  { start: "bottom 115%", end: "bottom top", dist: -480 },
       contrastEnabled: true
     },
     last: {
       visual: { start: "top 85%",   end: "bottom top", dist: -320, blur: 6 },
-      title:  { start: "top 70%",   end: "bottom top", dist: 320 },
-      block:  { start: "bottom 100%", end: "bottom top", dist: -200 },
+      title:  { start: "top 70%",   end: "bottom top", dist: 560 },
+      block:  { start: "bottom 100%", end: "bottom top", dist: -120 },
       contrastEnabled: false
     }
   };
