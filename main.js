@@ -46,9 +46,9 @@
   const isTouch = window.matchMedia("(pointer: coarse), (hover: none)").matches;
 
   const CFG = {
-    first:  { visual: { start:"top 85%", end:"bottom top", dist:-320, blur:6 }, title:{ start:"top 55%", end:"bottom top", dist:320 }, block:{ start:"bottom 115%", end:"bottom top", dist:-480 }, contrast:true },
-    middle: { visual: { start:"top 85%", end:"bottom top", dist:-320, blur:6 }, title:{ start:"top 70%", end:"bottom top", dist:320 }, block:{ start:"bottom 115%", end:"bottom top", dist:-480 }, contrast:true },
-    last:   { visual: { start:"top 85%", end:"bottom top", dist:-320, blur:6 }, title:{ start:"top 70%", end:"bottom top", dist:560 }, block:{ start:"bottom 100%", end:"bottom top", dist:-120 }, contrast:false }
+    first:  { visual: { start:"top 85%",   end:"bottom top", dist:-320, blur:6 }, title:{ start:"top 55%",    end:"bottom top", dist:320 }, block:{ start:"bottom 115%", end:"bottom top", dist:-480 }, contrast:true },
+    middle: { visual: { start:"top 85%",   end:"bottom top", dist:-320, blur:6 }, title:{ start:"top 70%",    end:"bottom top", dist:320 }, block:{ start:"bottom 115%", end:"bottom top", dist:-480 }, contrast:true },
+    last:   { visual: { start:"top 85%",   end:"bottom top", dist:-320, blur:6 }, title:{ start:"top 70%",    end:"bottom top", dist:560 }, block:{ start:"bottom 100%", end:"bottom top", dist:-120 }, contrast:false }
   };
 
   cards.forEach((card, idx) => {
@@ -65,16 +65,20 @@
     const endTrigger = nextCard || card;
     const endValue   = nextCard ? "top top" : cfg.visual.end;
 
+    let vST = null, tST = null, bST = null;
+
     if (visual) {
       const qy = gsap.quickSetter(visual, "y", "px");
       const qf = gsap.quickSetter(visual, "filter");
+      gsap.set(visual, { willChange: "transform, filter", force3D: true });
       const blurMax = isTouch ? Math.min(3, cfg.visual.blur || 0) : (cfg.visual.blur || 0);
-      ScrollTrigger.create({
+      vST = ScrollTrigger.create({
         trigger: card,
         start: cfg.visual.start,
         endTrigger,
         end: endValue,
         scrub: true,
+        refreshPriority: 1,
         onUpdate: self => {
           const p = self.progress;
           qy(cfg.visual.dist * p);
@@ -84,7 +88,8 @@
     }
 
     if (!isTouch && title) {
-      gsap.to(title, {
+      gsap.set(title, { willChange: "transform", force3D: true });
+      tST = gsap.to(title, {
         y: cfg.title.dist,
         ease: "none",
         overwrite: "auto",
@@ -96,19 +101,22 @@
           end: endValue,
           scrub: true,
           anticipatePin: 1,
-          invalidateOnRefresh: true
+          invalidateOnRefresh: true,
+          refreshPriority: 1
         }
-      });
+      }).scrollTrigger;
     }
 
     if (!isTouch && block) {
       const q = gsap.quickSetter(block, "y", "px");
-      ScrollTrigger.create({
+      gsap.set(block, { willChange: "transform", force3D: true });
+      bST = ScrollTrigger.create({
         trigger: card,
         start: cfg.block.start,
         endTrigger,
         end: endValue,
         scrub: true,
+        refreshPriority: 1,
         onUpdate: self => q(cfg.block.dist * self.progress)
       });
     }
@@ -127,7 +135,7 @@
           scrub: 1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
-          onUpdate: st => {
+          onUpdate(st) {
             if (!cfg.contrast) { gsap.set(card, { filter: "contrast(100%)" }); return; }
             const p = st.progress;
             const n = 100 + (-90) * Math.max(0, Math.min(1, (p - 0.1) / 0.8));
@@ -135,6 +143,22 @@
           }
         }
       });
+
+      if (nextCard) {
+        ScrollTrigger.create({
+          trigger: nextCard,
+          start: "top 90%",
+          once: true,
+          onEnter: () => {
+            if (vST) { vST.disable(); vST.kill(); vST = null; }
+            if (tST) { tST.disable(); tST.kill(); tST = null; }
+            if (bST) { bST.disable(); bST.kill(); bST = null; }
+            if (visual) gsap.set(visual, { y: cfg.visual.dist, filter: (cfg.visual.blur ? `blur(${cfg.visual.blur}px)` : "none") });
+            if (!isTouch && title) gsap.set(title, { y: cfg.title.dist });
+            if (!isTouch && block) gsap.set(block, { y: cfg.block.dist });
+          }
+        });
+      }
     }
   });
 
