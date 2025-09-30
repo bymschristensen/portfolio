@@ -45,31 +45,10 @@
 
   const isTouch = window.matchMedia("(pointer: coarse), (hover: none)").matches;
 
-  const CFG_DESKTOP = {
-    first: {
-      visual: { start: "top 85%", end: "bottom top", dist: -320, blur: 6 },
-      title:  { start: "top 55%", end: "bottom top", dist: 560 },
-      block:  { start: "bottom 115%", end: "bottom top", dist: -240 },
-      contrastEnabled: true
-    },
-    middle: {
-      visual: { start: "top 85%", end: "bottom top", dist: -320, blur: 6 },
-      title:  { start: "top 70%", end: "bottom top", dist: 560 },
-      block:  { start: "bottom 115%", end: "bottom top", dist: -240 },
-      contrastEnabled: true
-    },
-    last: {
-      visual: { start: "top 85%", end: "bottom top", dist: -320, blur: 6 },
-      title:  { start: "top 70%", end: "bottom top", dist: 560 },
-      block:  { start: "bottom 115%", end: "bottom top", dist: -200 },
-      contrastEnabled: false
-    }
-  };
-
-  const CFG_TOUCH = {
-    first:  { visual: { start: "top 85%", end: "bottom top", dist: -320, blur: 6 }, contrastEnabled: true },
-    middle: { visual: { start: "top 85%", end: "bottom top", dist: -320, blur: 6 }, contrastEnabled: true },
-    last:   { visual: { start: "top 85%", end: "bottom top", dist: -320, blur: 6 }, contrastEnabled: false }
+  const CFG = {
+    first:  { visual: { start:"top 85%", end:"bottom top", dist:-320, blur:6 }, title:{ start:"top 55%", end:"bottom top", dist:320 }, block:{ start:"bottom 115%", end:"bottom top", dist:-480 }, contrast:true },
+    middle: { visual: { start:"top 85%", end:"bottom top", dist:-320, blur:6 }, title:{ start:"top 70%", end:"bottom top", dist:320 }, block:{ start:"bottom 115%", end:"bottom top", dist:-480 }, contrast:true },
+    last:   { visual: { start:"top 85%", end:"bottom top", dist:-320, blur:6 }, title:{ start:"top 70%", end:"bottom top", dist:560 }, block:{ start:"bottom 100%", end:"bottom top", dist:-120 }, contrast:false }
   };
 
   cards.forEach((card, idx) => {
@@ -80,64 +59,31 @@
     const isFirst = idx === 0;
     const isLast  = idx === cards.length - 1;
     const type    = isFirst ? "first" : (isLast ? "last" : "middle");
+    const cfg     = CFG[type];
 
-    if (isTouch) {
-      const cfg = CFG_TOUCH[type];
-
-      if (visual) {
-        ScrollTrigger.create({
-          trigger: card,
-          start: cfg.visual.start,
-          end: cfg.visual.end,
-          scrub: true,
-          onUpdate: self => {
-            const p = self.progress;
-            gsap.set(visual, { y: cfg.visual.dist * p, filter: `blur(${(cfg.visual.blur || 0) * p}px)` });
-          }
-        });
-      }
-
-      if (!isLast) {
-        const next = cards[idx + 1] || null;
-        const isShort = card.offsetHeight < window.innerHeight;
-
-        gsap.timeline({
-          scrollTrigger: {
-            trigger: card,
-            start: isShort ? "top top" : "bottom bottom",
-            endTrigger: next || card,
-            end: next ? "top top" : "bottom top",
-            pin: true,
-            pinSpacing: false,
-            pinType: "transform",
-            scrub: 1,
-            anticipatePin: 1,
-            invalidateOnRefresh: true
-          }
-        })
-        .fromTo(card, { filter: cfg.contrastEnabled ? "contrast(100%)" : "contrast(100%)" },
-                      { filter: cfg.contrastEnabled ? "contrast(10%)"  : "contrast(100%)", duration: 0.85 }, 0);
-      }
-
-      return;
-    }
-
-    const cfg = CFG_DESKTOP[type];
+    const nextCard   = cards[idx + 1] || null;
+    const endTrigger = nextCard || card;
+    const endValue   = nextCard ? "top top" : cfg.visual.end;
 
     if (visual) {
+      const qy = gsap.quickSetter(visual, "y", "px");
+      const qf = gsap.quickSetter(visual, "filter");
+      const blurMax = isTouch ? Math.min(3, cfg.visual.blur || 0) : (cfg.visual.blur || 0);
       ScrollTrigger.create({
         trigger: card,
         start: cfg.visual.start,
-        end: cfg.visual.end,
+        endTrigger,
+        end: endValue,
         scrub: true,
         onUpdate: self => {
           const p = self.progress;
-          gsap.set(visual, { y: cfg.visual.dist * p, filter: `blur(${(cfg.visual.blur || 0) * p}px)` });
+          qy(cfg.visual.dist * p);
+          qf(blurMax ? `blur(${blurMax * p}px)` : "none");
         }
       });
     }
 
-    if (title) {
+    if (!isTouch && title) {
       gsap.to(title, {
         y: cfg.title.dist,
         ease: "none",
@@ -146,7 +92,8 @@
         scrollTrigger: {
           trigger: card,
           start: cfg.title.start,
-          end: cfg.title.end,
+          endTrigger,
+          end: endValue,
           scrub: true,
           anticipatePin: 1,
           invalidateOnRefresh: true
@@ -154,39 +101,40 @@
       });
     }
 
-    if (block) {
+    if (!isTouch && block) {
+      const q = gsap.quickSetter(block, "y", "px");
       ScrollTrigger.create({
         trigger: card,
         start: cfg.block.start,
-        end: cfg.block.end,
+        endTrigger,
+        end: endValue,
         scrub: true,
-        onUpdate: self => {
-          const p = self.progress;
-          gsap.set(block, { y: cfg.block.dist * p });
-        }
+        onUpdate: self => q(cfg.block.dist * self.progress)
       });
     }
 
     if (!isLast) {
-      const next = cards[idx + 1] || null;
       const isShort = card.offsetHeight < window.innerHeight;
-
       gsap.timeline({
         scrollTrigger: {
           trigger: card,
           start: isShort ? "top top" : "bottom bottom",
-          endTrigger: next || card,
-          end: next ? "top top" : "bottom top",
+          endTrigger: nextCard || card,
+          end: nextCard ? "top top" : "bottom top",
           pin: true,
           pinSpacing: false,
-          pinType: "transform",
+          pinType: isTouch ? "transform" : undefined,
           scrub: 1,
           anticipatePin: 1,
-          invalidateOnRefresh: true
+          invalidateOnRefresh: true,
+          onUpdate: st => {
+            if (!cfg.contrast) { gsap.set(card, { filter: "contrast(100%)" }); return; }
+            const p = st.progress;
+            const n = 100 + (-90) * Math.max(0, Math.min(1, (p - 0.1) / 0.8));
+            gsap.set(card, { filter: `contrast(${n}%)` });
+          }
         }
-      })
-      .fromTo(card, { filter: cfg.contrastEnabled ? "contrast(100%)" : "contrast(100%)" },
-                    { filter: cfg.contrastEnabled ? "contrast(10%)"  : "contrast(100%)", duration: 0.85 }, 0);
+      });
     }
   });
 
