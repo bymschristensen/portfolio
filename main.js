@@ -37,110 +37,107 @@
 	function openFirstArchiveProject(e=document){e.querySelectorAll(".list-item-archive-project.open").forEach((e=>e.classList.remove("open")));const t=Array.from(e.querySelectorAll(".list-item-archive-project")).find((e=>null!==e.offsetParent));t&&(t.classList.add("open"),requestAnimationFrame((()=>{["scroll","resize"].forEach((e=>{window.dispatchEvent(new Event(e,{bubbles:!0})),document.documentElement.dispatchEvent(new Event(e,{bubbles:!0})),document.body.dispatchEvent(new Event(e,{bubbles:!0}))})),[document.documentElement,document.body].forEach((e=>{e.scrollTop+=2,e.scrollTop-=2}))})))}
 	function initArchiveFilters(e=document){const t=Array.from(e.querySelectorAll(".filters-tab")),r=Array.from(e.querySelectorAll(".list-item-archive-project")),a=Array.from(e.querySelectorAll("[id^='nav-archive-filter-']"));r.forEach((e=>{e._catsNorm||(e._catsNorm=Array.from(e.querySelectorAll(".archive-categories .cms-categories")).map((e=>e.textContent.trim().toLowerCase().replace(/[\W_]+/g,""))))}));const o=e=>"all"===e?r.length:r.filter((t=>t._catsNorm.includes(e))).length;function c(t,a=!0){const o=e.querySelector("#archive-results-counter");if(!o)return;const c=parseInt(o.textContent?.replace(/\D/g,""),10)||0;r.forEach((e=>{e.style.display="all"===t||e._catsNorm.includes(t)?"":"none"}));const l=r.filter((e=>"none"!==e.style.display)),i=l.length;if(gsap.to({v:c},{v:i,duration:a?.5:.01,ease:"power1.out",onUpdate:function(){o.textContent=Math.round(this.targets()[0].v)}}),!l.length)return;if(a){const e=gsap.timeline();e.set(l,{y:100,opacity:0,filter:"blur(0px)",willChange:"transform,opacity"}),e.to(l,{y:0,opacity:1,duration:.6,ease:"power2.out",stagger:.12})}else gsap.set(l,{y:0,opacity:1,filter:"blur(0px)"});const s=l.find((e=>null!==e.offsetParent));e.querySelectorAll(".list-item-archive-project.open").forEach((e=>e.classList.remove("open"))),s&&s.classList.add("open")}t.forEach((e=>{const t=e.id.replace("archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),r=e.querySelector(".filters-counter");r&&(r.textContent=`(${o(t)})`)})),a.forEach((e=>{const t=e.querySelector(".nav-counter-filters"),r=e.id.replace("nav-archive-filter-","").toLowerCase().replace(/[\W_]+/g,"");t&&(t.textContent=`(${o(r)})`)})),t.forEach((e=>{e.addEventListener("click",(r=>{r.preventDefault(),t.forEach((e=>e.classList.remove("active"))),e.classList.add("active");c(e.id.replace("archive-filter-","").toLowerCase().replace(/[\W_]+/g,""),!0)}))}));const l=e.querySelector("#archive-filter-all");l&&l.classList.add("active");const i=e.querySelector('.w-tab-pane[data-w-tab="Archive"]');let s=!1;const n=new MutationObserver((()=>{i&&i.classList.contains("w--tab-active")&&(s||(s=!0,c("all",!0)))}));i&&n.observe(i,{attributes:!0,attributeFilter:["class"]}),registerObserver(n),c("all",!1);const u=Array.from(e.querySelectorAll(".list-item-archive-project img")).slice(0,12);("requestIdleCallback"in window?window.requestIdleCallback:e=>setTimeout(e,0))((()=>{u.forEach((e=>{e&&e.decode&&e.decode().catch((()=>{}))}))}))}
 	// function initResourcesPinnedSections(t=document){if(!window.gsap||!window.ScrollTrigger)return;const e=Array.from(t.querySelectorAll(".section-resources .resource-item"));if(!e.length)return;const o=window.matchMedia("(max-width: 767px)").matches,r={first:{visual:{start:"top 85%",end:"bottom top",dist:-320,blur:6},title:{start:"top 55%",end:"bottom top",dist:320},block:{start:"bottom 115%",end:"bottom top",dist:-480},contrastEnabled:!0},middle:{visual:{start:"top 85%",end:"bottom top",dist:-320,blur:6},title:{start:"top 70%",end:"bottom top",dist:320},block:{start:"bottom 115%",end:"bottom top",dist:-480},contrastEnabled:!0},last:{visual:{start:"top 85%",end:"bottom top",dist:-320,blur:6},title:{start:"top 70%",end:"bottom top",dist:560},block:{start:"bottom 100%",end:"bottom top",dist:-120},contrastEnabled:!1}};e.forEach(((t,s)=>{const i=t.querySelector(".resource-visual"),n=t.querySelector(".resource-item h2"),a=t.querySelector(".resource-block"),l=0===s,c=s===e.length-1,d=r[l?"first":c?"last":"middle"];if(i&&ScrollTrigger.create({trigger:t,start:d.visual.start,end:d.visual.end,scrub:!0,onUpdate:t=>{const e=t.progress;gsap.set(i,{y:d.visual.dist*e,filter:`blur(${(d.visual.blur||0)*e}px)`})}}),!o&&n&&gsap.to(n,{y:d.title.dist,ease:"none",overwrite:"auto",force3D:!0,scrollTrigger:{trigger:t,start:d.title.start,end:d.title.end,scrub:!0,anticipatePin:1,invalidateOnRefresh:!0}}),!o&&a&&ScrollTrigger.create({trigger:t,start:d.block.start,end:d.block.end,scrub:!0,onUpdate:t=>{const e=t.progress;gsap.set(a,{y:d.block.dist*e})}}),!c){const o=e[s+1]||null,r=t.offsetHeight<window.innerHeight;gsap.timeline({scrollTrigger:{trigger:t,start:r?"top top":"bottom bottom",endTrigger:o||t,end:o?"top top":"bottom top",pin:!0,pinSpacing:!1,scrub:1,anticipatePin:1,invalidateOnRefresh:!0,onUpdate(e){if(!d.contrastEnabled)return void gsap.set(t,{filter:"contrast(100%)"});const o=e.progress,r=100+-90*Math.max(0,Math.min(1,(o-.1)/.8));gsap.set(t,{filter:`contrast(${r}%)`})}}})}})),ScrollTrigger.refresh(!0)}
-	function initResourcesPinnedSections(root=document){
-  if(!window.gsap||!window.ScrollTrigger) return;
+	function initResourcesPinnedSections(root = document) {
+  if (!window.gsap || !window.ScrollTrigger) return;
 
-  const cards=Array.from(root.querySelectorAll(".section-resources .resource-item"));
-  if(!cards.length) return;
+  const cards = Array.from(root.querySelectorAll(".section-resources .resource-item"));
+  if (!cards.length) return;
 
-  const isTouch=window.matchMedia("(pointer: coarse), (hover: none)").matches;
+  const isTouch = window.matchMedia("(pointer: coarse), (hover: none)").matches;
 
-  const CFG={
-    first:{visual:{start:"top 85%",end:"bottom top",dist:-320,blur:6},title:{start:"top 55%",end:"bottom top",dist:320},block:{start:"bottom 115%",end:"bottom top",dist:-480},contrast:true},
-    middle:{visual:{start:"top 85%",end:"bottom top",dist:-320,blur:6},title:{start:"top 70%",end:"bottom top",dist:320},block:{start:"bottom 115%",end:"bottom top",dist:-480},contrast:true},
-    last:{visual:{start:"top 85%",end:"bottom top",dist:-320,blur:6},title:{start:"top 70%",end:"bottom top",dist:560},block:{start:"bottom 100%",end:"bottom top",dist:-120},contrast:false}
+  const CFG = {
+    first:  { visual:{start:"top 85%", end:"bottom top", dist:-320, blur:6}, title:{start:"top 55%", end:"bottom top", dist:320},  block:{start:"bottom 115%", end:"bottom top", dist:-480}, contrast:true },
+    middle: { visual:{start:"top 85%", end:"bottom top", dist:-320, blur:6}, title:{start:"top 70%", end:"bottom top", dist:320},  block:{start:"bottom 115%", end:"bottom top", dist:-480}, contrast:true },
+    last:   { visual:{start:"top 85%", end:"bottom top", dist:-320, blur:6}, title:{start:"top 70%", end:"bottom top", dist:560},  block:{start:"bottom 100%", end:"bottom top", dist:-120}, contrast:false }
   };
 
-  cards.forEach((card,idx)=>{
-    const visual=card.querySelector(".resource-visual");
-    const title =card.querySelector(".resource-item h2");
-    const block =card.querySelector(".resource-block");
+  cards.forEach((card, idx) => {
+    const visual = card.querySelector(".resource-visual");
+    const title  = card.querySelector(".resource-item h2");
+    const block  = card.querySelector(".resource-block");
 
-    const isFirst=idx===0;
-    const isLast =idx===cards.length-1;
-    const cfg=CFG[isFirst?"first":(isLast?"last":"middle")];
+    const isFirst = idx === 0;
+    const isLast  = idx === cards.length - 1;
+    const type    = isFirst ? "first" : (isLast ? "last" : "middle");
+    const cfg     = CFG[type];
 
-    card.style.setProperty("--vDist",`${cfg.visual.dist}px`);
-    card.style.setProperty("--tDist",`${cfg.title.dist}px`);
-    card.style.setProperty("--bDist",`${cfg.block.dist}px`);
+    const nextCard   = cards[idx + 1] || null;
+    const endTrigger = nextCard || card;
+    const endValue   = nextCard ? "top top" : cfg.visual.end;
 
-    const next=cards[idx+1]||null;
-    const endTrigger=next||card;
-    const endValue=next?"top top":cfg.visual.end;
-
-    if(visual){
-      const blurMax=isTouch?Math.min(3,cfg.visual.blur||0):(cfg.visual.blur||0);
+    if (visual) {
+      const qy = gsap.quickSetter(visual, "y", "px");
+      const qf = gsap.quickSetter(visual, "filter");
+      const blurMax = cfg.visual.blur || 0;
       ScrollTrigger.create({
-        trigger:card,
-        start:cfg.visual.start,
+        trigger: card,
+        start: cfg.visual.start,
         endTrigger,
-        end:endValue,
-        scrub:true,
-        onUpdate:self=>{
-          const p=self.progress;
-          card.style.setProperty("--pv",p.toFixed(4));
-          if(blurMax){ gsap.set(visual,{filter:`blur(${(blurMax*p).toFixed(3)}px)`}); }
-          else{ gsap.set(visual,{filter:"none"}); }
+        end: endValue,
+        scrub: true,
+        onUpdate: st => {
+          const p = st.progress;
+          qy(cfg.visual.dist * p);
+          qf(blurMax ? `blur(${blurMax * p}px)` : "none");
         }
       });
     }
 
-    if(!isTouch&&title){
-      ScrollTrigger.create({
-        trigger:card,
-        start:cfg.title.start,
-        endTrigger,
-        end:endValue,
-        scrub:true,
-        anticipatePin:1,
-        invalidateOnRefresh:true,
-        onUpdate:self=>{
-          card.style.setProperty("--pt",self.progress.toFixed(4));
+    if (!isTouch && title) {
+      gsap.to(title, {
+        y: cfg.title.dist,
+        ease: "none",
+        overwrite: "auto",
+        force3D: true,
+        scrollTrigger: {
+          trigger: card,
+          start: cfg.title.start,
+          endTrigger,
+          end: endValue,
+          scrub: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true
         }
       });
-    }else{
-      card.style.setProperty("--pt","0");
     }
 
-    if(!isTouch&&block){
+    if (!isTouch && block) {
+      const q = gsap.quickSetter(block, "y", "px");
       ScrollTrigger.create({
-        trigger:card,
-        start:cfg.block.start,
+        trigger: card,
+        start: cfg.block.start,
         endTrigger,
-        end:endValue,
-        scrub:true,
-        onUpdate:self=>{
-          card.style.setProperty("--pb",self.progress.toFixed(4));
-        }
+        end: endValue,
+        scrub: true,
+        onUpdate: st => q(cfg.block.dist * st.progress)
       });
-    }else{
-      card.style.setProperty("--pb","0");
     }
 
-    if(!isLast){
-      const isShort=card.offsetHeight<window.innerHeight;
+    if (!isLast) {
+      const isShort = card.offsetHeight < window.innerHeight;
+      const startPin = isShort ? "top top" : "bottom bottom";
+
       gsap.timeline({
-        scrollTrigger:{
-          trigger:card,
-          start:isShort?"top top":"bottom bottom",
-          endTrigger:next||card,
-          end:next?"top top":"bottom top",
-          pin:true,
-          pinSpacing:false,
-          pinType:isTouch?"transform":undefined,
-          scrub:1,
-          anticipatePin:1,
-          invalidateOnRefresh:true,
-          onUpdate:st=>{
-            if(!cfg.contrast){ card.style.setProperty("--c","0"); return; }
-            const p=st.progress;
-            const pc=Math.max(0,Math.min(1,(p-0.1)/0.8));
-            card.style.setProperty("--c",pc.toFixed(4));
+        scrollTrigger: {
+          trigger: card,
+          start: startPin,
+          endTrigger: nextCard || card,
+          end: nextCard ? "top top" : "bottom top",
+          pin: true,
+          pinSpacing: false,
+          scrub: 1,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: st => {
+            if (!cfg.contrast) { gsap.set(card, { filter: "contrast(100%) blur(0px)" }); return; }
+            const p = st.progress;
+            const t = Math.max(0, Math.min(1, (p - 0.15) / 0.85));
+            const c = 100 + (10 - 100) * t;
+            const b = 10 * t;
+            gsap.set(card, { filter: `contrast(${c}%) blur(${b}px)` });
           }
         }
-      });
-    }else{
-      card.style.setProperty("--c","0");
+      }).set(card, { filter: "contrast(100%) blur(0px)" });
     }
   });
 
