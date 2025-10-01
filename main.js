@@ -63,7 +63,7 @@
 
     const nextCard   = cards[idx+1] || null;
     const endTrigger = nextCard || card;
-    const endValue   = nextCard ? "top top+=0.1" : cfg.visual.end;
+    const endValue   = nextCard ? "top top+=1" : cfg.visual.end;
 
     if(visual) gsap.set(visual,{willChange:"transform,filter",force3D:true});
     if(title)  gsap.set(title ,{willChange:"transform",force3D:true});
@@ -102,7 +102,7 @@
           end: endValue,
           scrub:true,
           fastScrollEnd:true,
-          anticipatePin:1,
+          anticipatePin:2,
           invalidateOnRefresh:true
         }
       });
@@ -123,27 +123,27 @@
 
     if(!isLast){
       const isShort = card.offsetHeight < window.innerHeight;
-      gsap.timeline({
-        scrollTrigger:{
-          trigger: card,
-          start: isShort ? "top top" : "bottom bottom",
-          endTrigger: nextCard || card,
-          end: nextCard ? "top top+=0.1" : "bottom top",
-          pin:true,
-          pinSpacing:false,
-          pinReparent:true,
-          pinType: isTouch ? "transform" : undefined,
-          scrub:1,
-          fastScrollEnd:true,
-          anticipatePin:1,
-          invalidateOnRefresh:true
+      const pinST = ScrollTrigger.create({
+        trigger: card,
+        start: isShort ? "top top" : "bottom bottom",
+        endTrigger: nextCard || card,
+        end: nextCard ? "top top+=1" : "bottom top",
+        pin:true,
+        pinSpacing:false,
+        pinReparent:true,
+        pinType: isTouch ? "transform" : undefined,
+        scrub:1,
+        fastScrollEnd:true,
+        anticipatePin:2,
+        invalidateOnRefresh:true,
+        onToggle:self=>{ card.style.zIndex = self.isActive ? "1000" : ""; },
+        onUpdate: st=>{
+          if(!cfg.contrast){ gsap.set(card,{filter:"contrast(100%)"}); return; }
+          const p = st.progress;
+          const n = 100 + (-90) * Math.max(0, Math.min(1, (p-0.1)/0.8));
+          gsap.set(card,{filter:`contrast(${n}%)`});
         }
-      }).fromTo(
-        card,
-        { filter: cfg.contrast ? "contrast(100%)" : "contrast(100%)" },
-        { filter: cfg.contrast ? "contrast(10%)"  : "contrast(100%)", duration:.85 },
-        0
-      );
+      });
     }
   });
 
