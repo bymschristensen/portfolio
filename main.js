@@ -18,6 +18,32 @@
 		return false;
 	}
 
+// Smooth Scroll
+	function initSmoothScroll(root = document) {
+	  if (window.__smoothScrollInit) return;
+	  window.__smoothScrollInit = true;
+	
+	  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+	
+	  let current = window.scrollY;
+	  let target = current;
+	  const ease = 0.08; // tweak from 0.05 (floaty) to 0.12 (tighter)
+	
+	  const setY = gsap.quickSetter("html, body", "scrollTop", "px");
+	
+	  function onScroll() {
+		target = window.scrollY;
+	  }
+	
+	  function update() {
+		current += (target - current) * ease;
+		setY(current);
+	  }
+	
+	  window.addEventListener("scroll", onScroll, { passive: true });
+	  gsap.ticker.add(update);
+	}
+
 // Text Animation
 	function splitAndMask(e){if(e._originalHTML||(e._originalHTML=e.innerHTML),e._split)return e._split;const t=getComputedStyle(e).whiteSpace||"normal",i=e.style.whiteSpace,l=e.style.display;e.style.whiteSpace=t,"inline"===getComputedStyle(e).display&&(e.style.display="block"),e.clientWidth;const s=new SplitText(e,{type:"lines",linesClass:"line",reduceWhiteSpace:!1});return s.lines.forEach((e=>{const i=e.getBoundingClientRect().height||e.offsetHeight||0,l=document.createElement("div");l.className="text-mask",l.style.overflow="hidden",l.style.display="block",l.style.height=i+"px",e.style.whiteSpace=t,e.style.display="block",e.parentNode.insertBefore(l,e),l.appendChild(e)})),gsap.set(s.lines,{yPercent:100,rotation:10,transformOrigin:"0 10%",willChange:"transform,opacity"}),e.style.whiteSpace=i,e.style.display=l,s}
 	function safelyRevertSplit(e,i){e&&i&&(e.revert(),i._originalHTML&&(i.innerHTML=i._originalHTML,delete i._originalHTML),delete i._split)}
@@ -148,6 +174,7 @@
 // Run All Initialisers
 	let _firstLoadDone = false;
 	function initAllYourInits(root = document) {
+		initSmoothScroll(root);
 		initReparentChildren(root);
 		markTabLinksForBarba(root);
 		initTextAnimationOne(root);
