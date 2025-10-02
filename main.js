@@ -28,11 +28,12 @@
 // Reparent data-child into matching data-parent
 	function initReparentChildren(t=document){t.querySelectorAll("[data-child]").forEach((e=>{if(e.matches(".w-tab-link, .w-tab-pane")||e.closest(".w-tabs"))return;const a=e.getAttribute("data-child");let n=t.querySelector(`[data-parent="${a}"]`);n||t===document||(n=document.querySelector(`[data-parent="${a}"]`)),n&&n.appendChild(e)}))}
 	function markTabLinksForBarba(a=document){a.querySelectorAll(".w-tab-link").forEach((a=>{a.setAttribute("data-barba-prevent","all")}))}
-	function _resolveTabKey(e,t=document){let n=e?.toLowerCase()||"";let r=e; t.querySelectorAll('.w-tab-link[data-w-tab]').forEach(o=>{const a=o.getAttribute('data-w-tab');if(a&&a.toLowerCase()===n)r=a});return r}
-	function preselectTabByKey(e,t=document){e=_resolveTabKey(e,t);const n=t.querySelector(`.w-tab-link[data-w-tab="${e}"]`);if(!n)return!1;const r=n.closest(".w-tabs");r&&(r.querySelectorAll(".w-tab-link.w--current").forEach(e=>e.classList.remove("w--current")),r.querySelectorAll(".w-tab-pane.w--tab-active").forEach(e=>e.classList.remove("w--tab-active")),n.classList.add("w--current"));const o=t.querySelector(`.w-tab-pane[data-w-tab="${e}"]`);return o&&o.classList.add("w--tab-active"),!0}
+	function _tabKey(){return(location.hash||"").slice(1)||new URLSearchParams(location.search).get("tab")}
+	function _resolveTabKey(e,t=document){let n=e?.toLowerCase()||"",r=e;t.querySelectorAll('.w-tab-link[data-w-tab]').forEach(a=>{const o=a.getAttribute('data-w-tab');o&&o.toLowerCase()===n&&(r=o)});return r}
+	function preselectTabByKey(e,t=document){e=_resolveTabKey(e,t);const n=t.querySelector(`.w-tab-link[data-w-tab="${e}"]`);if(!n)return!1;const r=n.closest(".w-tabs");r&&(r.querySelectorAll(".w-tab-link.w--current").forEach(e=>e.classList.remove("w--current")),r.querySelectorAll(".w-tab-pane.w--tab-active").forEach(e=>e.classList.remove("w--tab-active")),n.classList.add("w--current"));const a=t.querySelector(`.w-tab-pane[data-w-tab="${e}"]`);return a&&a.classList.add("w--tab-active"),!0}
 	function openTabByKey(e,t=document){e=_resolveTabKey(e,t);const n=t.querySelector(`.w-tab-link[data-w-tab="${e}"]`)||t.querySelector(`#${e}.w-tab-link`)||t.querySelector(`#${e}`);return!!n&&(n.click(),!0)}
-	function preselectTabFromURL(t=document){const e=(location.hash||"").slice(1)||new URLSearchParams(location.search).get("tab");e&&preselectTabByKey(e,t)}
-	function initOpenTabFromURL(t=document){const e=(location.hash||"").slice(1)||new URLSearchParams(location.search).get("tab");e&&(preselectTabByKey(e,t),requestAnimationFrame(()=>{setTimeout(()=>{openTabByKey(e,t)},0)}))}
+	function preselectTabFromURL(t=document){const e=_tabKey();e&&preselectTabByKey(e,t)}
+	function finalizeOpenTabFromURL(t=document){const e=_tabKey();if(!e)return;let n=0;const r=24,a=()=>{if(openTabByKey(e,t))return;n<r&&(n++,setTimeout(a,50))};setTimeout(a,0)}
 	function _goURL(e){try{if(window.barba&&barba.go){barba.go(new URL(e,location.origin).href);return}}catch{}window.location.assign(e)}
 	function initLinkMappings(r=document){r.querySelectorAll("[data-open-tab]").forEach(t=>{t.addEventListener("click",e=>{const a=t.dataset.openTab;if(!a)return;if(openTabByKey(a,r)){e.preventDefault();e.stopImmediatePropagation();return}let n=t.dataset.href||t.getAttribute("href")||"/new-index";if(/^(mailto:|tel:)/i.test(n))return;try{const r=new URL(n,location.origin),t=r.origin!==location.origin||/\.[a-z0-9]{2,8}$/i.test(r.pathname);if(t)return;r.hash||(r.hash="#"+encodeURIComponent(a)),e.preventDefault(),e.stopImmediatePropagation(),_goURL(r.pathname+r.search+r.hash)}catch{e.preventDefault(),e.stopImmediatePropagation();const r=n&&"#"!==n?n:"/new-index",t=r.includes("#")?"":"#";_goURL(r+t+encodeURIComponent(a))}}, {passive:!1})})}
 
@@ -134,10 +135,12 @@
 					enter: async ({ next }) => {
 						preselectTabFromURL(next.container);
 						resetWebflow({ next });
+						preselectTabFromURL(next.container);
 						window.scrollTo(0, 0);
 						await runEntryFlow(next.container, { withCoverOut: true });
 					},
 					afterEnter({ next }) {
+						finalizeOpenTabFromURL(next.container);
 						window.scrollTo(0, 0);
 						markTabLinksForBarba(next.container);
 						requestAnimationFrame(() => reinitWebflowModules());
