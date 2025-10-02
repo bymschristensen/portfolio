@@ -159,7 +159,6 @@
 		initCaseStudyCloseButton(root);
 		initThemeSwitch(root);
 		initAccordions(root);
-		initCounters(root);
 		initAppearInLine(root);
 		initCustomCursor();
 		initOverscrollBehavior(root);
