@@ -34,6 +34,7 @@
 	function openTabByKey(e,t=document){e=_resolveTabKey(e,t);const n=t.querySelector(`.w-tab-link[data-w-tab="${e}"]`)||t.querySelector(`#${e}.w-tab-link`)||t.querySelector(`#${e}`);return!!n&&(n.click(),!0)}
 	function preselectTabFromURL(t=document){const e=_tabKey();e&&preselectTabByKey(e,t)}
 	function finalizeOpenTabFromURL(t=document){const e=_tabKey();if(!e)return;let n=0;const r=24,a=()=>{if(openTabByKey(e,t))return;n<r&&(n++,setTimeout(a,50))};setTimeout(a,0)}
+	function initOpenTabFromURL(root=document){preselectTabFromURL(root);finalizeOpenTabFromURL(root);}
 	function _goURL(e){try{if(window.barba&&barba.go){barba.go(new URL(e,location.origin).href);return}}catch{}window.location.assign(e)}
 	function initLinkMappings(r=document){r.querySelectorAll("[data-open-tab]").forEach(t=>{t.addEventListener("click",e=>{const a=t.dataset.openTab;if(!a)return;if(openTabByKey(a,r)){e.preventDefault();e.stopImmediatePropagation();return}let n=t.dataset.href||t.getAttribute("href")||"/new-index";if(/^(mailto:|tel:)/i.test(n))return;try{const r=new URL(n,location.origin),t=r.origin!==location.origin||/\.[a-z0-9]{2,8}$/i.test(r.pathname);if(t)return;r.hash||(r.hash="#"+encodeURIComponent(a)),e.preventDefault(),e.stopImmediatePropagation(),_goURL(r.pathname+r.search+r.hash)}catch{e.preventDefault(),e.stopImmediatePropagation();const r=n&&"#"!==n?n:"/new-index",t=r.includes("#")?"":"#";_goURL(r+t+encodeURIComponent(a))}}, {passive:!1})})}
 
