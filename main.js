@@ -30,7 +30,12 @@
 	function markTabLinksForBarba(a=document){a.querySelectorAll(".w-tab-link").forEach((a=>{a.setAttribute("data-barba-prevent","all")}))}
 	
 // Tabs & Cross-page linking to tabs
-	!function(){const t="__tabTarget";function e(t,e=document){let r=t?.toLowerCase()||"",a=t;return e.querySelectorAll(".w-tab-link[data-w-tab]").forEach((t=>{const e=t.getAttribute("data-w-tab");e&&e.toLowerCase()===r&&(a=e)})),a}function r(t,r=document){t=e(t,r);const a=r.querySelector(`.w-tab-link[data-w-tab="${t}"]`)||r.querySelector(`#${t}.w-tab-link`)||r.querySelector(`#${t}`);return!!a&&(a.click(),!0)}function a(t,r=document){t=e(t,r);const a=(document.querySelector(".nav-primary-wrap")?.offsetHeight||0)+8,n=new MutationObserver((e=>{for(const r of e)if("attributes"===r.type&&r.target.classList.contains("w--tab-active")&&r.target.getAttribute("data-w-tab")===t){const t=()=>{const t=r.target.getBoundingClientRect().top+window.scrollY-a;window.scrollTo(0,Math.max(0,t))};return t(),requestAnimationFrame(t),setTimeout((()=>{t(),window.ScrollTrigger&&ScrollTrigger.refresh(!0)}),80),void n.disconnect()}}));r.querySelectorAll(".w-tab-pane").forEach((t=>n.observe(t,{attributes:!0,attributeFilter:["class"]}))),setTimeout((()=>n.disconnect()),1500)}function n(t){const e=function(t){try{return new URL(t,location.origin)}catch{return null}}(t);return e?{same:e.origin===location.origin&&e.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"")}:{same:!0}}if(window.initTabLinking=function(o=document){o.querySelectorAll("[data-open-tab]").forEach((i=>{i.addEventListener("click",(c=>{const s=i.dataset.openTab;if(!s)return;let l=i.dataset.href||i.getAttribute("href")||"";if(/^(mailto:|tel:)/i.test(l))return;const u=n(l).same,w=!!o.querySelector(`.w-tab-link[data-w-tab="${e(s,o)}"]`);if(u&&w)return c.preventDefault(),void(r(s,o)&&a(s,o));if(u);else{c.preventDefault();try{sessionStorage.setItem(t,s)}catch{}!function(t){try{if(window.barba&&barba.go)return void barba.go(new URL(t,location.origin).href)}catch{}window.location.assign(t)}(l||"/")}}),{passive:!1})}))},window.consumePendingTab=function(n=document){let o=null;try{o=sessionStorage.getItem(t)}catch{}if(!o)return;try{sessionStorage.removeItem(t)}catch{}!function(t,r=document){t=e(t,r);const a=r.querySelector(`.w-tab-link[data-w-tab="${t}"]`);if(!a)return!1;const n=a.closest(".w-tabs");n&&(n.querySelectorAll(".w-tab-link.w--current").forEach((t=>t.classList.remove("w--current"))),n.querySelectorAll(".w-tab-pane.w--tab-active").forEach((t=>t.classList.remove("w--tab-active"))),a.classList.add("w--current"));const o=r.querySelector(`.w-tab-pane[data-w-tab="${t}"]`);o&&o.classList.add("w--tab-active")}(o,n);let i=0;!function t(){r(o,n)||(a(o,n),++i<24&&setTimeout(t,50))}()},"scrollRestoration"in history)try{history.scrollRestoration="manual"}catch{}}();
+	function _tabKey(){return new URL(location.href).searchParams.get("tab")||(location.hash||"").slice(1)}
+	function _resolveTabKey(e,t=document){let a=e?.toLowerCase()||"",r=e;return t.querySelectorAll(".w-tab-link[data-w-tab]").forEach((e=>{const t=e.getAttribute("data-w-tab");t&&t.toLowerCase()===a&&(r=t)})),r}
+	function preselectTabByKey(e,t=document){e=_resolveTabKey(e,t);const a=t.querySelector(`.w-tab-link[data-w-tab="${e}"]`);if(!a)return!1;const r=a.closest(".w-tabs");r&&(r.querySelectorAll(".w-tab-link.w--current").forEach((e=>e.classList.remove("w--current"))),r.querySelectorAll(".w-tab-pane.w--tab-active").forEach((e=>e.classList.remove("w--tab-active"))),a.classList.add("w--current"));const c=t.querySelector(`.w-tab-pane[data-w-tab="${e}"]`);return c&&c.classList.add("w--tab-active"),!0}
+	function openTabByKey(e,t=document){e=_resolveTabKey(e,t);const a=t.querySelector(`.w-tab-link[data-w-tab="${e}"]`);return!!a&&(a.click(),!0)}
+	function preselectTabFromURL(e=document){const t=_tabKey();t&&preselectTabByKey(t,e)}
+	function finalizeOpenTabFromURL(e=document){const t=_tabKey();if(!t)return;let a=0;!function r(){openTabByKey(t,e)||++a<24&&setTimeout(r,50)}()}
 
 // Selected Work + Archive + Resources
 	function initSelectedWorkLoop(e=document){const t=e.querySelector(".selected-container"),n=t?.querySelector(".selected-content");if(!t||!n)return;if(t.__selectedLoopInited)return;t.__selectedLoopInited=!0;const o=Array.from(n.querySelectorAll(".selected-item-outer"));if(!o.length)return;n.style.justifyContent="center",n.style.transform="translateZ(0)";const r=e=>e.offsetWidth+(e=>(parseFloat(getComputedStyle(e).marginLeft)||0)+(parseFloat(getComputedStyle(e).marginRight)||0))(e),a=()=>{const e=Math.max(document.documentElement.clientWidth,window.innerWidth||0);return Math.round(e*(window.matchMedia("(max-width: 767px)").matches?.78:.28))};function l(e){Array.from(n.querySelectorAll(".selected-item-outer")).forEach((t=>{t._baseW=e,t.style.width=e+"px"}))}function s(){let e=0;return Array.from(n.children).forEach((t=>{1===t.nodeType&&(e+=r(t))})),e}function i(){o.forEach((e=>{const t=e.cloneNode(!0);t.setAttribute("data-clone","true"),n.appendChild(t)}))}function c(){const e=Array.from(n.children).filter((e=>1===e.nodeType)),o=Math.floor(e.length/2);let a=0;for(let t=0;t<o;t++)a+=r(e[t]);const l=r(e[o]);h=-(a+.5*l-.5*t.clientWidth),gsap.set(n,{x:h})}function d(){t.hasAttribute("data-loop-ready")||(t.setAttribute("data-loop-ready","1"),n.dispatchEvent(new CustomEvent("selected:loop-ready",{bubbles:!0})))}!function(){Array.from(n.children).forEach((e=>1===e.nodeType&&e.hasAttribute("data-clone")&&e.remove())),l(a()),i(),i();const e=3*t.clientWidth;let o=0;for(;s()<e&&o++<8;)i();l(a())}();let h=0,u=0,f=1;const p={t:0},m=gsap.quickTo(p,"t",{duration:.45,ease:"power3.out",onUpdate:y});function y(){Array.from(n.querySelectorAll(".selected-item-outer")).forEach((e=>{const t=e._baseW||a();e.style.width=t*(1+p.t)+"px"}))}let b=!1;const w=t.closest(".w-tab-pane");gsap.ticker.add(((e,t)=>{if(w&&!w.classList.contains("w--tab-active"))return;const o=t/16.6667,a=u+1*f;h-=a*o;let l=n.firstElementChild,s=0;for(;l&&h<-r(l);){const e=r(l);if(h+=e,n.appendChild(l),l=n.firstElementChild,++s>50)break}let i=n.lastElementChild;for(s=0;i&&h>0;){const e=r(i);if(h-=e,n.insertBefore(i,n.firstElementChild),i=n.lastElementChild,++s>50)break}gsap.set(n,{x:h});const c=Math.min(1,Math.abs(a)/70);m((a>=0?.14:-.1)*c),Math.abs(a)<3&&Math.abs(p.t)>.002&&!b&&(b=!0,gsap.to(p,{t:0,duration:1.1,ease:"elastic.out(0.62,0.32)",onUpdate:y})),Math.abs(a)>=3&&(b=!1);const d=n.querySelectorAll(".selected-item-visual");if(d.length){const e=.5*window.innerWidth,t=.5+.5*c;d.forEach((n=>{const o=n.closest(".selected-visual");if(!o)return;const r=o.getBoundingClientRect(),a=(e-(r.left+.5*r.width))/window.innerWidth;n.style.setProperty("--drift",80*a*t+"px")}))}u*=Math.pow(.94,o),Math.abs(u)<.01&&(u=0)})),Observer.create({target:n,type:"wheel,touch",wheelSpeed:1,tolerance:6,onChange(e){const t=Math.abs(e.deltaX)>=Math.abs(e.deltaY)?e.deltaX:e.deltaY;if(!t)return;const n=e.event.type.includes("touch")?.34:.08;u+=t*n,u=gsap.utils.clamp(-70,70,u),f=t>0?1:-1}}),c(),d();let g=0;new ResizeObserver((()=>{cancelAnimationFrame(g),g=requestAnimationFrame((()=>{l(a()),y(),c(),d()}))})).observe(t)}
@@ -115,8 +120,8 @@
 					once: async ({ next }) => {
 						await runEntryFlow(next.container);
 					    markTabLinksForBarba(next.container);
-					    initTabLinking(next.container);
-					    consumePendingTab(next.container);
+					    preselectTabFromURL(next.container);
+						finalizeOpenTabFromURL(next.container);
 					    reinitWebflowModules();
 					    initDynamicPortraitColumns(next.container);
 					}
@@ -137,8 +142,8 @@
 					afterEnter({ next }) {
 						_unfreezeScroll();
 					    markTabLinksForBarba(next.container);
-					    initTabLinking(next.container);
-					    consumePendingTab(next.container);
+					    preselectTabFromURL(next.container);
+						finalizeOpenTabFromURL(next.container);
 					    requestAnimationFrame(() => reinitWebflowModules());
 						next.container.querySelectorAll("video[autoplay]").forEach(video => {video.muted = true; video.play().catch(() => {});});
 						setTimeout(() => {
@@ -157,8 +162,6 @@
 		initReparentChildren(root);
 		markTabLinksForBarba(root);
 		initTextAnimationOne(root);
-		initTabLinking(root);
-  		consumePendingTab(root);
 		initSelectedWorkLoop(root);
 		initResourcesPinnedSections(root);
 		initArchiveResultsCounter(root);
