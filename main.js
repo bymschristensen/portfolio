@@ -90,7 +90,7 @@
 	function runPageEntryAnimations(e){const{delayHero:t,entryOffset:a}=getEntryConfig(e),n=gsap.timeline();return"info"===e.dataset.barbaNamespace&&n.add(animateInfoEntry(e),0),e.querySelector(".section-table-of-contents")&&n.add(animateCapabilitiesEntry(e,{delayHero:t}),0),e.querySelector(".selected-item-outer")&&n.add(animateSelectedEntries(e),0),e.querySelector(".cs-hero-image")&&n.add(animateCaseStudyEntry(e),0),{tl:n,entryOffset:a}}
 	const waitForLayoutStability=()=>new Promise((t=>{requestAnimationFrame((()=>{requestAnimationFrame((()=>{setTimeout(t,30)}))}))}));
 	async function finalizeAfterEntry(i,e){await e.finished,await waitForLayoutStability(),initDynamicPortraitColumns(i),initServicesPinnedSections(i),initServicesGallery(i),i.querySelector(".cs-hero-image")&&initCaseStudyBackgroundScroll(i),initResourcesPinnedSections(i),ScrollTrigger.refresh(!0),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
-	async function runEntryFlow(i,{withCoverOut:n=!1}={}){i.style.visibility="",n&&await coverOut().finished,await runSafeInit(i,{preserveServicePins:!0});const{tl:t,entryOffset:e}=runPageEntryAnimations(i);t.call((()=>finalizeAfterEntry(i,t)),null,e+t.duration()),await t.finished,_scrollToTopNow()}
+	async function runEntryFlow(t,{withCoverOut:i=!1}={}){t.style.visibility="",i&&await coverOut().finished,await runSafeInit(t,{preserveServicePins:!0});const{tl:n,entryOffset:a}=runPageEntryAnimations(t);n.call((()=>finalizeAfterEntry(t,n)),null,a+n.duration()),await n.finished;!(!location.hash&&!sessionStorage.getItem("__barbaTabHash"))||_scrollToTopNow()}
 
 // Barba Init
 	function initBarba() {
@@ -120,11 +120,10 @@
 						await runEntryFlow(next.container);
 					    preselectTabFromURL(next.container);
 					    finalizeOpenTabFromURL(next.container);
-					    _scrollToTopNow();
 					    reinitWebflowModules();
 					    requestAnimationFrame(() => {
-					      preselectTabFromURL(next.container);
-					      finalizeOpenTabFromURL(next.container);
+							preselectTabFromURL(next.container);
+							finalizeOpenTabFromURL(next.container);
 					    });
 					    initDynamicPortraitColumns(next.container);
 					}
@@ -143,8 +142,7 @@
 					    current.container.remove();
 					},
 					enter: async ({ next }) => {
-						_unfreezeScroll();
-						_scrollToTopNow();
+						unfreezeScroll();
 						resetWebflow({ next });
 						await runEntryFlow(next.container, { withCoverOut: true });
 						preselectTabFromURL(next.container);
@@ -194,6 +192,8 @@
 if(typeof initBarba==="function")window.initBarba=initBarba;
 if(typeof initAllYourInits==="function")window.initAllYourInits=initAllYourInits;
 (function(){function boot(){if(window.initBarba)window.initBarba()}if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot,{once:true})})();
-window.addEventListener("pageshow", (e) => { if (e.persisted) _scrollToTopNow(); });
+window.addEventListener("pageshow", (e) => {
+	if (e.persisted && !location.hash) _scrollToTopNow();
+});
 
 
