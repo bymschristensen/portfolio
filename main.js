@@ -30,19 +30,7 @@
 	function markTabLinksForBarba(a=document){a.querySelectorAll(".w-tab-link").forEach((a=>{a.setAttribute("data-barba-prevent","all")}))}
 	
 // Tabs & Cross-page linking to tabs
-	function _tabKey(){const u=new URL(location.href);return u.searchParams.get("tab")||((location.hash||"").slice(1))}
-	function _resolveTabKey(e,t=document){let n=e?.toLowerCase()||"",r=e;t.querySelectorAll('.w-tab-link[data-w-tab]').forEach(a=>{const o=a.getAttribute('data-w-tab');o&&o.toLowerCase()===n&&(r=o)});return r}
-	function preselectTabByKey(e,t=document){e=_resolveTabKey(e,t);const n=t.querySelector(`.w-tab-link[data-w-tab="${e}"]`);if(!n)return!1;const r=n.closest(".w-tabs");r&&(r.querySelectorAll(".w-tab-link.w--current").forEach(e=>e.classList.remove("w--current")),r.querySelectorAll(".w-tab-pane.w--tab-active").forEach(e=>e.classList.remove("w--tab-active")),n.classList.add("w--current"));const a=t.querySelector(`.w-tab-pane[data-w-tab="${e}"]`);return a&&a.classList.add("w--tab-active"),!0}
-	function openTabByKey(e,t=document){e=_resolveTabKey(e,t);const n=t.querySelector(`.w-tab-link[data-w-tab="${e}"]`)||t.querySelector(`#${e}.w-tab-link`)||t.querySelector(`#${e}`);return!!n&&(n.click(),!0)}
-	function preselectTabFromURL(t=document){const e=_tabKey();e&&preselectTabByKey(e,t)}
-	function finalizeOpenTabFromURL(t=document){const e=_tabKey();if(!e)return;let n=0;const r=24,a=()=>{if(openTabByKey(e,t))return;n<r&&(n++,setTimeout(a,50))};setTimeout(a,0)}
-	function initOpenTabFromURL(root=document){preselectTabFromURL(root);finalizeOpenTabFromURL(root);}
-	function _goURL(e){try{if(window.barba&&barba.go){barba.go(new URL(e,location.origin).href);return}}catch{}window.location.assign(e)}
-	function _armOneShotTabJump(e,t=document){e=_resolveTabKey(e,t);let o=0,a=null;const r=(document.querySelector(".nav-primary-wrap")?.offsetHeight||0)+8,i=n=>{const l=n.getBoundingClientRect().top+window.pageYOffset-r;window.scrollTo(0,l<0?0:l)};const c=new MutationObserver(s=>{if(!e)return;for(const n of s){if(n.type==="attributes"&&n.target.classList.contains("w--tab-active")){const d=n.target.getAttribute("data-w-tab");if(d===e){if(a)clearTimeout(a);i(n.target);requestAnimationFrame(()=>{i(n.target);setTimeout(()=>{i(n.target);window.ScrollTrigger&&ScrollTrigger.refresh(!0)},80)});e=null;c.disconnect();break}}}});t.querySelectorAll(".w-tab-pane").forEach(n=>c.observe(n,{attributes:!0,attributeFilter:["class"]}));a=setTimeout(()=>{c.disconnect()},1500)}
-	function initLinkMappings(r=document){r.querySelectorAll("[data-open-tab]").forEach(t=>{t.addEventListener("click",e=>{const a=t.dataset.openTab;if(!a)return;if(r.querySelector(`.w-tab-link[data-w-tab]`)&&openTabByKey(a,r)){e.preventDefault(),e.stopImmediatePropagation(),_armOneShotTabJump(a,r);return}let n=t.dataset.href||t.getAttribute("href")||"/new-index";if(/^(mailto:|tel:)/i.test(n))return;try{const r=new URL(n,location.origin),t=r.origin!==location.origin||/\.[a-z0-9]{2,8}$/i.test(r.pathname);if(t)return;r.searchParams.set("tab",a),r.hash||(r.hash="#"+encodeURIComponent(a));e.preventDefault(),e.stopImmediatePropagation(),_goURL(r.pathname+r.search+r.hash)}catch{e.preventDefault(),e.stopImmediatePropagation();const r=(n&&"#"!==n?n:"/new-index").replace(/#.*$/,""),s=r.includes("?")?"&":"?";_goURL(r+s+"tab="+encodeURIComponent(a)+"#"+encodeURIComponent(a))}}, {passive:!1})})}
-	if("scrollRestoration"in history)try{history.scrollRestoration="manual"}catch(_){}
-	function _freezeScroll(){const y=window.scrollY||document.documentElement.scrollTop;document.documentElement.setAttribute("data-scroll-y",y);Object.assign(document.body.style,{position:"fixed",top:`-${y}px`,left:"0",right:"0",width:"100%"});}
-	function _unfreezeScroll(){Object.assign(document.body.style,{position:"",top:"",left:"",right:"",width:""});document.documentElement.removeAttribute("data-scroll-y");window.scrollTo(0,0);}
+	!function(){function t(){return new URL(location.href).searchParams.get("tab")||(location.hash||"").slice(1)}function e(t,e=document){let n=t?.toLowerCase()||"",a=t;return e.querySelectorAll(".w-tab-link[data-w-tab]").forEach((t=>{const e=t.getAttribute("data-w-tab");e&&e.toLowerCase()===n&&(a=e)})),a}function n(t,n=document){t=e(t,n);const a=n.querySelector(`.w-tab-link[data-w-tab="${t}"]`)||n.querySelector(`#${t}.w-tab-link`)||n.querySelector(`#${t}`);return!!a&&(a.click(),!0)}function a(t){try{if(window.barba&&barba.go)return void barba.go(new URL(t,location.origin).href)}catch{}window.location.assign(t)}window.initTabLinking=function(t=document){t.querySelectorAll("[data-open-tab]").forEach((o=>{o.addEventListener("click",(r=>{const i=o.dataset.openTab;if(!i)return;if(n(i,t))return r.preventDefault(),r.stopImmediatePropagation(),void function(t,n=document){t=e(t,n);const a=(document.querySelector(".nav-primary-wrap")?.offsetHeight||0)+8,o=new MutationObserver((e=>{for(const n of e)if("attributes"===n.type&&n.target.classList.contains("w--tab-active")&&n.target.getAttribute("data-w-tab")===t){const t=()=>{const t=n.target.getBoundingClientRect().top+window.scrollY-a;window.scrollTo(0,t<0?0:t)};return t(),requestAnimationFrame(t),setTimeout((()=>{t(),window.ScrollTrigger&&ScrollTrigger.refresh(!0)}),80),void o.disconnect()}}));n.querySelectorAll(".w-tab-pane").forEach((t=>o.observe(t,{attributes:!0,attributeFilter:["class"]}))),setTimeout((()=>o.disconnect()),1500)}(i,t);let c=o.dataset.href||o.getAttribute("href")||"/new-index";if(!/^(mailto:|tel:)/i.test(c))try{const t=new URL(c,location.origin);if(t.origin!==location.origin||/\.[a-z0-9]{2,8}$/i.test(t.pathname))return;t.searchParams.set("tab",i),t.hash||(t.hash="#"+encodeURIComponent(i)),r.preventDefault(),r.stopImmediatePropagation(),a(t.pathname+t.search+t.hash)}catch{r.preventDefault(),r.stopImmediatePropagation();const t=(c&&"#"!==c?c:"/new-index").replace(/#.*$/,""),e=t.includes("?")?"&":"?";a(t+e+"tab="+encodeURIComponent(i)+"#"+encodeURIComponent(i))}}),{passive:!1})}))},window.preselectTabFromURL=function(n=document){const a=t();a&&function(t,n=document){t=e(t,n);const a=n.querySelector(`.w-tab-link[data-w-tab="${t}"]`);if(!a)return!1;const o=a.closest(".w-tabs");o&&(o.querySelectorAll(".w-tab-link.w--current").forEach((t=>t.classList.remove("w--current"))),o.querySelectorAll(".w-tab-pane.w--tab-active").forEach((t=>t.classList.remove("w--tab-active"))),a.classList.add("w--current"));const r=n.querySelector(`.w-tab-pane[data-w-tab="${t}"]`);r&&r.classList.add("w--tab-active")}(a,n)},window.finalizeTabFromURL=function(e=document){const a=t();if(!a)return;let o=0;const r=()=>{n(a,e)||o++<24&&setTimeout(r,50)};setTimeout(r,0)}}();
 
 // Selected Work + Archive + Resources
 	function initSelectedWorkLoop(e=document){const t=e.querySelector(".selected-container"),n=t?.querySelector(".selected-content");if(!t||!n)return;if(t.__selectedLoopInited)return;t.__selectedLoopInited=!0;const o=Array.from(n.querySelectorAll(".selected-item-outer"));if(!o.length)return;n.style.justifyContent="center",n.style.transform="translateZ(0)";const r=e=>e.offsetWidth+(e=>(parseFloat(getComputedStyle(e).marginLeft)||0)+(parseFloat(getComputedStyle(e).marginRight)||0))(e),a=()=>{const e=Math.max(document.documentElement.clientWidth,window.innerWidth||0);return Math.round(e*(window.matchMedia("(max-width: 767px)").matches?.78:.28))};function l(e){Array.from(n.querySelectorAll(".selected-item-outer")).forEach((t=>{t._baseW=e,t.style.width=e+"px"}))}function s(){let e=0;return Array.from(n.children).forEach((t=>{1===t.nodeType&&(e+=r(t))})),e}function i(){o.forEach((e=>{const t=e.cloneNode(!0);t.setAttribute("data-clone","true"),n.appendChild(t)}))}function c(){const e=Array.from(n.children).filter((e=>1===e.nodeType)),o=Math.floor(e.length/2);let a=0;for(let t=0;t<o;t++)a+=r(e[t]);const l=r(e[o]);h=-(a+.5*l-.5*t.clientWidth),gsap.set(n,{x:h})}function d(){t.hasAttribute("data-loop-ready")||(t.setAttribute("data-loop-ready","1"),n.dispatchEvent(new CustomEvent("selected:loop-ready",{bubbles:!0})))}!function(){Array.from(n.children).forEach((e=>1===e.nodeType&&e.hasAttribute("data-clone")&&e.remove())),l(a()),i(),i();const e=3*t.clientWidth;let o=0;for(;s()<e&&o++<8;)i();l(a())}();let h=0,u=0,f=1;const p={t:0},m=gsap.quickTo(p,"t",{duration:.45,ease:"power3.out",onUpdate:y});function y(){Array.from(n.querySelectorAll(".selected-item-outer")).forEach((e=>{const t=e._baseW||a();e.style.width=t*(1+p.t)+"px"}))}let b=!1;const w=t.closest(".w-tab-pane");gsap.ticker.add(((e,t)=>{if(w&&!w.classList.contains("w--tab-active"))return;const o=t/16.6667,a=u+1*f;h-=a*o;let l=n.firstElementChild,s=0;for(;l&&h<-r(l);){const e=r(l);if(h+=e,n.appendChild(l),l=n.firstElementChild,++s>50)break}let i=n.lastElementChild;for(s=0;i&&h>0;){const e=r(i);if(h-=e,n.insertBefore(i,n.firstElementChild),i=n.lastElementChild,++s>50)break}gsap.set(n,{x:h});const c=Math.min(1,Math.abs(a)/70);m((a>=0?.14:-.1)*c),Math.abs(a)<3&&Math.abs(p.t)>.002&&!b&&(b=!0,gsap.to(p,{t:0,duration:1.1,ease:"elastic.out(0.62,0.32)",onUpdate:y})),Math.abs(a)>=3&&(b=!1);const d=n.querySelectorAll(".selected-item-visual");if(d.length){const e=.5*window.innerWidth,t=.5+.5*c;d.forEach((n=>{const o=n.closest(".selected-visual");if(!o)return;const r=o.getBoundingClientRect(),a=(e-(r.left+.5*r.width))/window.innerWidth;n.style.setProperty("--drift",80*a*t+"px")}))}u*=Math.pow(.94,o),Math.abs(u)<.01&&(u=0)})),Observer.create({target:n,type:"wheel,touch",wheelSpeed:1,tolerance:6,onChange(e){const t=Math.abs(e.deltaX)>=Math.abs(e.deltaY)?e.deltaX:e.deltaY;if(!t)return;const n=e.event.type.includes("touch")?.34:.08;u+=t*n,u=gsap.utils.clamp(-70,70,u),f=t>0?1:-1}}),c(),d();let g=0;new ResizeObserver((()=>{cancelAnimationFrame(g),g=requestAnimationFrame((()=>{l(a()),y(),c(),d()}))})).observe(t)}
@@ -127,10 +115,10 @@
 					once: async ({ next }) => {
 						preselectTabFromURL(next.container);
 					    await runEntryFlow(next.container);
-					    finalizeOpenTabFromURL(next.container);
-						markTabLinksForBarba(next.container);
-  						reinitWebflowModules();
-						initDynamicPortraitColumns(next.container);
+					    finalizeTabFromURL(next.container);
+					    markTabLinksForBarba(next.container);
+					    reinitWebflowModules();
+					    initDynamicPortraitColumns(next.container);
 					}
 				},
 				{
@@ -149,7 +137,7 @@
 						await runEntryFlow(next.container, { withCoverOut: true });
 					},
 					afterEnter({ next }) {
-						finalizeOpenTabFromURL(next.container);
+						finalizeTabFromURL(next.container);
 						_unfreezeScroll();
 						markTabLinksForBarba(next.container);
 						requestAnimationFrame(() => reinitWebflowModules());
@@ -170,8 +158,9 @@
 		initReparentChildren(root);
 		markTabLinksForBarba(root);
 		initTextAnimationOne(root);
-		initOpenTabFromURL(root);
-		initLinkMappings(root);
+		preselectTabFromURL(root);
+		finalizeTabFromURL(root);
+		initTabLinking(root);
 		initSelectedWorkLoop(root);
 		initResourcesPinnedSections(root);
 		initArchiveResultsCounter(root);
