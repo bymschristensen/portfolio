@@ -22,6 +22,7 @@
 	function _freezeScroll(){ document.documentElement.style.overflow = 'hidden'; }
 	function _unfreezeScroll(){ document.documentElement.style.overflow = ''; }
 	function _scrollToTopNow() {window.scrollTo({ top: 0, left: 0, behavior: "auto" });document.documentElement.scrollTop = 0;document.body.scrollTop = 0;}
+	function whenTlDone(e){return new Promise((n=>{if(!e)return n();e.finished&&"function"==typeof e.finished.then?e.finished.then(n):e.eventCallback("onComplete",(()=>{e.eventCallback("onComplete",null),n()}))}))}
 
 // Text Animation
 	function splitAndMask(e){if(e._originalHTML||(e._originalHTML=e.innerHTML),e._split)return e._split;const t=getComputedStyle(e).whiteSpace||"normal",i=e.style.whiteSpace,l=e.style.display;e.style.whiteSpace=t,"inline"===getComputedStyle(e).display&&(e.style.display="block"),e.clientWidth;const s=new SplitText(e,{type:"lines",linesClass:"line",reduceWhiteSpace:!1});return s.lines.forEach((e=>{const i=e.getBoundingClientRect().height||e.offsetHeight||0,l=document.createElement("div");l.className="text-mask",l.style.overflow="hidden",l.style.display="block",l.style.height=i+"px",e.style.whiteSpace=t,e.style.display="block",e.parentNode.insertBefore(l,e),l.appendChild(e)})),gsap.set(s.lines,{yPercent:100,rotation:10,transformOrigin:"0 10%",willChange:"transform,opacity"}),e.style.whiteSpace=i,e.style.display=l,s}
@@ -101,8 +102,8 @@
 	function getEntryConfig(e){return entryConfigByNamespace[e.dataset.barbaNamespace]??{delayHero:!1,entryOffset:0}}
 	function runPageEntryAnimations(e){const{delayHero:t,entryOffset:a}=getEntryConfig(e),n=gsap.timeline();return"info"===e.dataset.barbaNamespace&&n.add(animateInfoEntry(e),0),e.querySelector(".section-table-of-contents")&&n.add(animateCapabilitiesEntry(e,{delayHero:t}),0),e.querySelector(".selected-item-outer")&&n.add(animateSelectedEntries(e),0),e.querySelector(".cs-hero-image")&&n.add(animateCaseStudyEntry(e),0),{tl:n,entryOffset:a}}
 	const waitForLayoutStability=()=>new Promise((t=>{requestAnimationFrame((()=>{requestAnimationFrame((()=>{setTimeout(t,30)}))}))}));
-	async function finalizeAfterEntry(i,e){await e.finished,await waitForLayoutStability(),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),ScrollTrigger.refresh(!0),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
-	async function runEntryFlow(t,{withCoverOut:i=!1}={}){t.style.visibility="",i&&await coverOut().finished,await runSafeInit(t,{preserveServicePins:!0});const{tl:n,entryOffset:a}=runPageEntryAnimations(t);n.call((()=>finalizeAfterEntry(t,n)),null,a+n.duration()),await n.finished;!(!location.hash&&!sessionStorage.getItem("__barbaTabHash"))||_scrollToTopNow()}
+	async function finalizeAfterEntry(e,i){await whenTlDone(i),await new Promise((e=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(e,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(e),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(e),"function"==typeof initServicesGallery&&initServicesGallery(e),e.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(e),ScrollTrigger.refresh(!0),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
+	async function runEntryFlow(n,{withCoverOut:t=!1}={}){if(n.style.visibility="",t){const n=coverOut();await whenTlDone(n)}await runSafeInit(n,{preserveServicePins:!0});const{tl:e,entryOffset:a}=runPageEntryAnimations(n);e.call((()=>finalizeAfterEntry(n,e)),null,a+e.duration()),await whenTlDone(e),location.hash||sessionStorage.getItem("__barbaTabHash")||_scrollToTopNow()}
 
 // Barba Init
 	function initBarba() {
@@ -110,6 +111,8 @@
   		window.__barbaInited = true;
 		barba.init({
 			debug: true,
+			timeout: 8000,
+			prefetch: false,
 			transitions: [
 			// 1) first-load / preloader
 			// {
@@ -144,14 +147,10 @@
 					name: "page-swipe",
 					leave: async ({ current }) => {
 						_freezeScroll();
-					    const tl = coverIn();
-					    if (tl?.finished && typeof tl.finished.then === "function") {
-					      await tl.finished;
-					    } else {
-					      await new Promise((resolve) => tl.eventCallback("onComplete", resolve));
-					    }
-					    destroyAllYourInits();
-					    current.container.remove();
+						const tl = coverIn();
+						await whenTlDone(tl);
+						destroyAllYourInits();
+						current.container.remove();
 					},
 					enter: async ({ next }) => {
 						resetWebflow({ next });
