@@ -21,7 +21,7 @@
 	function setActiveTab(e){document.querySelectorAll("[data-tab-link]").forEach((e=>e.classList.remove("is-active")));const c="selected"===e?"#selectedOpen":"archive"===e?"#archiveOpen":"resources"===e?"#resourcesOpen":null;c&&document.querySelector(c)?.classList.add("is-active")}
 	function applyOverscroll(e){const o="selected"===e?"none":"auto";document.documentElement.style.setProperty("overscroll-behavior",o,"important"),document.documentElement.style.setProperty("overscroll-behavior-y",o,"important"),document.body.style.setProperty("overscroll-behavior",o,"important"),document.body.style.setProperty("overscroll-behavior-y",o,"important")}
 	history.scrollRestoration="manual";const SCROLL_KEY=t=>`scroll:${t}`;function saveScroll(t=location.pathname+location.search){try{sessionStorage.setItem(SCROLL_KEY(t),`${window.scrollX},${window.scrollY}`)}catch{}}function readScroll(t=location.pathname+location.search){try{const o=sessionStorage.getItem(SCROLL_KEY(t));if(!o)return null;const[n,s]=o.split(",").map((t=>parseInt(t,10)||0));return{x:n,y:s}}catch{return null}}let __historyNav=!1;window.addEventListener("popstate",(()=>{__historyNav=!0}),{passive:!0});
-	let __navToPath=null,__lastFromPath=null,__lastToPath=null,__bothWorkNav=null;function getClickedAnchor(t){return t&&1===t.nodeType?"A"===t.tagName?t:t.closest("a[href]"):null}document.addEventListener("click",(function(t){if(t.defaultPrevented)return;if(0!==t.button)return;if(t.metaKey||t.ctrlKey||t.shiftKey||t.altKey)return;const e=getClickedAnchor(t.target);if(!e)return;const n=e.getAttribute("href")||e.href||"";if(!n)return;const a=/^https?:\/\//i.test(n)&&!n.startsWith(location.origin),o=/^(mailto:|tel:)/i.test(n),r="_blank"===e.target,i=e.hasAttribute("download"),l=/\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(n);if(!(a||o||r||i||l)){try{const t=new URL(n,location.origin);if(normalizePath(t.pathname)===normalizePath(location.pathname)&&t.hash)return void(__navToPath=null)}catch{}__navToPath=normalizePath(n)}}),!0),window.addEventListener("popstate",(()=>{__navToPath=normalizePath(location.pathname)}));
+	let __navModeFade=!1;function getClickedAnchor(t){return t&&1===t.nodeType?"A"===t.tagName?t:t.closest("a[href]"):null}document.addEventListener("pointerdown",(t=>{if(0!==t.button)return;if(t.metaKey||t.ctrlKey||t.shiftKey||t.altKey)return;const e=getClickedAnchor(t.target);if(!e)return;const a=e.getAttribute("href")||e.href||"";if(!a)return;const n=/^https?:\/\//i.test(a)&&!a.startsWith(location.origin),r=/^(mailto:|tel:)/i.test(a)||"_blank"===e.target||e.hasAttribute("download")||/\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(a);if(!n&&!r){try{const t=new URL(a,location.href);if((t.pathname.replace(/\/+$/,"")||"/")===(location.pathname.replace(/\/+$/,"")||"/")&&t.hash)return}catch{}__navModeFade="fade"===e.getAttribute("data-pagetransition")?.toLowerCase()}}),!0),window.addEventListener("popstate",(()=>{__navModeFade=!1}),{passive:!0});
 
 // Text Animation + Appear in Line
 	function splitAndMask(e){if(e._originalHTML||(e._originalHTML=e.innerHTML),e._split)return e._split;const t=getComputedStyle(e).whiteSpace||"normal",i=e.style.whiteSpace,l=e.style.display;e.style.whiteSpace=t,"inline"===getComputedStyle(e).display&&(e.style.display="block"),e.clientWidth;const s=new SplitText(e,{type:"lines",linesClass:"line",reduceWhiteSpace:!1});return s.lines.forEach(n=>{const a=n.getBoundingClientRect().height||n.offsetHeight||0,o=document.createElement("div");o.className="text-mask",o.style.overflow="hidden",o.style.display="block",o.style.height=a+"px",n.style.whiteSpace=t,n.style.display="block",n.parentNode.insertBefore(o,n),o.appendChild(n)}),gsap.set(s.lines,{yPercent:100,rotation:10,transformOrigin:"0 10%",willChange:"transform,opacity"}),e.style.whiteSpace=i,e.style.display=l,e._split=s,s}
@@ -88,9 +88,6 @@
 	async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
 	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await coverOut(),await runSafeInit(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
 	function normalizePath(e){try{return new URL(e,location.origin).pathname.replace(/\/+$/,"")||"/"}catch{return(e||"").replace(/\/+$/,"")||"/"}}
-	function isWorkPath(e){const n=normalizePath(e);return"/selected"===n||"/archive"===n||"/resources"===n||"/new-index"===n}
-	// For when we go live, change above to this: function isWorkPath(r){const e=normalizePath(r);return"/"===e||"/archive"===e||"/resources"===e}
-	function getToPath(t){if(__navToPath)return __navToPath;const e=t?.next?.url;if(e)return normalizePath(e.path||e.pathname||e.href||"");const a=getClickedAnchor(t?.trigger);return a?normalizePath(a.getAttribute("href")||a.href||""):normalizePath(location.pathname)}
 	function isPageTransition(t){const i=getClickedAnchor(t?.trigger);if(!i)return!0;const r=i.getAttribute("href")||i.href||"";if(!r)return!0;if(normalizePath(r)===normalizePath(location.pathname)&&i.hash)return!1;const e=/^https?:\/\//i.test(r)&&!r.startsWith(location.origin),n=/^(mailto:|tel:)/i.test(r)||"_blank"===i.target||i.hasAttribute("download")||/\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(r);return!(e||n)}
 
 // Barba Init
@@ -125,41 +122,19 @@
 				},{
 					name: "page-transitions",
 					custom: (data) => isPageTransition(data),
-					leave: async (data) => {
-						const { current } = data;
+					leave: async ({ current }) => {
 						saveScroll();
-						
-						const fromPath = normalizePath(current?.url?.path || location.pathname);
-						const toPath   = getToPath(data);
-						const bothWork = isWorkPath(fromPath) && isWorkPath(toPath);
-						__lastFromPath = fromPath;
-						__lastToPath   = toPath;
-						__bothWorkNav  = bothWork;
-						if (bothWork) {
-							await gsap.to(current.container, { autoAlpha: 0, duration: 0.5, ease: "power1.out" });
-						} else {
-							await coverIn();
-						}
-						
+						if (__navModeFade) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: "power1.out" }); } else { await coverIn(); }
 						destroyAllYourInits();
 						current.container.remove();
 					},
 					enter: async ({ next }) => {
 						resetWebflow({ next });
-						
-						const toPath   = __lastToPath || normalizePath(next?.url?.path || location.pathname);
-						const fromPath = __lastFromPath || normalizePath(document.referrer || "/");
-						const bothWork = (__bothWorkNav != null) ? __bothWorkNav : (isWorkPath(fromPath) && isWorkPath(toPath));
-						
 						const wasHistory = __historyNav; __historyNav = false;
 						if (wasHistory) { const pos = readScroll(); if (pos) window.scrollTo(pos.x, pos.y); }
 						else if (!location.hash) window.scrollTo(0, 0);
-						
-						await runEntryFlow(next.container, { withCoverOut: !bothWork });
-						
-						__navToPath = null;
-						__lastFromPath = __lastToPath = null;
-						__bothWorkNav  = null;
+						await runEntryFlow(next.container, { withCoverOut: !__navModeFade });
+						__navModeFade = false;
 					},
 					afterEnter: ({ next }) => {
 						requestAnimationFrame(() => reinitWebflowModules());
