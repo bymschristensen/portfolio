@@ -45,7 +45,19 @@
 		// return isSlowConnection() || isReload() || !sessionStorage.getItem("preloaderSeen");
 		return false;
 	}
-	function setActiveTab(e){document.querySelectorAll("[data-tab-link]").forEach((e=>e.classList.remove("is-active")));const c="selected"===e?"#selectedOpen":"archive"===e?"#archiveOpen":"resources"===e?"#resourcesOpen":null;c&&document.querySelector(c)?.classList.add("is-active")}
+	function setActiveTab(ns){
+	  document.querySelectorAll("[data-tab-link] a, [data-tab-link].is-active, a.is-active")
+	    .forEach(el => el.classList.remove("is-active"));
+	
+	  const id = ns === "selected"  ? "selectedOpen"
+	           : ns === "archive"   ? "archiveOpen"
+	           : ns === "resources" ? "resourcesOpen"
+	           : "";
+	
+	  // add to the actual <a> inside (if present)
+	  const link = id ? document.querySelector(`#${id} a`) || document.querySelector(`#${id}`) : null;
+	  if (link) link.classList.add("is-active");
+	}
 	function applyOverscroll(e){const o="selected"===e?"none":"auto";document.documentElement.style.setProperty("overscroll-behavior",o,"important"),document.documentElement.style.setProperty("overscroll-behavior-y",o,"important"),document.body.style.setProperty("overscroll-behavior",o,"important"),document.body.style.setProperty("overscroll-behavior-y",o,"important")}
 	history.scrollRestoration="manual";const SCROLL_KEY=t=>`scroll:${t}`;
 	function saveScroll(t = location.pathname + location.search) {
@@ -139,9 +151,8 @@
 	
 // Page Transitions
 	function coverIn(){
-	  const e = document.querySelector(".page-overlay");
-	  const t = e?.querySelector(".page-overlay-tint");
-	  if (!e) { logPT("coverIn → overlay MISSING"); return false; }
+	  const e = document.querySelector(".page-overlay"), t = e?.querySelector(".page-overlay-tint");
+		if (!e) { logPT('coverIn → overlay MISSING'); return false; }
 	  logPT("coverIn → start");
 	
 	  e.style.display = "block";
@@ -161,9 +172,8 @@
 	}
 	
 	function coverOut(){
-	  const e = document.querySelector(".page-overlay");
-	  const t = e?.querySelector(".page-overlay-tint");
-	  if (!e) { logPT("coverOut → overlay MISSING"); return false; }
+	  const e = document.querySelector(".page-overlay"), t = e?.querySelector(".page-overlay-tint");
+  		if (!e) { logPT('coverOut → overlay MISSING'); return false; }
 	  logPT("coverOut → start");
 	
 	  document.querySelectorAll(".nav-primary-wrap").forEach(w=>{
@@ -325,9 +335,6 @@
 			initArchiveFilters(root);
 		}
 		if (ns === "resources") {
-			initResourcesPinnedSections(root);
-		}
-		if (ns === "test") {
 			initResourcesPinnedSections(root);
 		}
 		
