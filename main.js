@@ -327,6 +327,9 @@
 		if (ns === "resources") {
 			initResourcesPinnedSections(root);
 		}
+		if (ns === "test") {
+			initResourcesPinnedSections(root);
+		}
 		
 		requestAnimationFrame(() => reinitWebflowModules());
 		if (destroyCursor) { destroyCursor(); destroyCursor = null; }
