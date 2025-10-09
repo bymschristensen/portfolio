@@ -98,6 +98,48 @@
 	  const attr=a.getAttribute("data-pagetransition");
 	  logPT("pointerdown",{href,attr,decidedMode:__navModeFade?"fade":"swipe",fromNS:getNS(document)})
 	}),!0);
+	// Force internal <a> to use Barba (workaround when Barba skips clicks on some pages)
+	document.addEventListener("click", (ev) => {
+	  // Only left-click without modifiers
+	  if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+	
+	  const a = ev.target && (ev.target.closest ? ev.target.closest("a[href]") : null);
+	  if (!a) return;
+	
+	  // Same checks we already log in pointerdown
+	  const href = a.getAttribute("href") || a.href || "";
+	  if (!href) return;
+	
+	  // External / special links → let browser handle
+	  const isExternal = /^https?:\/\//i.test(href) && !href.startsWith(location.origin);
+	  const isSpecial  = /^(mailto:|tel:)/i.test(href) || a.target === "_blank" || a.hasAttribute("download") ||
+	                     /\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(href);
+	  if (isExternal || isSpecial) return;
+	
+	  // Same-page hash → allow browser scroll, no transition
+	  const samePath = (() => {
+	    try {
+	      const u = new URL(href, location.href);
+	      const clean = (p) => (p.replace(/\/+$/,"") || "/");
+	      return clean(u.pathname) === clean(location.pathname);
+	    } catch(_) { return false; }
+	  })();
+	  if (samePath && a.hash) return;
+	
+	  // Decide fade vs swipe based on attribute (like our pointerdown)
+	  __navModeFade = (a.getAttribute("data-pagetransition") || "").toLowerCase() === "fade";
+	
+	  // Hand it to Barba
+	  ev.preventDefault();
+	  logPT("router-shim → barba.go()", { href, fromNS: getNS(document), mode: __navModeFade ? "fade" : "swipe" });
+	  try {
+	    barba.go(href);
+	  } catch (err) {
+	    console.error("[PT] router-shim error", err);
+	    // Fallback to hard navigate if something goes wrong
+	    location.assign(href);
+	  }
+	}, true); // use capture to run before other handlers
 	window.addEventListener("popstate",()=>{__historyNav=!0;logPT("popstate → history navigation detected")},{passive:!0});
 	window.addEventListener("popstate",()=>{__navModeFade=!1;logPT("popstate → set mode=swipe")},{passive:!0});
 
@@ -151,9 +193,10 @@
 	
 // Page Transitions
 	function coverIn(){
-	  const e = document.querySelector(".page-overlay"), t = e?.querySelector(".page-overlay-tint");
-		if (!e) { logPT('coverIn → overlay MISSING'); return false; }
-	  logPT("coverIn → start");
+	  const e = document.querySelector(".page-overlay"),
+        t = e?.querySelector(".page-overlay-tint");
+		  if (!e) { logPT('coverIn → overlay MISSING'); return false; }   // ← el → e
+		  logPT('coverIn → start');
 	
 	  e.style.display = "block";
 	  e.style.pointerEvents = "auto";
@@ -172,9 +215,10 @@
 	}
 	
 	function coverOut(){
-	  const e = document.querySelector(".page-overlay"), t = e?.querySelector(".page-overlay-tint");
-  		if (!e) { logPT('coverOut → overlay MISSING'); return false; }
-	  logPT("coverOut → start");
+	  const e = document.querySelector(".page-overlay"),
+        t = e?.querySelector(".page-overlay-tint");
+		  if (!e) { logPT('coverOut → overlay MISSING'); return false; }  // ← el → e
+		  logPT('coverOut → start');
 	
 	  document.querySelectorAll(".nav-primary-wrap").forEach(w=>{
 	    w.querySelector(".menu-wrapper")?.style && (w.querySelector(".menu-wrapper").style.display = "none");
