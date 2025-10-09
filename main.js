@@ -138,8 +138,50 @@
 	})();
 	
 // Page Transitions
-	function coverIn(){const e=document.querySelector(".page-overlay"),t=e?.querySelector(".page-overlay-tint");return e?(e.style.display="block",e.style.pointerEvents="auto",gsap.set(e,{y:"100%",clipPath:"polygon(0% 0%, 100% 20%, 100% 100%, 0% 100%)",willChange:"transform,clip-path"}),gsap.set(t,{opacity:0,willChange:"opacity"}),new Promise((o=>{gsap.timeline({defaults:{duration:1.35,ease:"power4.inOut"},onComplete:o}).to(e,{y:"0%"},0).to(e,{clipPath:"polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)"},0).to(t,{opacity:1,ease:"none"},.6)}))):Promise.resolve()}
-	function coverOut(){const e=document.querySelector(".page-overlay");if(!e)return Promise.resolve();const t=e.querySelector(".page-overlay-tint");return document.querySelectorAll(".nav-primary-wrap").forEach((e=>{e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow="",new Promise((o=>{gsap.timeline({onStart(){e.style.pointerEvents="auto"},onComplete(){e.style.display="none",e.style.pointerEvents="none",o()}}).to(e,{duration:.6,ease:"power4.in",y:"-100%"},0).to(t,{duration:.6,ease:"none",opacity:1},0)}))}
+	function coverIn(){
+	  const e = document.querySelector(".page-overlay");
+	  const t = e?.querySelector(".page-overlay-tint");
+	  if (!e) { logPT("coverIn → overlay MISSING"); return false; }
+	  logPT("coverIn → start");
+	
+	  e.style.display = "block";
+	  e.style.pointerEvents = "auto";
+	  gsap.set(e, { y:"100%", clipPath:"polygon(0% 0%,100% 20%,100% 100%,0% 100%)", willChange:"transform,clip-path" });
+	  gsap.set(t, { opacity:0, willChange:"opacity" });
+	
+	  return new Promise((resolve)=>{
+	    gsap.timeline({
+	      defaults:{ duration:1.35, ease:"power4.inOut" },
+	      onComplete: () => resolve(true)
+	    })
+	    .to(e, { y:"0%" }, 0)
+	    .to(e, { clipPath:"polygon(0% 0%,100% 0%,100% 100%,0% 100%)" }, 0)
+	    .to(t, { opacity:1, ease:"none" }, .6);
+	  });
+	}
+	
+	function coverOut(){
+	  const e = document.querySelector(".page-overlay");
+	  const t = e?.querySelector(".page-overlay-tint");
+	  if (!e) { logPT("coverOut → overlay MISSING"); return false; }
+	  logPT("coverOut → start");
+	
+	  document.querySelectorAll(".nav-primary-wrap").forEach(w=>{
+	    w.querySelector(".menu-wrapper")?.style && (w.querySelector(".menu-wrapper").style.display = "none");
+	    w.querySelector(".menu-container")?.style && (w.querySelector(".menu-container").style.display = "none");
+	    w.querySelector(".filters-container")?.style && (w.querySelector(".filters-container").style.display = "none");
+	  });
+	  document.body.style.overflow = "";
+	
+	  return new Promise((resolve)=>{
+	    gsap.timeline({
+	      onStart(){ e.style.pointerEvents = "auto"; },
+	      onComplete(){ e.style.display = "none"; e.style.pointerEvents = "none"; resolve(true); }
+	    })
+	    .to(e, { duration:.6, ease:"power4.in", y:"-100%" }, 0)
+	    .to(t, { duration:.6, ease:"none", opacity:1 }, 0);
+	  });
+	}
 
 // Page Entry Animations
 	function animateSelectedEntries(e=document){const t=e.querySelector(".selected-container"),r=t?.querySelector(".selected-content"),o=Array.from(e.querySelectorAll(".selected-item-outer")),l=gsap.timeline();if(!t||!r||!o.length)return l;o.forEach((e=>{if(e.__entryDone)return;const t=e.querySelector(".selected-visual"),r=e.querySelector(".selected-item-header .headline-m"),o=e.querySelector(".selected-item-details"),l=e.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:0,transformOrigin:"bottom center",opacity:0}),r&&gsap.set(r,{opacity:0}),o&&gsap.set(o,{opacity:0,height:0}),l.length&&gsap.set(l,{opacity:0,y:20,filter:"blur(10px)"})}));return(e=>{const o=()=>{requestAnimationFrame((()=>requestAnimationFrame(e)))};if(t.hasAttribute("data-loop-ready"))return o();const l=()=>{r.removeEventListener("selected:loop-ready",l,!0),o()};r.addEventListener("selected:loop-ready",l,!0),setTimeout((()=>{r.removeEventListener("selected:loop-ready",l,!0),o()}),600)})((()=>{const e=window.innerWidth||document.documentElement.clientWidth,t=window.innerHeight||document.documentElement.clientHeight,r=o.map((r=>{const o=r.getBoundingClientRect();return{o:r,r:o,area:Math.max(0,Math.min(o.right,e)-Math.max(o.left,0))*Math.max(0,Math.min(o.bottom,t)-Math.max(o.top,0)),center:.5*(o.left+o.right)}}));let a=r.filter((e=>e.area>1)).sort(((e,t)=>e.r.left-t.r.left));if(!a.length){const t=.5*e;a=r.slice().sort(((e,r)=>Math.abs(e.center-t)-Math.abs(r.center-t))).slice(0,2).sort(((e,t)=>e.r.left-t.r.left))}const n=new Set(a.map((e=>e.o)));r.forEach((e=>{if(e.o.__entryDone||n.has(e.o))return;const t=e.o.querySelector(".selected-visual"),r=e.o.querySelector(".selected-item-header .headline-m"),o=e.o.querySelector(".selected-item-details"),l=e.o.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:1,opacity:1}),r&&gsap.set(r,{opacity:1}),o&&gsap.set(o,{opacity:1,height:"auto"}),l.length&&gsap.set(l,{opacity:1,y:0,filter:"blur(0px)"}),e.o.__entryDone=!0}));a.forEach(((e,t)=>{const r=e.o;if(r.__entryDone)return;const o=r.querySelector(".selected-visual"),a=r.querySelector(".selected-item-header .headline-m"),n=r.querySelector(".selected-item-details"),i=r.querySelectorAll(".selected-item-details .body-s"),s=.15*t;o&&l.set(o,{opacity:1},s).to(o,{scaleY:1,duration:.8,ease:"power2.out"},s),a&&l.set(a,{opacity:1},s+.2).call((()=>{if(a.__splitRun)return;a.__splitRun=!0;const e=splitAndMask(a);gsap.delayedCall(.15,(()=>{animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,a)))}))}),null,s+.2),n&&l.to(n,{opacity:1,height:"auto",duration:.4,ease:"power2.out"},s+.6),i.length&&l.to(i,{opacity:1,y:0,filter:"blur(0px)",duration:.4,ease:"power2.out",stagger:.15},s+.6),r.__entryDone=!0}))})),l}
@@ -180,8 +222,16 @@
 	function initBarba() {
 		if (window.__barbaInited) return;
   		window.__barbaInited = true;
+
+		(function(){
+		    const el = document.querySelector('.page-overlay');
+		    console.log('[PT] overlay', el ? 'present' : 'MISSING');
+		    if (el) console.log('[PT] overlay z-index =', getComputedStyle(el).zIndex);
+	  	})();
+		
 		barba.init({
 			debug: DEBUG,
+			timeout: 8000,
 			transitions: [
 			// 1) first-load / preloader
 			// {
@@ -210,16 +260,17 @@
 					custom: (data) => isPageTransition(data),
 					leave: async ({ current, trigger }) => {
 						saveScroll();
-						const href = hrefFrom(trigger);
 						const mode = __navModeFade ? "fade" : "swipe";
-						logPT("LEAVE start", { fromNS: getNS(current.container), href, mode });
+						logPT("LEAVE start", { fromNS: getNS(current.container), href: hrefFrom(trigger), mode });
 						
 						if (__navModeFade) {
-						  await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: "power1.out" });
-						  logPT("LEAVE anim", "fade → content alpha 0");
+							await gsap.to(current.container,{autoAlpha:0,duration:.45,ease:"power1.out"});
 						} else {
-						  await coverIn();
-						  logPT("LEAVE anim", "swipe → coverIn()");
+							const ok = await coverIn();
+						if (!ok) {
+							await gsap.to(current.container,{autoAlpha:0,duration:.45,ease:"power1.out"});
+								logPT("LEAVE anim","swipe requested but overlay missing → fallback fade");
+							}
 						}
 						
 						destroyAllYourInits();
@@ -227,29 +278,24 @@
 						logPT("LEAVE done");
 					},
 					enter: async ({ next, trigger }) => {
-						const href = hrefFrom(trigger);
 						resetWebflow({ next });
 						
 						const wasHistory = __historyNav; __historyNav = false;
-						logPT("ENTER start", { toNS: getNS(next.container), href, wasHistory });
-						
 						if (wasHistory) {
-						  const pos = readScroll();
-						  if (pos) window.scrollTo(pos.x, pos.y);
+							const pos = readScroll(); if (pos) window.scrollTo(pos.x,pos.y);
 						} else if (!location.hash) {
-						  window.scrollTo(0, 0);
+							window.scrollTo(0,0);
 						}
 						
-						await runEntryFlow(next.container, { withCoverOut: !__navModeFade });
-						logPT("ENTER anim finished", { usedCoverOut: !__navModeFade });
-						
-						__navModeFade = false; // always reset
+						const usedCoverOut = !__navModeFade && await coverOut();
+						await runEntryFlow(next.container, { withCoverOut:false });
+						logPT("ENTER anim finished", { usedCoverOut });
+						__navModeFade = false;
 					},
 					afterEnter: ({ next }) => {
 						logPT("afterEnter", { ns: getNS(next.container) });
 						requestAnimationFrame(() => reinitWebflowModules());
 						next.container.querySelectorAll("video[autoplay]").forEach(v => { v.muted = true; v.play().catch(()=>{}) });
-						setTimeout(() => { initDynamicPortraitColumns(next.container); ScrollTrigger.refresh(true); }, 30);
 					}
 				}
 			]
