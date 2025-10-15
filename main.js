@@ -160,14 +160,11 @@ function logBarbaSanity() {
   }
 }
 
-// Instrument clicks & navigation + which transition is used
 function installDebugProbes() {
-  // 1) Log when prevent() blocks a click (wrap your prevent)
-  if (!window.barba || !barba.options) return;
-
-  if (!barba.__preventWrapped) {
-    const originalPrevent = barba.options.prevent || (() => false);
-    const wrappedPrevent = (args) => {
+  // 1) Wrap prevent() ONLY if it exists
+  if (window.barba && !barba.__preventWrapped && barba.options && typeof barba.options.prevent === 'function') {
+    const originalPrevent = barba.options.prevent;
+    barba.options.prevent = (args) => {
       const blocked = originalPrevent(args);
       if (blocked) {
         const a = args.el && (args.el.tagName === 'A' ? args.el : args.el.closest?.('a'));
@@ -179,11 +176,10 @@ function installDebugProbes() {
       }
       return blocked;
     };
-    barba.options.prevent = wrappedPrevent;
     barba.__preventWrapped = true;
   }
 
-  // 2) Log every anchor click (capture), including data-barba-prevent ancestry
+  // 2) Link probe (idempotent)
   if (!window.__linkProbeInstalled) {
     document.addEventListener('click', (ev) => {
       const a = ev.target && (ev.target.tagName === 'A' ? ev.target : ev.target.closest?.('a'));
@@ -200,8 +196,7 @@ function installDebugProbes() {
     window.__linkProbeInstalled = true;
   }
 
-  // 3) Log chosen transition: add a small log at the start of each transition
-  //    (Call these inside your transition handlers.)
+  // 3) Transition logger (idempotent)
   if (!window.__logTransitionChoice) {
     window.__logTransitionChoice = (name, data) => {
       const from = data?.current?.container?.dataset?.barbaNamespace || '(none)';
@@ -210,8 +205,8 @@ function installDebugProbes() {
     };
   }
 
-  // 4) Barba hooks
-  if (!window.__barbaHooksInstalled) {
+  // 4) Barba hooks (only if hooks exist)
+  if (window.barba && barba.hooks && !window.__barbaHooksInstalled) {
     barba.hooks.before(({ current, next }) => {
       const from = current?.container?.dataset?.barbaNamespace || '(none)';
       const to   = next?.container?.dataset?.barbaNamespace || '(none)';
@@ -219,16 +214,14 @@ function installDebugProbes() {
       console.log('from → to:', from, '→', to);
       console.groupEnd();
     });
-    barba.hooks.after(() => {
-      // Re-run sanity after each navigation
-      setTimeout(logBarbaSanity, 0);
-    });
+    barba.hooks.after(() => setTimeout(logBarbaSanity, 0));
     window.__barbaHooksInstalled = true;
   }
 }
 
 // Barba Init
 	function initBarba() {
+		logBarbaSanity();
 		if (window.__barbaInited) return;
   		window.__barbaInited = true;
 		
@@ -243,8 +236,8 @@ function installDebugProbes() {
 					const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
 					if (samePath && url.hash) return true;
 				} catch(_) {}
-					const blocker = a.closest('[data-barba-prevent]');
-					return blocker ? blocker.getAttribute('data-barba-prevent') === 'true' : false;
+				const blocker = a.closest('[data-barba-prevent]');
+				return blocker ? blocker.getAttribute('data-barba-prevent') === 'true' : false;
 			},
 			transitions: [
 			// 1) first-load / preloader
