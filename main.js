@@ -114,25 +114,138 @@
 	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await coverOut(),await runSafeInit(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
 	function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,l=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),l&&l.progress()>0&&l.timeScale(2).reverse();const n=e.querySelector(".menu-wrapper"),o=e.querySelector(".menu-container"),t=e.querySelector(".filters-container");n?.style&&(n.style.display="none"),o?.style&&(o.style.display="none"),t?.style&&(t.style.display="none")})),document.body.style.overflow=""}
 
+// ===== Debug helpers =====
+function logBarbaSanity() {
+  try {
+    const ns = document.querySelector('[data-barba="container"]')?.getAttribute('data-barba-namespace') || '(none)';
+    const overlay = !!document.querySelector('.page-overlay');
+    const work = ['selected','archive','resources'];
+
+    // Log overlay + current namespace
+    console.group('%c[Sanity] Page state', 'color:#0aa; font-weight:bold');
+    console.log('Namespace:', ns);
+    console.log('Overlay present:', overlay);
+
+    // Log all links that go to each namespace + whether they’re prevented
+    const targets = [
+      ['/new-index',      'selected'],
+      ['/archive',        'archive'],
+      ['/resources',      'resources'],
+      ['/capabilities',   'capabilities'],
+      ['/info',           'info'],
+    ];
+
+    targets.forEach(([path, label]) => {
+      const links = [...document.querySelectorAll(`a[href*="${path}"]`)];
+      if (!links.length) return;
+      console.groupCollapsed(`Links → ${label} (${links.length})`);
+      links.forEach((a, i) => {
+        const preventNode = a.closest('[data-barba-prevent]');
+        const preventVal  = preventNode?.getAttribute('data-barba-prevent');
+        console.log(`#${i+1}`, {
+          text: (a.textContent||'').trim().slice(0,60),
+          href: a.getAttribute('href') || a.href,
+          hasPreventAncestor: !!preventNode,
+          preventValue: preventVal ?? null
+        });
+      });
+      console.groupEnd();
+    });
+
+    // Quick rule preview: would work→work be fade?
+    console.log('Work set:', work.join(', '), ' | work→work should be FADE, others SWIPE');
+    console.groupEnd();
+  } catch (err) {
+    console.warn('[Sanity] Failed:', err);
+  }
+}
+
+// Instrument clicks & navigation + which transition is used
+function installDebugProbes() {
+  // 1) Log when prevent() blocks a click (wrap your prevent)
+  if (!barba.__preventWrapped) {
+    const originalPrevent = (barba.options && barba.options.prevent) || (() => false);
+    const wrappedPrevent = (args) => {
+      const blocked = originalPrevent(args);
+      if (blocked) {
+        const a = args.el && (args.el.tagName === 'A' ? args.el : args.el.closest?.('a'));
+        console.warn('[barba][prevent] blocked', {
+          text: a ? (a.textContent||'').trim().slice(0,80) : null,
+          href: a ? (a.getAttribute('href') || a.href) : null,
+          el: a
+        });
+      }
+      return blocked;
+    };
+    barba.options.prevent = wrappedPrevent; // re-assign
+    barba.__preventWrapped = true;
+  }
+
+  // 2) Log every anchor click (capture), including data-barba-prevent ancestry
+  if (!window.__linkProbeInstalled) {
+    document.addEventListener('click', (ev) => {
+      const a = ev.target && (ev.target.tagName === 'A' ? ev.target : ev.target.closest?.('a'));
+      if (!a) return;
+      const preventNode = a.closest('[data-barba-prevent]');
+      const preventVal  = preventNode?.getAttribute('data-barba-prevent');
+      console.log('[link]', {
+        href: a.getAttribute('href') || a.href,
+        text: (a.textContent||'').trim().slice(0,80),
+        hasPreventAncestor: !!preventNode,
+        preventValue: preventVal ?? null
+      });
+    }, true);
+    window.__linkProbeInstalled = true;
+  }
+
+  // 3) Log chosen transition: add a small log at the start of each transition
+  //    (Call these inside your transition handlers.)
+  if (!window.__logTransitionChoice) {
+    window.__logTransitionChoice = (name, data) => {
+      const from = data?.current?.container?.dataset?.barbaNamespace || '(none)';
+      const to   = data?.next?.container?.dataset?.barbaNamespace || '(none)';
+      console.info(`[transition] ${name}`, { from, to });
+    };
+  }
+
+  // 4) Barba hooks
+  if (!window.__barbaHooksInstalled) {
+    barba.hooks.before(({ current, next }) => {
+      const from = current?.container?.dataset?.barbaNamespace || '(none)';
+      const to   = next?.container?.dataset?.barbaNamespace || '(none)';
+      console.group('%c[barba] navigating', 'color:#6a0dad; font-weight:bold');
+      console.log('from → to:', from, '→', to);
+      console.groupEnd();
+    });
+    barba.hooks.after(() => {
+      // Re-run sanity after each navigation
+      setTimeout(logBarbaSanity, 0);
+    });
+    window.__barbaHooksInstalled = true;
+  }
+}
+
 // Barba Init
 	function initBarba() {
+		installDebugProbes();
+		logBarbaSanity();
 		if (window.__barbaInited) return;
   		window.__barbaInited = true;
 		
 		barba.init({
 			debug: DEBUG,
 			timeout: 8000,
-			prevent: ({ el, event }) => {
-			    const a = el && el.tagName === 'A' ? el : el?.closest?.('a');
-			    if (a) {
-			      	try {
-			        	const url = new URL(a.getAttribute('href') || a.href, location.href);
-			        	const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
-			        	if (samePath && url.hash) return true;
-			      	} catch(_) {}
-			    }
-			    return !!(el && el.closest('[data-barba-prevent]'));
-		  	},
+		  	prevent: ({ el }) => {
+				const a = el && (el.tagName === 'A' ? el : el.closest('a'));
+				if (!a) return false;
+				try {
+					const url = new URL(a.getAttribute('href') || a.href, location.href);
+					const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
+					if (samePath && url.hash) return true;
+				} catch(_) {}
+					const blocker = a.closest('[data-barba-prevent]');
+					return blocker ? blocker.getAttribute('data-barba-prevent') === 'true' : false;
+			},
 			transitions: [
 			// 1) first-load / preloader
 			// {
@@ -157,46 +270,18 @@
 			        	if (!location.hash) window.scrollTo(0, 0);
 			      	}
 				},{
-					name: 'fade',
-					from: { namespace: ['selected','archive','resources'] },
-					to: { namespace: ['selected','archive','resources'] },
-					async leave({ current }) {
-						saveScroll();
-						await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-						destroyAllYourInits();
-						current.container.remove();
-					},
-					async enter({ next }) {
-						resetWebflow({ next });
-						const entries = performance.getEntriesByType('navigation');
-						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
-						if (isHistory) {
-							const pos = readScroll();
-							if (pos) window.scrollTo(pos.x, pos.y);
-						} else if (!location.hash) {
-							window.scrollTo(0, 0);
-						}
-						await runEntryFlow(next.container, { withCoverOut: false });
-					},
-					afterEnter({ next }) {
-						requestAnimationFrame(() => reinitWebflowModules());
-						requestAnimationFrame(() => {
-							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-							if (h1) {
-								h1.setAttribute('tabindex', '-1');
-								h1.focus({ preventScroll: true });
-								setTimeout(() => h1.removeAttribute('tabindex'), 0);
-							}
-						});
-						next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
-					}
-				},{
 					name: 'swipe',
+					custom({ from, to }) {
+						const work = ['selected','archive','resources'];
+						const isWorkToWork = work.includes(from?.namespace) && work.includes(to?.namespace);
+						return !isWorkToWork; // swipe otherwise (e.g., Resources -> Capabilities)
+					},
 					async leave({ current }) {
+						window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
 						document.body.style.overflow = "";
 						saveScroll();
 						const ok = await coverIn();
-						if (!ok) await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+						if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
 						destroyAllYourInits();
 						current.container.remove();
 					},
@@ -213,14 +298,42 @@
 						await runEntryFlow(next.container, { withCoverOut: false });
 					},
 					afterEnter({ next }) {
+						forceCloseMenus();
 						requestAnimationFrame(() => reinitWebflowModules());
 						requestAnimationFrame(() => {
 							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-							if (h1) {
-								h1.setAttribute('tabindex', '-1');
-								h1.focus({ preventScroll: true });
-								setTimeout(() => h1.removeAttribute('tabindex'), 0);
-							}
+							if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
+						});
+						next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
+					}
+				},{
+					name: 'fade',
+					from: { namespace: ['selected','archive','resources'] },
+					to: { namespace: ['selected','archive','resources'] },
+					async leave({ current }) {
+						window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
+						saveScroll();
+						await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+						destroyAllYourInits();
+						current.container.remove();
+					},
+					async enter({ next }) {
+						resetWebflow({ next });
+						const entries = performance.getEntriesByType('navigation');
+						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
+						if (isHistory) {
+						const pos = readScroll();
+							if (pos) window.scrollTo(pos.x, pos.y);
+						} else if (!location.hash) {
+							window.scrollTo(0, 0);
+						}
+						await runEntryFlow(next.container, { withCoverOut: false });
+					},
+					afterEnter({ next }) {
+						requestAnimationFrame(() => reinitWebflowModules());
+						requestAnimationFrame(() => {
+							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+							if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
 						});
 						next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
 					}
