@@ -190,39 +190,77 @@
 	  catch { return (href || '').replace(/\/+$/,'') || '/'; }
 	}
 	
-	function getClickedAnchor(trigger) {
-	  if (!trigger || trigger.nodeType !== 1) return null;
-	  return trigger.tagName === 'A' ? trigger : (trigger.closest ? trigger.closest('a[href]') : null);
+	function getClickedAnchor(triggerOrEventTarget) {
+	  const path = (typeof Event !== 'undefined' && triggerOrEventTarget && triggerOrEventTarget.composedPath)
+	    ? triggerOrEventTarget.composedPath()
+	    : null;
+	
+	  if (path && path.length) {
+	    for (const n of path) {
+	      if (n && n.nodeType === 1 && n.tagName === 'A' && n.hasAttribute('href')) return n;
+	    }
+	  }
+	
+	  let n = triggerOrEventTarget;
+	  while (n && n.nodeType === 1) {
+	    if (n.tagName === 'A' && n.hasAttribute('href')) return n;
+	    n = n.parentNode || (n.host && n.host instanceof Node ? n.host : null);
+	  }
+	  return null;
 	}
 	
-	function isBarbaNavigable(trigger) {
-	  const a = getClickedAnchor(trigger);
-	  if (!a) return true;
+	function isBarbaNavigable(triggerOrEventTarget) {
+	  const a = getClickedAnchor(triggerOrEventTarget);
+	  if (!a) return false;
 	
-	  const href = a.getAttribute('href') || a.href || '';
-	  if (!href) return false;
+	  const raw = a.getAttribute('href') || a.href || '';
+	  if (!raw) return false;
 	
-	  if (normalizePath(href) === normalizePath(location.pathname) && a.hash) return false;
-	
-	  let url;
-	  try { url = new URL(href, location.href); } catch { return false; }
-	
-	  if (!/^https?:$/.test(url.protocol)) return false;
-	  if (url.origin !== location.origin) return false;
-	  if (
-	    a.target === '_blank' ||
-	    a.hasAttribute('download') ||
-	    /\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(url.pathname)
-	  ) return false;
+	  // Same-page hash → let browser handle
+	  try {
+	    const url = new URL(raw, location.href);
+	    const samePath = (url.pathname.replace(/\/+$/,'') || '/') === (location.pathname.replace(/\/+$/,'') || '/');
+	    if (samePath && url.hash) return false;
+	    if (!/^https?:$/.test(url.protocol)) return false;
+	    if (url.origin !== location.origin) return false;
+	    if (a.target === '_blank' || a.hasAttribute('download')) return false;
+	    if (/\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(url.pathname)) return false;
+	  } catch { return false; }
 	
 	  return true;
 	}
 	
 	/** Decide the mode (default swipe, only fade when data-pagetransition="fade") */
-	function getTransitionMode(trigger) {
-	  const a = getClickedAnchor(trigger);
-	  const val = a ? (a.getAttribute('data-pagetransition') || '').toLowerCase() : '';
-	  return val === 'fade' ? 'fade' : 'swipe';
+	function getTransitionMode(triggerOrEventTarget) {
+	  // 3a) try to read data-pagetransition from any element in the composed path
+	  const path = (triggerOrEventTarget && triggerOrEventTarget.composedPath)
+	    ? triggerOrEventTarget.composedPath() : [];
+	  for (const n of path) {
+	    if (n && n.nodeType === 1 && n.getAttribute) {
+	      const v = (n.getAttribute('data-pagetransition') || '').trim().toLowerCase();
+	      if (v === 'fade') return 'fade';
+	      if (v === 'swipe') return 'swipe';
+	    }
+	  }
+	
+	  // 3b) fall back to the anchor itself
+	  const a = getClickedAnchor(triggerOrEventTarget);
+	  if (a) {
+	    const v = (a.getAttribute('data-pagetransition') || '').trim().toLowerCase();
+	    if (v === 'fade') return 'fade';
+	    if (v === 'swipe') return 'swipe';
+	  }
+	
+	  // 3c) hard rule: the entire “work universe” must be FADE
+	  try {
+	    const href = (a ? (a.getAttribute('href') || a.href || '') : '');
+	    const url = new URL(href, location.href);
+	    const p = url.pathname.replace(/\/+$/,'');
+	    if (p === '/new-index' || p === '/archive' || p === '/resources') return 'fade';
+	  } catch {}
+	
+	  // default
+	  return 'swipe';
 	}
 
 	if (window.DEBUG && !window.__ptClickDebugInstalled) {
@@ -351,28 +389,26 @@ if (!window.__ptCaptureGuardInstalled) {
   window.__ptCaptureGuardInstalled = true;
 
   document.addEventListener('click', function (e) {
-    // only main-button, no modifiers (let users open in new tab, etc.)
+    // Only main button, no modifiers (preserve open-in-new-tab)
     if (e.defaultPrevented) return;
     if (e.button !== 0) return;
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
-    const a = e.target && e.target.closest && e.target.closest('a[href]');
+    const a = getClickedAnchor(e);
     if (!a) return;
 
-    // Use your same allow/deny rules for Barba navigation
-    if (!isBarbaNavigable(a)) return;
+    if (!isBarbaNavigable(e)) return; // let browser handle external/hash/download
 
     e.preventDefault();
     e.stopImmediatePropagation();
 
     const href = a.getAttribute('href') || a.href || '';
-    const mode = getTransitionMode(a);
+    const mode = getTransitionMode(e); // read from composedPath + hard rules
     logPT('capture-guard → barba.go', { href, mode, ns: getNS(document) });
 
     try {
-      // ⬅️ pass the trigger so Barba forwards it to leave/enter hooks
-      barba.go(href, { trigger: a, e });
-    } catch (err) {
+      barba.go(href, { trigger: a, e }); // leave/enter will receive the correct trigger
+    } catch {
       // ultra-fallback
       location.assign(href);
     }
@@ -493,8 +529,20 @@ if (!window.__ptCaptureGuardInstalled) {
 		if (window.matchMedia('(pointer:fine)').matches) {
 			destroyCursor = initCustomCursor(root);
 		}
+
+		enforceWorkUniverseFade(root);
 	}
 
+function enforceWorkUniverseFade(root = document) {
+  const WORK = ['/new-index', '/archive', '/resources'];
+  root.querySelectorAll('a[href]').forEach(a => {
+    try {
+      const p = new URL(a.getAttribute('href') || a.href, location.href)
+        .pathname.replace(/\/+$/,'');
+      if (WORK.includes(p)) a.setAttribute('data-pagetransition', 'fade');
+    } catch {}
+  });
+}
 if(typeof initBarba==="function")window.initBarba=initBarba;
 if(typeof initAllYourInits==="function")window.initAllYourInits=initAllYourInits;
 (function(){function boot(){if(window.initBarba)window.initBarba()}if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot,{once:true})})();
