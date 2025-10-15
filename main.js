@@ -84,12 +84,13 @@
 				ev.preventDefault();
 				ev.stopPropagation();
 				ev.stopImmediatePropagation();
+				console.info('[intercept→barba]', hit.url.href, 'locks:', [...state.locks]);
 				if (window.barba?.go) barba.go(hit.url.href);
 				else location.href = hit.url.href;
 			};
 	
-		    document.addEventListener('pointerdown', state.clickHandler, { capture: true });
-		    document.addEventListener('click', state.clickHandler, { capture: true });
+		    window.addEventListener('pointerdown', state.clickHandler, { capture: true });
+		    window.addEventListener('click', state.clickHandler, { capture: true });
 		    state.installed = true;
 		    dlog('link interceptor installed');
 	  	}
