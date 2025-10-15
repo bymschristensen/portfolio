@@ -113,6 +113,7 @@
 	async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
 	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await coverOut(),await runSafeInit(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
 	function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,l=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),l&&l.progress()>0&&l.timeScale(2).reverse();const n=e.querySelector(".menu-wrapper"),o=e.querySelector(".menu-container"),t=e.querySelector(".filters-container");n?.style&&(n.style.display="none"),o?.style&&(o.style.display="none"),t?.style&&(t.style.display="none")})),document.body.style.overflow=""}
+	function ensureBarbaClickRouting(){if(window.__globalRouterInstalled)return;window.__globalRouterInstalled=!0;document.addEventListener("click",(t=>{const e=t.target&&("A"===t.target.tagName?t.target:t.target.closest?.("a"));if(!e)return;if(e.closest('[data-router-ignore="true"], .w-lightbox'))return;if("external"===e.getAttribute("rel"))return;if(e.closest('[data-barba-prevent="true"]'))return;const r=e.getAttribute("href")||e.href||"";if(r&&!(t=>t.defaultPrevented||t.metaKey||t.ctrlKey||t.shiftKey||t.altKey||0!==t.button)(t)&&!e.hasAttribute("download")&&"_blank"!==e.target&&(t=>{try{return new URL(t,location.href).origin===location.origin}catch{return!1}})(r)){try{const t=new URL(r,location.href);if(t.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"")&&t.hash)return}catch{}t.preventDefault(),t.stopPropagation(),t.stopImmediatePropagation(),window.barba?.go?barba.go(r):location.href=r}}),!0)}
 
 // ===== Debug helpers =====
 function logBarbaSanity() {
@@ -219,6 +220,8 @@ function installDebugProbes() {
   }
 }
 
+	!function(){function n(){ensureBarbaClickRouting(),window.initBarba&&window.initBarba()}"loading"!==document.readyState?n():document.addEventListener("DOMContentLoaded",n,{once:!0})}();
+
 // Barba Init
 	function initBarba() {
 		logBarbaSanity();
@@ -264,10 +267,10 @@ function installDebugProbes() {
 			      	}
 				},{
 					name: 'swipe',
-					custom({ from, to }) {
+					custom({ current, next }) {
 						const work = ['selected','archive','resources'];
-						const isWorkToWork = work.includes(from?.namespace) && work.includes(to?.namespace);
-						return !isWorkToWork; // swipe otherwise (e.g., Resources -> Capabilities)
+						const isWorkToWork = work.includes(current?.namespace) && work.includes(next?.namespace);
+						return !isWorkToWork;
 					},
 					async leave({ current }) {
 						window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
@@ -372,4 +375,3 @@ function installDebugProbes() {
 
 if(typeof initBarba==="function")window.initBarba=initBarba;
 if(typeof initAllYourInits==="function")window.initAllYourInits=initAllYourInits;
-(function(){function boot(){if(window.initBarba)window.initBarba()}if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot,{once:true})})();
