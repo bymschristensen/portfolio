@@ -163,8 +163,10 @@ function logBarbaSanity() {
 // Instrument clicks & navigation + which transition is used
 function installDebugProbes() {
   // 1) Log when prevent() blocks a click (wrap your prevent)
+  if (!window.barba || !barba.options) return;
+
   if (!barba.__preventWrapped) {
-    const originalPrevent = (barba.options && barba.options.prevent) || (() => false);
+    const originalPrevent = barba.options.prevent || (() => false);
     const wrappedPrevent = (args) => {
       const blocked = originalPrevent(args);
       if (blocked) {
@@ -177,7 +179,7 @@ function installDebugProbes() {
       }
       return blocked;
     };
-    barba.options.prevent = wrappedPrevent; // re-assign
+    barba.options.prevent = wrappedPrevent;
     barba.__preventWrapped = true;
   }
 
