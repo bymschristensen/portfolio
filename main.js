@@ -220,11 +220,9 @@
 	
 	/** Decide the mode (default swipe, only fade when data-pagetransition="fade") */
 	function getTransitionMode(trigger) {
-		  const a = getClickedAnchor(trigger);
-		  if (!a) return 'swipe';
-		  const attr = a.getAttribute && a.getAttribute('data-pagetransition');
-		  const val  = (attr ? String(attr) : '').trim().toLowerCase();
-		  return val === 'fade' ? 'fade' : 'swipe';
+	  const a = getClickedAnchor(trigger);
+	  const val = a ? (a.getAttribute('data-pagetransition') || '').toLowerCase() : '';
+	  return val === 'fade' ? 'fade' : 'swipe';
 	}
 
 	if (window.DEBUG && !window.__ptClickDebugInstalled) {
@@ -352,22 +350,33 @@ if (DEBUG && !window.__ptSnifferInstalled) {
 if (!window.__ptCaptureGuardInstalled) {
   window.__ptCaptureGuardInstalled = true;
 
-  document.addEventListener('click', function(e){
+  document.addEventListener('click', function (e) {
+    // only main-button, no modifiers (let users open in new tab, etc.)
+    if (e.defaultPrevented) return;
+    if (e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
     const a = e.target && e.target.closest && e.target.closest('a[href]');
     if (!a) return;
 
-    // Use your existing helpers so we match your Barba rules exactly
+    // Use your same allow/deny rules for Barba navigation
     if (!isBarbaNavigable(a)) return;
 
-    // Take control BEFORE IX2 / other handlers can navigate
     e.preventDefault();
     e.stopImmediatePropagation();
 
     const href = a.getAttribute('href') || a.href || '';
-    const mode = getTransitionMode(a); // (we keep your mode logic; logging only)
+    const mode = getTransitionMode(a);
     logPT('capture-guard → barba.go', { href, mode, ns: getNS(document) });
-    try { barba.go(href); } catch (err) { location.assign(href); } // ultra-fallback
-  }, true); // ← capture
+
+    try {
+      // ⬅️ pass the trigger so Barba forwards it to leave/enter hooks
+      barba.go(href, { trigger: a, e });
+    } catch (err) {
+      // ultra-fallback
+      location.assign(href);
+    }
+  }, true); // capture
 }
 
 // Barba Init
@@ -409,53 +418,39 @@ if (!window.__ptCaptureGuardInstalled) {
 				    }
 				},{
 					name: 'page-transitions',
-			      	custom: ({ trigger }) => {
-						try { return isBarbaNavigable(trigger); }
-						catch (_) { return false; }
+			      	custom: ({ trigger }) => isBarbaNavigable(trigger),
+					leave: async ({ current, trigger }) => {
+					  saveScroll();
+					  const mode = getTransitionMode(trigger);  // now always safe
+					  logPT('LEAVE start', { fromNS: getNS(current.container), href: hrefFrom(trigger), mode });
+					
+					  if (mode === 'fade') {
+					    await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+					  } else {
+					    const ok = await coverIn();
+					    if (!ok) await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+					  }
+					
+					  destroyAllYourInits();
+					  current.container.remove();
 					},
-			    	leave: async ({ current, trigger }) => {
-			        	saveScroll();
-			        	const mode = (() => { try { return getTransitionMode(trigger); } catch { return 'swipe'; } })();
-			
-			        	logPT('LEAVE start', {
-			          		fromNS: getNS(current.container),
-			          		href: hrefFrom(trigger),
-			          		mode
-			        	});
-			
-			        	if (mode === 'fade') {
-			          		await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-			        	} else {
-			          		const ok = await coverIn();
-			          		if (!ok) {
-			            		await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-			            		logPT('LEAVE anim', 'swipe requested but overlay missing → fallback fade');
-			          		}
-			        	}
-			
-			        	destroyAllYourInits();
-			        	current.container.remove();
-			        	logPT('LEAVE done');
-			    	},
-			    	enter: async ({ next, trigger }) => {
-			    		resetWebflow({ next });
-						
-			        	const entries = performance.getEntriesByType('navigation');
-			        	const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
-			
-			        	if (isHistory) {
-			          		const pos = readScroll();
-			          		if (pos) window.scrollTo(pos.x, pos.y);
-			        	} else if (!location.hash) {
-			          		window.scrollTo(0, 0);
-			        	}
-			
-			        	const mode = (() => { try { return getTransitionMode(trigger); } catch { return 'swipe'; } })();
-			        	const usedCoverOut = (mode === 'swipe') && await coverOut();
-			
-			        	await runEntryFlow(next.container, { withCoverOut: false });
-			        	logPT('ENTER anim finished', { usedCoverOut });
-			    	},
+					
+					enter: async ({ next, trigger }) => {
+					  resetWebflow({ next });
+					  const entries = performance.getEntriesByType('navigation');
+					  const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
+					  if (isHistory) {
+					    const pos = readScroll(); if (pos) window.scrollTo(pos.x, pos.y);
+					  } else if (!location.hash) {
+					    window.scrollTo(0, 0);
+					  }
+					
+					  const mode = getTransitionMode(trigger);
+					  const usedCoverOut = (mode === 'swipe') && await coverOut();
+					
+					  await runEntryFlow(next.container, { withCoverOut: false });
+					  logPT('ENTER anim finished', { usedCoverOut });
+					},
 			      	afterEnter: ({ next }) => {
 			        	logPT('afterEnter', { ns: getNS(next.container) });
 			        	requestAnimationFrame(() => reinitWebflowModules());
