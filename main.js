@@ -287,6 +287,87 @@
 	  try { window.runLinkAudit(); } catch {}
 	}
 
+	// --- PT SNiffer + Fail-safe (install once, before barba.init) ---
+if (DEBUG && !window.__ptSnifferInstalled) {
+  window.__ptSnifferInstalled = true;
+
+  // 1) Log location changes that bypass Barba (best-effort, guarded)
+  (function(){
+    try {
+      const wrap = (obj, key) => {
+        const orig = obj[key];
+        if (typeof orig !== 'function') return;
+        obj[key] = function(...args){
+          try { console.warn('[PT][sniff] '+key+'(', args[0], ')\n', (new Error()).stack); } catch(_){}
+          return orig.apply(this, args);
+        };
+      };
+      wrap(history, 'pushState');
+      wrap(history, 'replaceState');
+
+      // Some navigations use window.location.* — try to log them too.
+      ['assign','replace'].forEach(fn=>{
+        const orig = window.location[fn];
+        if (typeof orig === 'function') {
+          window.location[fn] = function(url){
+            try { console.warn('[PT][sniff] location.'+fn+'(', url, ')\n', (new Error()).stack); } catch(_){}
+            return orig.call(this, url);
+          };
+        }
+      });
+
+      // href setter is non-configurable in some browsers; guard it.
+      try {
+        const desc = Object.getOwnPropertyDescriptor(window.Location.prototype, 'href');
+        if (desc && desc.set) {
+          const origSet = desc.set;
+          Object.defineProperty(window.Location.prototype, 'href', {
+            configurable: true,
+            enumerable: desc.enumerable,
+            get: desc.get,
+            set: function(v){
+              try { console.warn('[PT][sniff] location.href =', v, '\n', (new Error()).stack); } catch(_){}
+              return origSet.call(this, v);
+            }
+          });
+        }
+      } catch(_) {}
+    } catch(_) {}
+  })();
+
+  // 2) See whether something prevents default before Barba
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    console.log('[PT][sniff] click on', a.getAttribute('href') || a.href, 'defaultPrevented=', e.defaultPrevented);
+    setTimeout(() => {
+      console.log('[PT][sniff] after click, defaultPrevented=', e.defaultPrevented);
+    }, 0);
+  }, true);
+}
+
+// 3) Hard-nav kill switch (capture-phase) — guarantees Barba owns internal links
+if (!window.__ptCaptureGuardInstalled) {
+  window.__ptCaptureGuardInstalled = true;
+
+  document.addEventListener('click', function(e){
+    const a = e.target && e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+
+    // Use your existing helpers so we match your Barba rules exactly
+    if (!isBarbaNavigable(a)) return;
+
+    // Take control BEFORE IX2 / other handlers can navigate
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    const href = a.getAttribute('href') || a.href || '';
+    const mode = getTransitionMode(a); // (we keep your mode logic; logging only)
+    logPT('capture-guard → barba.go', { href, mode, ns: getNS(document) });
+    try { barba.go(href); } catch (err) { location.assign(href); } // ultra-fallback
+  }, true); // ← capture
+}
+
 // Barba Init
 	function initBarba() {
 		if (window.__barbaInited) return;
