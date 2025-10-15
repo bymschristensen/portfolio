@@ -220,9 +220,11 @@
 	
 	/** Decide the mode (default swipe, only fade when data-pagetransition="fade") */
 	function getTransitionMode(trigger) {
-	  const a = getClickedAnchor(trigger);
-	  const val = (a && (a.getAttribute('data-pagetransition') || '')).toLowerCase();
-	  return val === 'fade' ? 'fade' : 'swipe';
+		  const a = getClickedAnchor(trigger);
+		  if (!a) return 'swipe';
+		  const attr = a.getAttribute && a.getAttribute('data-pagetransition');
+		  const val  = (attr ? String(attr) : '').trim().toLowerCase();
+		  return val === 'fade' ? 'fade' : 'swipe';
 	}
 
 	if (window.DEBUG && !window.__ptClickDebugInstalled) {
@@ -407,10 +409,13 @@ if (!window.__ptCaptureGuardInstalled) {
 				    }
 				},{
 					name: 'page-transitions',
-			      	custom: ({ trigger }) => isBarbaNavigable(trigger),
+			      	custom: ({ trigger }) => {
+						try { return isBarbaNavigable(trigger); }
+						catch (_) { return false; }
+					},
 			    	leave: async ({ current, trigger }) => {
 			        	saveScroll();
-			        	const mode = getTransitionMode(trigger); // <-- no globals
+			        	const mode = (() => { try { return getTransitionMode(trigger); } catch { return 'swipe'; } })();
 			
 			        	logPT('LEAVE start', {
 			          		fromNS: getNS(current.container),
@@ -445,7 +450,7 @@ if (!window.__ptCaptureGuardInstalled) {
 			          		window.scrollTo(0, 0);
 			        	}
 			
-			        	const mode = getTransitionMode(trigger);
+			        	const mode = (() => { try { return getTransitionMode(trigger); } catch { return 'swipe'; } })();
 			        	const usedCoverOut = (mode === 'swipe') && await coverOut();
 			
 			        	await runEntryFlow(next.container, { withCoverOut: false });
