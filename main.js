@@ -5,38 +5,12 @@
 	gsap.registerPlugin(ScrollTrigger,Flip,SplitText,TextPlugin,Observer);
 	const DEBUG = true;
 	window.DEBUG = true;
-	
-	if (window.ScrollTrigger) {
-	  ScrollTrigger.config({ log: true });
-	}
-	
-	function logPT(...args) {
-	  if (!window.DEBUG) return;
-	  try { console.log("[PT]", ...args); } catch(_) {}
-	}
-	
-	function getNS(root = document) {
-	  return root?.dataset?.barbaNamespace || root.getAttribute?.("data-barba-namespace") || "(no-ns)";
-	}
-	
-	function hrefFrom(el) {
-	  if (!el) return "(no trigger)";
-	  try {
-	    if (el.closest) {
-	      const a = el.closest('a[href]');
-	      if (a) return a.getAttribute('href') || a.href || "(no href)";
-	    }
-	    return el.getAttribute?.('href') || el.href || "(no href)";
-	  } catch(_) {
-	    return "(no href)";
-	  }
-	}
 
-// Helpers
+// System Helpers
 	function registerGsapObserver(e){return window._gsapObservers.push(e),e}function registerTicker(e){return window._activeTickers.push(e),e}function registerObserver(e){return window._activeObservers.push(e),e}window._gsapObservers=window._gsapObservers||[],window._activeTickers=window._activeTickers||[],window._activeObservers=window._activeObservers||[];
 	let destroyCursor = null;	
-	function resetWebflow(t){const e=(new DOMParser).parseFromString(t.next.html,"text/html"),a=e.querySelector("html").getAttribute("data-wf-page"),o=e.querySelector("script[data-wf-site-data]")?.textContent;if(document.documentElement.setAttribute("data-wf-page",a),document.querySelectorAll("script[data-wf-site-data]").forEach((t=>t.remove())),o){const t=document.createElement("script");t.type="application/json",t.setAttribute("data-wf-site-data",""),t.textContent=o,document.head.appendChild(t)}window.Webflow?.destroy?.(),window.Webflow?.ready?.();const n=Webflow.require?.("ix2");n?.init()}
-	function destroyAllYourInits(){try{window.ScrollTrigger&&ScrollTrigger.getAll().forEach((r=>r.kill()))}catch(r){}if(window.Observer&&Observer.getAll)try{Observer.getAll().forEach((r=>{try{r.kill&&r.kill()}catch(r){}}))}catch(r){}try{Array.isArray(window._gsapObservers)&&(window._gsapObservers.forEach((r=>{try{r.kill&&r.kill()}catch(r){}})),window._gsapObservers=[])}catch(r){}try{Array.isArray(window._activeTickers)&&(window._activeTickers.forEach((r=>{try{gsap.ticker.remove(r)}catch(r){}})),window._activeTickers=[])}catch(r){}try{Array.isArray(window._activeObservers)&&(window._activeObservers.forEach((r=>{try{r.disconnect&&r.disconnect()}catch(r){}})),window._activeObservers=[])}catch(r){}try{"function"==typeof destroyCursor&&(destroyCursor(),destroyCursor=null)}catch(r){}}	
+	function resetWebflow(t){if(!t?.next?.html)return;const e=(new DOMParser).parseFromString(t.next.html,"text/html"),a=e.querySelector("html").getAttribute("data-wf-page"),o=e.querySelector("script[data-wf-site-data]")?.textContent;if(document.documentElement.setAttribute("data-wf-page",a),document.querySelectorAll("script[data-wf-site-data]").forEach((t=>t.remove())),o){const t=document.createElement("script");t.type="application/json",t.setAttribute("data-wf-site-data",""),t.textContent=o,document.head.appendChild(t)}window.Webflow?.destroy?.(),window.Webflow?.ready?.();const n=Webflow.require?.("ix2");n?.init()}
+	function destroyAllYourInits(){document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((r=>{try{r.remove()}catch(r){}}));try{window.ScrollTrigger&&ScrollTrigger.getAll().forEach((r=>r.kill()))}catch(r){}if(window.Observer&&Observer.getAll)try{Observer.getAll().forEach((r=>{try{r.kill&&r.kill()}catch(r){}}))}catch(r){}try{Array.isArray(window._gsapObservers)&&(window._gsapObservers.forEach((r=>{try{r.kill&&r.kill()}catch(r){}})),window._gsapObservers=[])}catch(r){}try{Array.isArray(window._activeTickers)&&(window._activeTickers.forEach((r=>{try{gsap.ticker.remove(r)}catch(r){}})),window._activeTickers=[])}catch(r){}try{Array.isArray(window._activeObservers)&&(window._activeObservers.forEach((r=>{try{r.disconnect&&r.disconnect()}catch(r){}})),window._activeObservers=[])}catch(r){}try{"function"==typeof destroyCursor&&(destroyCursor(),destroyCursor=null)}catch(r){}}	
 	function runSafeInit(e,{preserveServicePins:r=!1}={}){return new Promise(i=>{const n=async()=>{if(window.ScrollTrigger)ScrollTrigger.getAll().forEach(s=>{(r&&s.trigger?.classList?.contains("section-single-service"))||s.kill()});(window._activeObservers||[]).forEach(s=>{try{"function"==typeof s.disconnect&&s.disconnect()}catch{}}),window._activeObservers=[];initAllYourInits(e),await new Promise(s=>requestAnimationFrame(s)),await new Promise(s=>requestAnimationFrame(s)),window.ScrollTrigger&&ScrollTrigger.refresh(),i()};/^((?!chrome|android).)*safari/i.test(navigator.userAgent)?requestAnimationFrame(n):document.fonts&&document.fonts.ready?document.fonts.ready.then(()=>{requestAnimationFrame(()=>{requestAnimationFrame(()=>{"requestIdleCallback"in window?requestIdleCallback(n):setTimeout(n,0)})})}):setTimeout(n,600)})}
 	function reinitWebflowModules(){if(window.Webflow&&Webflow.require){try{Webflow.ready&&Webflow.ready()}catch(e){}try{const e=Webflow.require("tabs");e?.ready&&e.ready()}catch(e){}try{const e=Webflow.require("slider");e?.ready&&e.ready()}catch(e){}}}
 	function isSlowConnection() { const nav = navigator.connection || {};	return nav.effectiveType && nav.effectiveType !== "4g"; }
@@ -45,39 +19,13 @@
 		// return isSlowConnection() || isReload() || !sessionStorage.getItem("preloaderSeen");
 		return false;
 	}
-	function setActiveTab(ns){
-	  document.querySelectorAll("[data-tab-link] a, [data-tab-link].is-active, a.is-active")
-	    .forEach(el => el.classList.remove("is-active"));
-	
-	  const id = ns === "selected"  ? "selectedOpen"
-	           : ns === "archive"   ? "archiveOpen"
-	           : ns === "resources" ? "resourcesOpen"
-	           : "";
-	
-	  // add to the actual <a> inside (if present)
-	  const link = id ? document.querySelector(`#${id} a`) || document.querySelector(`#${id}`) : null;
-	  if (link) link.classList.add("is-active");
-	}
+
+// Site Helpers
+	function setActiveTab(e){document.querySelectorAll("[data-tab-link] a, [data-tab-link].is-active, a.is-active").forEach((e=>e.classList.remove("is-active")));const c="selected"===e?"selectedOpen":"archive"===e?"archiveOpen":"resources"===e?"resourcesOpen":"",t=c?document.querySelector(`#${c} a`)||document.querySelector(`#${c}`):null;t&&t.classList.add("is-active")}
 	function applyOverscroll(e){const o="selected"===e?"none":"auto";document.documentElement.style.setProperty("overscroll-behavior",o,"important"),document.documentElement.style.setProperty("overscroll-behavior-y",o,"important"),document.body.style.setProperty("overscroll-behavior",o,"important"),document.body.style.setProperty("overscroll-behavior-y",o,"important")}
 	history.scrollRestoration="manual";const SCROLL_KEY=t=>`scroll:${t}`;
-	function saveScroll(t = location.pathname + location.search) {
-	  try {
-	    const v = `${window.scrollX},${window.scrollY}`;
-	    sessionStorage.setItem(SCROLL_KEY(t), v);
-	    logPT("saveScroll", { key: SCROLL_KEY(t), v });
-	  } catch {}
-	}
-	function readScroll(t = location.pathname + location.search) {
-	  try {
-	    const raw = sessionStorage.getItem(SCROLL_KEY(t));
-	    if (!raw) { logPT("readScroll", { key: SCROLL_KEY(t), found: false }); return null; }
-	    const [x, y] = raw.split(",").map(n => parseInt(n, 10) || 0);
-	    logPT("readScroll", { key: SCROLL_KEY(t), x, y });
-	    return { x, y };
-	  } catch {
-	    return null;
-	  }
-	}
+	function saveScroll(o=location.pathname+location.search){try{const c=`${window.scrollX},${window.scrollY}`;sessionStorage.setItem(SCROLL_KEY(o),c)}catch{}}
+	function readScroll(t=location.pathname+location.search){try{const n=sessionStorage.getItem(SCROLL_KEY(t));if(!n)return null;const[r,e]=n.split(",").map((t=>parseInt(t,10)||0));return{x:r,y:e}}catch{return null}}
 
 // Text Animation + Appear in Line
 	function splitAndMask(e){if(e._originalHTML||(e._originalHTML=e.innerHTML),e._split)return e._split;const t=getComputedStyle(e).whiteSpace||"normal",i=e.style.whiteSpace,l=e.style.display;e.style.whiteSpace=t,"inline"===getComputedStyle(e).display&&(e.style.display="block"),e.clientWidth;const s=new SplitText(e,{type:"lines",linesClass:"line",reduceWhiteSpace:!1});return s.lines.forEach(n=>{const a=n.getBoundingClientRect().height||n.offsetHeight||0,o=document.createElement("div");o.className="text-mask",o.style.overflow="hidden",o.style.display="block",o.style.height=a+"px",n.style.whiteSpace=t,n.style.display="block",n.parentNode.insertBefore(o,n),o.appendChild(n)}),gsap.set(s.lines,{yPercent:100,rotation:10,transformOrigin:"0 10%",willChange:"transform,opacity"}),e.style.whiteSpace=i,e.style.display=l,e._split=s,s}
@@ -128,50 +76,8 @@
 	})();
 	
 // Page Transitions
-	function coverIn(){
-	  const e = document.querySelector(".page-overlay"),
-        t = e?.querySelector(".page-overlay-tint");
-		  if (!e) { logPT('coverIn → overlay MISSING'); return false; }   // ← el → e
-		  logPT('coverIn → start');
-	
-	  e.style.display = "block";
-	  e.style.pointerEvents = "auto";
-	  gsap.set(e, { y:"100%", clipPath:"polygon(0% 0%,100% 20%,100% 100%,0% 100%)", willChange:"transform,clip-path" });
-	  gsap.set(t, { opacity:0, willChange:"opacity" });
-	
-	  return new Promise((resolve)=>{
-	    gsap.timeline({
-	      defaults:{ duration:1.35, ease:"power4.inOut" },
-	      onComplete: () => resolve(true)
-	    })
-	    .to(e, { y:"0%" }, 0)
-	    .to(e, { clipPath:"polygon(0% 0%,100% 0%,100% 100%,0% 100%)" }, 0)
-	    .to(t, { opacity:1, ease:"none" }, .6);
-	  });
-	}
-	
-	function coverOut(){
-	  const e = document.querySelector(".page-overlay"),
-        t = e?.querySelector(".page-overlay-tint");
-		  if (!e) { logPT('coverOut → overlay MISSING'); return false; }  // ← el → e
-		  logPT('coverOut → start');
-	
-	  document.querySelectorAll(".nav-primary-wrap").forEach(w=>{
-	    w.querySelector(".menu-wrapper")?.style && (w.querySelector(".menu-wrapper").style.display = "none");
-	    w.querySelector(".menu-container")?.style && (w.querySelector(".menu-container").style.display = "none");
-	    w.querySelector(".filters-container")?.style && (w.querySelector(".filters-container").style.display = "none");
-	  });
-	  document.body.style.overflow = "";
-	
-	  return new Promise((resolve)=>{
-	    gsap.timeline({
-	      onStart(){ e.style.pointerEvents = "auto"; },
-	      onComplete(){ e.style.display = "none"; e.style.pointerEvents = "none"; resolve(true); }
-	    })
-	    .to(e, { duration:.6, ease:"power4.in", y:"-100%" }, 0)
-	    .to(t, { duration:.6, ease:"none", opacity:1 }, 0);
-	  });
-	}
+	function coverIn(){const e=document.querySelector(".page-overlay"),t=e?.querySelector(".page-overlay-tint");return!!e&&(e.style.display="block",e.style.pointerEvents="auto",gsap.set(e,{y:"100%",clipPath:"polygon(0% 0%,100% 20%,100% 100%,0% 100%)",willChange:"transform,clip-path"}),gsap.set(t,{opacity:0,willChange:"opacity"}),new Promise((o=>{gsap.timeline({defaults:{duration:1.35,ease:"power4.inOut"},onComplete:()=>o(!0)}).to(e,{y:"0%"},0).to(e,{clipPath:"polygon(0% 0%,100% 0%,100% 100%,0% 100%)"},0).to(t,{opacity:1,ease:"none"},.6)})))}
+	function coverOut({closeMenus:e=!0}={}){const n=document.querySelector(".page-overlay"),o=n?.querySelector(".page-overlay-tint");return!!n&&(e&&"function"==typeof forceCloseMenus&&forceCloseMenus(document),coverOut._running||(coverOut._running=new Promise((e=>{if("none"===getComputedStyle(n).display)return n.style.display="none",n.style.pointerEvents="none",coverOut._running=null,e(!0);gsap.timeline({onStart(){n.style.pointerEvents="auto"},onComplete(){n.style.display="none",n.style.pointerEvents="none",coverOut._running=null,e(!0)}}).to(n,{duration:.6,ease:"power4.in",y:"-100%"},0).to(o||n,{duration:.6,ease:"none",opacity:1},0)}))),coverOut._running)}
 
 // Page Entry Animations
 	function animateSelectedEntries(e=document){const t=e.querySelector(".selected-container"),r=t?.querySelector(".selected-content"),o=Array.from(e.querySelectorAll(".selected-item-outer")),l=gsap.timeline();if(!t||!r||!o.length)return l;o.forEach((e=>{if(e.__entryDone)return;const t=e.querySelector(".selected-visual"),r=e.querySelector(".selected-item-header .headline-m"),o=e.querySelector(".selected-item-details"),l=e.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:0,transformOrigin:"bottom center",opacity:0}),r&&gsap.set(r,{opacity:0}),o&&gsap.set(o,{opacity:0,height:0}),l.length&&gsap.set(l,{opacity:0,y:20,filter:"blur(10px)"})}));return(e=>{const o=()=>{requestAnimationFrame((()=>requestAnimationFrame(e)))};if(t.hasAttribute("data-loop-ready"))return o();const l=()=>{r.removeEventListener("selected:loop-ready",l,!0),o()};r.addEventListener("selected:loop-ready",l,!0),setTimeout((()=>{r.removeEventListener("selected:loop-ready",l,!0),o()}),600)})((()=>{const e=window.innerWidth||document.documentElement.clientWidth,t=window.innerHeight||document.documentElement.clientHeight,r=o.map((r=>{const o=r.getBoundingClientRect();return{o:r,r:o,area:Math.max(0,Math.min(o.right,e)-Math.max(o.left,0))*Math.max(0,Math.min(o.bottom,t)-Math.max(o.top,0)),center:.5*(o.left+o.right)}}));let a=r.filter((e=>e.area>1)).sort(((e,t)=>e.r.left-t.r.left));if(!a.length){const t=.5*e;a=r.slice().sort(((e,r)=>Math.abs(e.center-t)-Math.abs(r.center-t))).slice(0,2).sort(((e,t)=>e.r.left-t.r.left))}const n=new Set(a.map((e=>e.o)));r.forEach((e=>{if(e.o.__entryDone||n.has(e.o))return;const t=e.o.querySelector(".selected-visual"),r=e.o.querySelector(".selected-item-header .headline-m"),o=e.o.querySelector(".selected-item-details"),l=e.o.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:1,opacity:1}),r&&gsap.set(r,{opacity:1}),o&&gsap.set(o,{opacity:1,height:"auto"}),l.length&&gsap.set(l,{opacity:1,y:0,filter:"blur(0px)"}),e.o.__entryDone=!0}));a.forEach(((e,t)=>{const r=e.o;if(r.__entryDone)return;const o=r.querySelector(".selected-visual"),a=r.querySelector(".selected-item-header .headline-m"),n=r.querySelector(".selected-item-details"),i=r.querySelectorAll(".selected-item-details .body-s"),s=.15*t;o&&l.set(o,{opacity:1},s).to(o,{scaleY:1,duration:.8,ease:"power2.out"},s),a&&l.set(a,{opacity:1},s+.2).call((()=>{if(a.__splitRun)return;a.__splitRun=!0;const e=splitAndMask(a);gsap.delayedCall(.15,(()=>{animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,a)))}))}),null,s+.2),n&&l.to(n,{opacity:1,height:"auto",duration:.4,ease:"power2.out"},s+.6),i.length&&l.to(i,{opacity:1,y:0,filter:"blur(0px)",duration:.4,ease:"power2.out",stagger:.15},s+.6),r.__entryDone=!0}))})),l}
@@ -179,256 +85,33 @@
 	function animateInfoEntry(e){const t=gsap.timeline(),a=e.querySelectorAll(".section-scroll-track .w-layout-cell"),o=e.querySelector(".section-hero .subpage-intro h1"),l=e.querySelector(".section-hero .subpage-intro a");if(a.forEach((e=>gsap.set(e,{scaleY:0,transformOrigin:"bottom center"}))),t.to(a,{scaleY:1,duration:1,ease:"power2.out",stagger:{each:.15,from:"start"}},0),o){gsap.set(o,{autoAlpha:0});const e=splitAndMask(o);t.set(o,{autoAlpha:1},.35).call((()=>animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,o)))),null,.35)}return l&&(gsap.set(l,{autoAlpha:0,y:20,filter:"blur(10px)"}),t.to(l,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},.6)),t}
 	function animateCaseStudyEntry(e){const t=gsap.timeline(),l=e.querySelector(".cs-hero-image"),a=e.querySelector(".cs-headline"),n=e.querySelectorAll(".cs-titles-inner div");return l&&gsap.set(l,{autoAlpha:0,y:80,filter:"blur(10px)"}),a&&gsap.set(a,{autoAlpha:0}),n.length&&gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),l&&t.to(l,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},0),a&&t.addLabel("headline",.35).set(a,{autoAlpha:1,display:"block"},"headline").call((()=>{const e=splitAndMask(a);animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,a)))}),null,"headline"),n.length&&t.to(n,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out",stagger:.05},.6),t}
 	
-// Barba helpers for entry animations
+// Barba helpers
 	const entryConfigByNamespace={selected:{delayHero:!1,entryOffset:-.2},archive:{delayHero:!1,entryOffset:-.2},resources:{delayHero:!1,entryOffset:-.2},capabilities:{delayHero:!0,entryOffset:.1},info:{delayHero:!1,entryOffset:-.2}};
 	function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
 	function runPageEntryAnimations(e){const{delayHero:t,entryOffset:a}=getEntryConfig(e),n=gsap.timeline();return"info"===e.dataset.barbaNamespace&&n.add(animateInfoEntry(e),0),e.querySelector(".section-table-of-contents")&&n.add(animateCapabilitiesEntry(e,{delayHero:t}),0),e.querySelector(".selected-item-outer")&&n.add(animateSelectedEntries(e),0),e.querySelector(".cs-hero-image")&&n.add(animateCaseStudyEntry(e),0),{tl:n,entryOffset:a}}
 	async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
 	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await coverOut(),await runSafeInit(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
-	function normalizePath(href) {
-	  try { return new URL(href, location.origin).pathname.replace(/\/+$/,'') || '/'; }
-	  catch { return (href || '').replace(/\/+$/,'') || '/'; }
-	}
-	
-	function getClickedAnchor(triggerOrEventTarget) {
-	  const path = (typeof Event !== 'undefined' && triggerOrEventTarget && triggerOrEventTarget.composedPath)
-	    ? triggerOrEventTarget.composedPath()
-	    : null;
-	
-	  if (path && path.length) {
-	    for (const n of path) {
-	      if (n && n.nodeType === 1 && n.tagName === 'A' && n.hasAttribute('href')) return n;
-	    }
-	  }
-	
-	  let n = triggerOrEventTarget;
-	  while (n && n.nodeType === 1) {
-	    if (n.tagName === 'A' && n.hasAttribute('href')) return n;
-	    n = n.parentNode || (n.host && n.host instanceof Node ? n.host : null);
-	  }
-	  return null;
-	}
-	
-	function isBarbaNavigable(triggerOrEventTarget) {
-	  const a = getClickedAnchor(triggerOrEventTarget);
-	  if (!a) return false;
-	
-	  const raw = a.getAttribute('href') || a.href || '';
-	  if (!raw) return false;
-	
-	  // Same-page hash → let browser handle
-	  try {
-	    const url = new URL(raw, location.href);
-	    const samePath = (url.pathname.replace(/\/+$/,'') || '/') === (location.pathname.replace(/\/+$/,'') || '/');
-	    if (samePath && url.hash) return false;
-	    if (!/^https?:$/.test(url.protocol)) return false;
-	    if (url.origin !== location.origin) return false;
-	    if (a.target === '_blank' || a.hasAttribute('download')) return false;
-	    if (/\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(url.pathname)) return false;
-	  } catch { return false; }
-	
-	  return true;
-	}
-	
-	/** Decide the mode (default swipe, only fade when data-pagetransition="fade") */
-	function getTransitionMode(triggerOrEventTarget) {
-	  // 3a) try to read data-pagetransition from any element in the composed path
-	  const path = (triggerOrEventTarget && triggerOrEventTarget.composedPath)
-	    ? triggerOrEventTarget.composedPath() : [];
-	  for (const n of path) {
-	    if (n && n.nodeType === 1 && n.getAttribute) {
-	      const v = (n.getAttribute('data-pagetransition') || '').trim().toLowerCase();
-	      if (v === 'fade') return 'fade';
-	      if (v === 'swipe') return 'swipe';
-	    }
-	  }
-	
-	  // 3b) fall back to the anchor itself
-	  const a = getClickedAnchor(triggerOrEventTarget);
-	  if (a) {
-	    const v = (a.getAttribute('data-pagetransition') || '').trim().toLowerCase();
-	    if (v === 'fade') return 'fade';
-	    if (v === 'swipe') return 'swipe';
-	  }
-	
-	  // 3c) hard rule: the entire “work universe” must be FADE
-	  try {
-	    const href = (a ? (a.getAttribute('href') || a.href || '') : '');
-	    const url = new URL(href, location.href);
-	    const p = url.pathname.replace(/\/+$/,'');
-	    if (p === '/new-index' || p === '/archive' || p === '/resources') return 'fade';
-	  } catch {}
-	
-	  // default
-	  return 'swipe';
-	}
-
-	if (window.DEBUG && !window.__ptClickDebugInstalled) {
-	  window.__ptClickDebugInstalled = true;
-	  document.addEventListener('click', (e) => {
-	    const a = e.target.closest?.('a[href]');
-	    if (!a) return;
-	    const href = a.getAttribute('href') || a.href || '';
-	    const navigable = isBarbaNavigable(a);
-	    const mode = getTransitionMode(a);
-	    console.log('[PT][click]', { href, navigable, mode, ns: getNS(document) });
-	  }, true);
-	}
-
-	// --- Link audit (console table) ---
-	if (window.DEBUG && !window.__ptLinkAuditInstalled) {
-	  window.__ptLinkAuditInstalled = true;
-	
-	  window.runLinkAudit = function runLinkAudit() {
-	    function normalizePath(href){
-	      try { return new URL(href, location.origin).pathname.replace(/\/+$/,'') || '/'; }
-	      catch { return (href || '').replace(/\/+$/,'') || '/'; }
-	    }
-	    function whyNotNavigable(a) {
-	      if (!a) return 'no <a>';
-	      const raw = a.getAttribute('href') || a.href || '';
-	      if (!raw) return 'empty href';
-	      try {
-	        const url = new URL(raw, location.href);
-	        if (normalizePath(url.pathname) === normalizePath(location.pathname) && url.hash) return 'same-page hash';
-	        if (!/^https?:$/.test(url.protocol)) return 'non-http(s)';
-	        if (url.origin !== location.origin) return 'cross-origin';
-	        if (a.target === '_blank') return 'target=_blank';
-	        if (a.hasAttribute('download')) return 'download';
-	        if (/\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(url.pathname)) return 'file-ext';
-	        if (a.closest('[data-barba-prevent]')) return 'data-barba-prevent ancestor';
-	        return ''; // OK for Barba
-	      } catch {
-	        return 'bad URL';
-	      }
-	    }
-	
-	    const ns = getNS(document);
-	    const rows = [...document.querySelectorAll('a[href]')]
-	      .filter(a => a.offsetParent) // visible-ish
-	      .map(a => {
-	        const reason = whyNotNavigable(a);
-	        return {
-	          ns,
-	          text: (a.textContent || '').trim().slice(0, 80),
-	          href: a.getAttribute('href') || a.href,
-	          reason: reason || '(will be intercepted by Barba)'
-	        };
-	      });
-	
-	    console.log('[PT][audit] namespace:', ns);
-	    console.table(rows);
-	    return rows;
-	  };
-	
-	  // Run once on first load:
-	  try { window.runLinkAudit(); } catch {}
-	}
-
-	// --- PT SNiffer + Fail-safe (install once, before barba.init) ---
-if (DEBUG && !window.__ptSnifferInstalled) {
-  window.__ptSnifferInstalled = true;
-
-  // 1) Log location changes that bypass Barba (best-effort, guarded)
-  (function(){
-    try {
-      const wrap = (obj, key) => {
-        const orig = obj[key];
-        if (typeof orig !== 'function') return;
-        obj[key] = function(...args){
-          try { console.warn('[PT][sniff] '+key+'(', args[0], ')\n', (new Error()).stack); } catch(_){}
-          return orig.apply(this, args);
-        };
-      };
-      wrap(history, 'pushState');
-      wrap(history, 'replaceState');
-
-      // Some navigations use window.location.* — try to log them too.
-      ['assign','replace'].forEach(fn=>{
-        const orig = window.location[fn];
-        if (typeof orig === 'function') {
-          window.location[fn] = function(url){
-            try { console.warn('[PT][sniff] location.'+fn+'(', url, ')\n', (new Error()).stack); } catch(_){}
-            return orig.call(this, url);
-          };
-        }
-      });
-
-      // href setter is non-configurable in some browsers; guard it.
-      try {
-        const desc = Object.getOwnPropertyDescriptor(window.Location.prototype, 'href');
-        if (desc && desc.set) {
-          const origSet = desc.set;
-          Object.defineProperty(window.Location.prototype, 'href', {
-            configurable: true,
-            enumerable: desc.enumerable,
-            get: desc.get,
-            set: function(v){
-              try { console.warn('[PT][sniff] location.href =', v, '\n', (new Error()).stack); } catch(_){}
-              return origSet.call(this, v);
-            }
-          });
-        }
-      } catch(_) {}
-    } catch(_) {}
-  })();
-
-  // 2) See whether something prevents default before Barba
-  document.addEventListener('click', e => {
-    const a = e.target.closest && e.target.closest('a[href]');
-    if (!a) return;
-    console.log('[PT][sniff] click on', a.getAttribute('href') || a.href, 'defaultPrevented=', e.defaultPrevented);
-    setTimeout(() => {
-      console.log('[PT][sniff] after click, defaultPrevented=', e.defaultPrevented);
-    }, 0);
-  }, true);
-}
-
-// 3) Hard-nav kill switch (capture-phase) — guarantees Barba owns internal links
-if (!window.__ptCaptureGuardInstalled) {
-  window.__ptCaptureGuardInstalled = true;
-
-  document.addEventListener('click', function (e) {
-    // Only main button, no modifiers (preserve open-in-new-tab)
-    if (e.defaultPrevented) return;
-    if (e.button !== 0) return;
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-
-    const a = getClickedAnchor(e);
-    if (!a) return;
-
-    if (!isBarbaNavigable(e)) return; // let browser handle external/hash/download
-
-    e.preventDefault();
-    e.stopImmediatePropagation();
-
-    const href = a.getAttribute('href') || a.href || '';
-    const mode = getTransitionMode(e); // read from composedPath + hard rules
-    logPT('capture-guard → barba.go', { href, mode, ns: getNS(document) });
-
-    try {
-      barba.go(href, { trigger: a, e }); // leave/enter will receive the correct trigger
-    } catch {
-      // ultra-fallback
-      location.assign(href);
-    }
-  }, true); // capture
-}
+	function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,l=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),l&&l.progress()>0&&l.timeScale(2).reverse();const n=e.querySelector(".menu-wrapper"),o=e.querySelector(".menu-container"),t=e.querySelector(".filters-container");n?.style&&(n.style.display="none"),o?.style&&(o.style.display="none"),t?.style&&(t.style.display="none")})),document.body.style.overflow=""}
 
 // Barba Init
 	function initBarba() {
 		if (window.__barbaInited) return;
   		window.__barbaInited = true;
-
-		(function(){
-		    const el = document.querySelector('.page-overlay');
-		    console.log('[PT] overlay', el ? 'present' : 'MISSING');
-		    if (el) console.log('[PT] overlay z-index =', getComputedStyle(el).zIndex);
-	  	})();
 		
 		barba.init({
 			debug: DEBUG,
 			timeout: 8000,
+			prevent: ({ el, event }) => {
+			    const a = el && el.tagName === 'A' ? el : el?.closest?.('a');
+			    if (a) {
+			      	try {
+			        	const url = new URL(a.getAttribute('href') || a.href, location.href);
+			        	const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
+			        	if (samePath && url.hash) return true;
+			      	} catch(_) {}
+			    }
+			    return !!(el && el.closest('[data-barba-prevent]'));
+		  	},
 			transitions: [
 			// 1) first-load / preloader
 			// {
@@ -447,53 +130,80 @@ if (!window.__ptCaptureGuardInstalled) {
 			// },
 				{
 				    name: 'initial-load',
-				    once: async ({ next }) => {
-				    	await runEntryFlow(next.container);
-				    	reinitWebflowModules();
-				    	if (!location.hash) window.scrollTo(0, 0);
-				    }
-				},{
-					name: 'page-transitions',
-			      	custom: ({ trigger }) => isBarbaNavigable(trigger),
-					leave: async ({ current, trigger }) => {
-					  saveScroll();
-					  const mode = getTransitionMode(trigger);  // now always safe
-					  logPT('LEAVE start', { fromNS: getNS(current.container), href: hrefFrom(trigger), mode });
-					
-					  if (mode === 'fade') {
-					    await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-					  } else {
-					    const ok = await coverIn();
-					    if (!ok) await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-					  }
-					
-					  destroyAllYourInits();
-					  current.container.remove();
-					},
-					
-					enter: async ({ next, trigger }) => {
-					  resetWebflow({ next });
-					  const entries = performance.getEntriesByType('navigation');
-					  const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
-					  if (isHistory) {
-					    const pos = readScroll(); if (pos) window.scrollTo(pos.x, pos.y);
-					  } else if (!location.hash) {
-					    window.scrollTo(0, 0);
-					  }
-					
-					  const mode = getTransitionMode(trigger);
-					  const usedCoverOut = (mode === 'swipe') && await coverOut();
-					
-					  await runEntryFlow(next.container, { withCoverOut: false });
-					  logPT('ENTER anim finished', { usedCoverOut });
-					},
-			      	afterEnter: ({ next }) => {
-			        	logPT('afterEnter', { ns: getNS(next.container) });
-			        	requestAnimationFrame(() => reinitWebflowModules());
-			        	next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
-						if (window.DEBUG && window.runLinkAudit) window.runLinkAudit();
+			      	once: async ({ next }) => {
+			        	await runEntryFlow(next.container);
+			        	reinitWebflowModules();
+			        	if (!location.hash) window.scrollTo(0, 0);
 			      	}
-			    }
+				},{
+					name: 'fade',
+					from: { namespace: ['selected','archive','resources'] },
+					to: { namespace: ['selected','archive','resources'] },
+					async leave({ current }) {
+						saveScroll();
+						await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+						destroyAllYourInits();
+						current.container.remove();
+					},
+					async enter({ next }) {
+						resetWebflow({ next });
+						const entries = performance.getEntriesByType('navigation');
+						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
+						if (isHistory) {
+							const pos = readScroll();
+							if (pos) window.scrollTo(pos.x, pos.y);
+						} else if (!location.hash) {
+							window.scrollTo(0, 0);
+						}
+						await runEntryFlow(next.container, { withCoverOut: false });
+					},
+					afterEnter({ next }) {
+						requestAnimationFrame(() => reinitWebflowModules());
+						requestAnimationFrame(() => {
+							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+							if (h1) {
+								h1.setAttribute('tabindex', '-1');
+								h1.focus({ preventScroll: true });
+								setTimeout(() => h1.removeAttribute('tabindex'), 0);
+							}
+						});
+						next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
+					}
+				},{
+					name: 'swipe',
+					async leave({ current }) {
+						document.body.style.overflow = "";
+						saveScroll();
+						const ok = await coverIn();
+						if (!ok) await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+						destroyAllYourInits();
+						current.container.remove();
+					},
+					async enter({ next }) {
+						resetWebflow({ next });
+						const entries = performance.getEntriesByType('navigation');
+						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
+						if (isHistory) {
+							const pos = readScroll();
+							if (pos) window.scrollTo(pos.x, pos.y);
+						}
+						if (!location.hash) window.scrollTo(0, 0);
+						await coverOut();
+						await runEntryFlow(next.container, { withCoverOut: false });
+					},
+					afterEnter({ next }) {
+						requestAnimationFrame(() => reinitWebflowModules());
+						requestAnimationFrame(() => {
+							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+							if (h1) {
+								h1.setAttribute('tabindex', '-1');
+								h1.focus({ preventScroll: true });
+								setTimeout(() => h1.removeAttribute('tabindex'), 0);
+							}
+						});
+						next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
+					}
+				}
 			]
 		});
 	}
@@ -529,20 +239,8 @@ if (!window.__ptCaptureGuardInstalled) {
 		if (window.matchMedia('(pointer:fine)').matches) {
 			destroyCursor = initCustomCursor(root);
 		}
-
-		enforceWorkUniverseFade(root);
 	}
 
-function enforceWorkUniverseFade(root = document) {
-  const WORK = ['/new-index', '/archive', '/resources'];
-  root.querySelectorAll('a[href]').forEach(a => {
-    try {
-      const p = new URL(a.getAttribute('href') || a.href, location.href)
-        .pathname.replace(/\/+$/,'');
-      if (WORK.includes(p)) a.setAttribute('data-pagetransition', 'fade');
-    } catch {}
-  });
-}
 if(typeof initBarba==="function")window.initBarba=initBarba;
 if(typeof initAllYourInits==="function")window.initAllYourInits=initAllYourInits;
 (function(){function boot(){if(window.initBarba)window.initBarba()}if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot,{once:true})})();
