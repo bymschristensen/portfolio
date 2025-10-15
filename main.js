@@ -188,8 +188,6 @@
 		async function coverIn() {
 			const { el, tint } = getOverlay();
 			if (!el) return true;
-			
-			// engage lock
 			try { window.NavigationManager?.setLock('overlay', true); } catch {}
 		
 			el.style.display = 'block';
@@ -206,49 +204,56 @@
 					defaults: { duration: 1.35, ease: 'power4.inOut' },
 					onComplete: () => resolve(true)
 				})
-				.to(el,   { y: '0%' }, 0)
-				.to(el,   { clipPath: 'polygon(0% 0%,100% 0%,100% 100%,0% 100%)' }, 0)
+				.to(el, { y: '0%' }, 0)
+				.to(el, { clipPath: 'polygon(0% 0%,100% 0%,100% 100%,0% 100%)' }, 0)
 				.to(tint || el, { opacity: 1, ease: 'none' }, 0.6);
 			});
 		}
 		
 		async function coverOut({ closeMenus = true } = {}) {
-			const { el, tint } = getOverlay();
+			const { el, tint } = (function getOverlay() {
+				const el = document.querySelector('.page-overlay');
+				const tint = el?.querySelector('.page-overlay-tint') || null;
+				return { el, tint };
+			})();
+			
 			if (!el) {
 				try { window.NavigationManager?.setLock('overlay', false); } catch {}
 				return true;
 			}
 			
-			if (closeMenus) {
-				try { window.forceCloseMenus?.(document); } catch {}
-			}
-		
-			if (runningCoverOut) return runningCoverOut;
-		
-			runningCoverOut = new Promise((resolve) => {
+			if (closeMenus) {try { window.forceCloseMenus?.(document); } catch {}}
+			
+			if (coverOut._running) return coverOut._running;
+			
+			coverOut._running = new Promise((resolve) => {
 				if (getComputedStyle(el).display === 'none') {
 					el.style.display = 'none';
 					el.style.pointerEvents = 'none';
 					try { window.NavigationManager?.setLock('overlay', false); } catch {}
-					runningCoverOut = null;
+					coverOut._running = null;
 					return resolve(true);
 				}
-		
+			
 				gsap.timeline({
-					onStart()  { el.style.pointerEvents = 'auto'; },
+					onStart() {
+						el.style.pointerEvents = 'auto';
+					},
 					onComplete() {
+						gsap.set(el, { clearProps: 'transform,clipPath' });
+						if (tint) gsap.set(tint, { clearProps: 'opacity' });
 						el.style.display = 'none';
 						el.style.pointerEvents = 'none';
 						try { window.NavigationManager?.setLock('overlay', false); } catch {}
-						runningCoverOut = null;
+						coverOut._running = null;
 						resolve(true);
 					}
 				})
-				.to(el,        { duration: 0.6, ease: 'power4.in', y: '-100%' }, 0)
-				.to(tint || el,{ duration: 0.6, ease: 'none',    opacity: 1    }, 0);
+				.to(el, { duration: 0.6, ease: 'power4.in', y: '-100%' }, 0)
+				.to(tint || el, { duration: 0.6, ease: 'none',      opacity: 0   }, 0); // fade DOWN
 			});
-		
-			return runningCoverOut;
+			
+			return coverOut._running;
 		}
 		
 		return { coverIn, coverOut };
