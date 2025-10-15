@@ -227,8 +227,6 @@ function installDebugProbes() {
 
 // Barba Init
 	function initBarba() {
-		installDebugProbes();
-		logBarbaSanity();
 		if (window.__barbaInited) return;
   		window.__barbaInited = true;
 		
@@ -340,6 +338,8 @@ function installDebugProbes() {
 				}
 			]
 		});
+		installDebugProbes();
+		logBarbaSanity();
 	}
 
 // Run All Initialisers
