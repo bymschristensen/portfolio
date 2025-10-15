@@ -27,7 +27,7 @@
 		  }
 	}
 
-// NavigationManager
+// 1. NavigationManager
 	window.NavigationManager = (function () {
 		const state = {
 			debug: false,
@@ -147,6 +147,113 @@
 		};
 	})();
 
+// 5. ScrollState
+	window.ScrollState = (function () {
+		const KEY = (p) => `scroll:${p}`;
+	
+		function save(path = location.pathname + location.search) {
+			try {
+				const pos = `${window.scrollX},${window.scrollY}`;
+				sessionStorage.setItem(KEY(path), pos);
+			} catch {}
+		}
+	
+		function read(path = location.pathname + location.search) {
+			try {
+				const raw = sessionStorage.getItem(KEY(path));
+				if (!raw) return null;
+				const [x, y] = raw.split(',').map((n) => parseInt(n, 10) || 0);
+				return { x, y };
+			} catch {
+				return null;
+			}
+		}
+	
+		// history handling belongs here too
+		try { history.scrollRestoration = 'manual'; } catch {}
+	
+		return { KEY, save, read };
+	})();
+
+// 7. TransitionEffects
+	window.TransitionEffects = (function () {
+		let runningCoverOut = null;
+		
+		function getOverlay() {
+			const el = document.querySelector('.page-overlay');
+			const tint = el?.querySelector('.page-overlay-tint') || null;
+			return { el, tint };
+		}
+		
+		async function coverIn() {
+			const { el, tint } = getOverlay();
+			if (!el) return true;
+			
+			// engage lock
+			try { window.NavigationManager?.setLock('overlay', true); } catch {}
+		
+			el.style.display = 'block';
+			el.style.pointerEvents = 'auto';
+			gsap.set(el, {
+				y: '100%',
+				clipPath: 'polygon(0% 0%,100% 20%,100% 100%,0% 100%)',
+				willChange: 'transform,clip-path'
+			});
+			if (tint) gsap.set(tint, { opacity: 0, willChange: 'opacity' });
+		
+			return new Promise((resolve) => {
+				gsap.timeline({
+					defaults: { duration: 1.35, ease: 'power4.inOut' },
+					onComplete: () => resolve(true)
+				})
+				.to(el,   { y: '0%' }, 0)
+				.to(el,   { clipPath: 'polygon(0% 0%,100% 0%,100% 100%,0% 100%)' }, 0)
+				.to(tint || el, { opacity: 1, ease: 'none' }, 0.6);
+			});
+		}
+		
+		async function coverOut({ closeMenus = true } = {}) {
+			const { el, tint } = getOverlay();
+			if (!el) {
+				try { window.NavigationManager?.setLock('overlay', false); } catch {}
+				return true;
+			}
+			
+			if (closeMenus) {
+				try { window.forceCloseMenus?.(document); } catch {}
+			}
+		
+			if (runningCoverOut) return runningCoverOut;
+		
+			runningCoverOut = new Promise((resolve) => {
+				if (getComputedStyle(el).display === 'none') {
+					el.style.display = 'none';
+					el.style.pointerEvents = 'none';
+					try { window.NavigationManager?.setLock('overlay', false); } catch {}
+					runningCoverOut = null;
+					return resolve(true);
+				}
+		
+				gsap.timeline({
+					onStart()  { el.style.pointerEvents = 'auto'; },
+					onComplete() {
+						el.style.display = 'none';
+						el.style.pointerEvents = 'none';
+						try { window.NavigationManager?.setLock('overlay', false); } catch {}
+						runningCoverOut = null;
+						resolve(true);
+					}
+				})
+				.to(el,        { duration: 0.6, ease: 'power4.in', y: '-100%' }, 0)
+				.to(tint || el,{ duration: 0.6, ease: 'none',    opacity: 1    }, 0);
+			});
+		
+			return runningCoverOut;
+		}
+		
+		return { coverIn, coverOut };
+	})();
+
 // System Helpers
 	function registerGsapObserver(e){return window._gsapObservers.push(e),e}function registerTicker(e){return window._activeTickers.push(e),e}function registerObserver(e){return window._activeObservers.push(e),e}window._gsapObservers=window._gsapObservers||[],window._activeTickers=window._activeTickers||[],window._activeObservers=window._activeObservers||[];
 	let destroyCursor = null;	
@@ -164,9 +271,7 @@
 // Site Helpers
 	function setActiveTab(e){document.querySelectorAll("[data-tab-link] a, [data-tab-link].is-active, a.is-active").forEach((e=>e.classList.remove("is-active")));const c="selected"===e?"selectedOpen":"archive"===e?"archiveOpen":"resources"===e?"resourcesOpen":"",t=c?document.querySelector(`#${c} a`)||document.querySelector(`#${c}`):null;t&&t.classList.add("is-active")}
 	function applyOverscroll(e){const o="selected"===e?"none":"auto";document.documentElement.style.setProperty("overscroll-behavior",o,"important"),document.documentElement.style.setProperty("overscroll-behavior-y",o,"important"),document.body.style.setProperty("overscroll-behavior",o,"important"),document.body.style.setProperty("overscroll-behavior-y",o,"important")}
-	history.scrollRestoration="manual";const SCROLL_KEY=t=>`scroll:${t}`;
-	function saveScroll(o=location.pathname+location.search){try{const c=`${window.scrollX},${window.scrollY}`;sessionStorage.setItem(SCROLL_KEY(o),c)}catch{}}
-	function readScroll(t=location.pathname+location.search){try{const n=sessionStorage.getItem(SCROLL_KEY(t));if(!n)return null;const[r,e]=n.split(",").map((t=>parseInt(t,10)||0));return{x:r,y:e}}catch{return null}}
+	
 
 // Text Animation + Appear in Line
 	function splitAndMask(e){if(e._originalHTML||(e._originalHTML=e.innerHTML),e._split)return e._split;const t=getComputedStyle(e).whiteSpace||"normal",i=e.style.whiteSpace,l=e.style.display;e.style.whiteSpace=t,"inline"===getComputedStyle(e).display&&(e.style.display="block"),e.clientWidth;const s=new SplitText(e,{type:"lines",linesClass:"line",reduceWhiteSpace:!1});return s.lines.forEach(n=>{const a=n.getBoundingClientRect().height||n.offsetHeight||0,o=document.createElement("div");o.className="text-mask",o.style.overflow="hidden",o.style.display="block",o.style.height=a+"px",n.style.whiteSpace=t,n.style.display="block",n.parentNode.insertBefore(o,n),o.appendChild(n)}),gsap.set(s.lines,{yPercent:100,rotation:10,transformOrigin:"0 10%",willChange:"transform,opacity"}),e.style.whiteSpace=i,e.style.display=l,e._split=s,s}
@@ -216,10 +321,6 @@
 		runPreloader=async function(){if(runPreloader._started)return;e.style.display="flex",runPreloader._started=!0;const t=[{ratio:2.5/3,heightVh:40,hold:.05},{ratio:16/9,heightVh:50,hold:.05},{ratio:1,heightVh:34,hold:.05},{ratio:4/3,heightVh:50,hold:.05},{ratio:1.5,heightVh:40,hold:.6}];l.forEach(((e,t)=>e.style.opacity=0===t?1:0));const o=t.length;let i=0;const p=t.map(((e,t)=>{const r=Math.round((t+1)/o*100),a=Math.round(10*Math.random()-5),n=Math.min(100,Math.max(i+1,r+a));return i=n,n}));for(let e=0;e<l.length;e++){const{ratio:o,heightVh:i,hold:u}=t[e%t.length];let g=h*(i/100),c=g*o;c>s&&(c=s,g=c/o);const w=p[e],m=gsap.to(n,{height:w+"%",duration:.8+u,ease:"power1.inOut"}),v={v:0===e?0:p[e-1]},y=gsap.to(v,{v:w,duration:.8+u,ease:"power1.inOut",onUpdate(){a.textContent=Math.round(v.v)+"%"}});0===e?await gsap.to(r,{width:c,height:g,duration:.8,ease:"power2.out"}):await d(l[e-1],l[e],r,{w:c,h:g},.8),await new Promise((e=>setTimeout(e,Math.round(1e3*u)))),await Promise.all([m,y])}await gsap.to(n,{height:"100%",duration:.2,ease:"none"}),a.textContent="100%",await new Promise((e=>setTimeout(e,200))),await gsap.to(e,{yPercent:-100,duration:.8,ease:"power2.inOut",onStart(){initAllYourInits()},onComplete(){sessionStorage.setItem("preloaderSeen","1"),window.removeEventListener("resize",u),e.remove()}})}
 	})();
 	
-// Page Transitions
-	function coverIn(){const e=document.querySelector(".page-overlay"),t=e?.querySelector(".page-overlay-tint");return!!e&&(e.style.display="block",e.style.pointerEvents="auto",gsap.set(e,{y:"100%",clipPath:"polygon(0% 0%,100% 20%,100% 100%,0% 100%)",willChange:"transform,clip-path"}),gsap.set(t,{opacity:0,willChange:"opacity"}),new Promise((o=>{gsap.timeline({defaults:{duration:1.35,ease:"power4.inOut"},onComplete:()=>o(!0)}).to(e,{y:"0%"},0).to(e,{clipPath:"polygon(0% 0%,100% 0%,100% 100%,0% 100%)"},0).to(t,{opacity:1,ease:"none"},.6)})))}
-	function coverOut({closeMenus:e=!0}={}){const n=document.querySelector(".page-overlay"),o=n?.querySelector(".page-overlay-tint");return!!n&&(e&&"function"==typeof forceCloseMenus&&forceCloseMenus(document),coverOut._running||(coverOut._running=new Promise((e=>{if("none"===getComputedStyle(n).display)return n.style.display="none",n.style.pointerEvents="none",coverOut._running=null,e(!0);gsap.timeline({onStart(){n.style.pointerEvents="auto"},onComplete(){n.style.display="none",n.style.pointerEvents="none",coverOut._running=null,e(!0)}}).to(n,{duration:.6,ease:"power4.in",y:"-100%"},0).to(o||n,{duration:.6,ease:"none",opacity:1},0)}))),coverOut._running)}
-
 // Page Entry Animations
 	function animateSelectedEntries(e=document){const t=e.querySelector(".selected-container"),r=t?.querySelector(".selected-content"),o=Array.from(e.querySelectorAll(".selected-item-outer")),l=gsap.timeline();if(!t||!r||!o.length)return l;o.forEach((e=>{if(e.__entryDone)return;const t=e.querySelector(".selected-visual"),r=e.querySelector(".selected-item-header .headline-m"),o=e.querySelector(".selected-item-details"),l=e.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:0,transformOrigin:"bottom center",opacity:0}),r&&gsap.set(r,{opacity:0}),o&&gsap.set(o,{opacity:0,height:0}),l.length&&gsap.set(l,{opacity:0,y:20,filter:"blur(10px)"})}));return(e=>{const o=()=>{requestAnimationFrame((()=>requestAnimationFrame(e)))};if(t.hasAttribute("data-loop-ready"))return o();const l=()=>{r.removeEventListener("selected:loop-ready",l,!0),o()};r.addEventListener("selected:loop-ready",l,!0),setTimeout((()=>{r.removeEventListener("selected:loop-ready",l,!0),o()}),600)})((()=>{const e=window.innerWidth||document.documentElement.clientWidth,t=window.innerHeight||document.documentElement.clientHeight,r=o.map((r=>{const o=r.getBoundingClientRect();return{o:r,r:o,area:Math.max(0,Math.min(o.right,e)-Math.max(o.left,0))*Math.max(0,Math.min(o.bottom,t)-Math.max(o.top,0)),center:.5*(o.left+o.right)}}));let a=r.filter((e=>e.area>1)).sort(((e,t)=>e.r.left-t.r.left));if(!a.length){const t=.5*e;a=r.slice().sort(((e,r)=>Math.abs(e.center-t)-Math.abs(r.center-t))).slice(0,2).sort(((e,t)=>e.r.left-t.r.left))}const n=new Set(a.map((e=>e.o)));r.forEach((e=>{if(e.o.__entryDone||n.has(e.o))return;const t=e.o.querySelector(".selected-visual"),r=e.o.querySelector(".selected-item-header .headline-m"),o=e.o.querySelector(".selected-item-details"),l=e.o.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:1,opacity:1}),r&&gsap.set(r,{opacity:1}),o&&gsap.set(o,{opacity:1,height:"auto"}),l.length&&gsap.set(l,{opacity:1,y:0,filter:"blur(0px)"}),e.o.__entryDone=!0}));a.forEach(((e,t)=>{const r=e.o;if(r.__entryDone)return;const o=r.querySelector(".selected-visual"),a=r.querySelector(".selected-item-header .headline-m"),n=r.querySelector(".selected-item-details"),i=r.querySelectorAll(".selected-item-details .body-s"),s=.15*t;o&&l.set(o,{opacity:1},s).to(o,{scaleY:1,duration:.8,ease:"power2.out"},s),a&&l.set(a,{opacity:1},s+.2).call((()=>{if(a.__splitRun)return;a.__splitRun=!0;const e=splitAndMask(a);gsap.delayedCall(.15,(()=>{animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,a)))}))}),null,s+.2),n&&l.to(n,{opacity:1,height:"auto",duration:.4,ease:"power2.out"},s+.6),i.length&&l.to(i,{opacity:1,y:0,filter:"blur(0px)",duration:.4,ease:"power2.out",stagger:.15},s+.6),r.__entryDone=!0}))})),l}
 	function animateCapabilitiesEntry(t,{delayHero:e=!1}={}){const a=gsap.timeline(),o=t.querySelector(".section-table-of-contents");o&&gsap.set(o,{autoAlpha:0});const r=t.querySelector(".approach-mask");r&&(gsap.set(r,{scale:0,transformOrigin:"0% 100%",willChange:"transform"}),a.to(r,{scale:1,duration:1.2,ease:"power2.out"},0));const l=t.querySelector(".section-hero .headline-lg");if(l){gsap.set(l,{autoAlpha:0});const n=e?0.2:0;a.addLabel("heroStart",n).set(l,{autoAlpha:1},"heroStart").call(()=>{const s=splitAndMask(l);animateLines(s.lines).eventCallback("onComplete",()=>safelyRevertSplit(s,l))},null,"heroStart")}const n=t.querySelector(".section-hero .button-primary");n&&(gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),a.fromTo(n,{autoAlpha:0,y:20,filter:"blur(10px)"},{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},"heroStart+=0.4"));const s=gsap.utils.toArray(t.querySelectorAll(".table-of-contents-item"));return s.length&&a.from(s,{autoAlpha:0,paddingTop:"6rem",paddingBottom:"6rem",duration:1,ease:"power2.out",stagger:.15},0),o&&a.to(o,{autoAlpha:1,duration:.6,ease:"power2.out"},0),a}
@@ -231,7 +332,7 @@
 	function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
 	function runPageEntryAnimations(e){const{delayHero:t,entryOffset:a}=getEntryConfig(e),n=gsap.timeline();return"info"===e.dataset.barbaNamespace&&n.add(animateInfoEntry(e),0),e.querySelector(".section-table-of-contents")&&n.add(animateCapabilitiesEntry(e,{delayHero:t}),0),e.querySelector(".selected-item-outer")&&n.add(animateSelectedEntries(e),0),e.querySelector(".cs-hero-image")&&n.add(animateCaseStudyEntry(e),0),{tl:n,entryOffset:a}}
 	async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
-	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await coverOut(),await runSafeInit(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
+	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="";if(n) await TransitionEffects.coverOut();await runSafeInit(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
 	function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,l=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),l&&l.progress()>0&&l.timeScale(2).reverse();const n=e.querySelector(".menu-wrapper"),o=e.querySelector(".menu-container"),t=e.querySelector(".filters-container");n?.style&&(n.style.display="none"),o?.style&&(o.style.display="none"),t?.style&&(t.style.display="none")})),document.body.style.overflow=""}
 	
 // ===== Debug helpers =====
@@ -404,7 +505,7 @@ function installDebugProbes() {
 					async leave({ current }) {
 						NavigationManager?.setLock('overlay', true);
 						window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
-						saveScroll();
+						ScrollState.save();
 						await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
 						destroyAllYourInits();
 						current.container.remove();
@@ -415,7 +516,7 @@ function installDebugProbes() {
 						const entries = performance.getEntriesByType('navigation');
 						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
 						if (isHistory) {
-						const pos = readScroll();
+						const pos = ScrollState.read();
 							if (pos) window.scrollTo(pos.x, pos.y);
 						} else if (!location.hash) {
 							window.scrollTo(0, 0);
@@ -440,8 +541,8 @@ function installDebugProbes() {
 						NavigationManager?.setLock('overlay', true);
 						window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
 						document.body.style.overflow = "";
-						saveScroll();
-						const ok = await coverIn();
+						ScrollState.save();
+						const ok = await TransitionEffects.coverIn();
 						if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
 						destroyAllYourInits();
 						current.container.remove();
@@ -452,11 +553,11 @@ function installDebugProbes() {
 						const entries = performance.getEntriesByType('navigation');
 						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
 						if (isHistory) {
-							const pos = readScroll();
+							const pos = ScrollState.read();
 							if (pos) window.scrollTo(pos.x, pos.y);
 						}
 						if (!location.hash) window.scrollTo(0, 0);
-						await coverOut();
+						await TransitionEffects.coverOut();
 						await runEntryFlow(next.container, { withCoverOut: false });
 					},
 					afterEnter({ next }) {
