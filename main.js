@@ -237,6 +237,56 @@
 	  }, true);
 	}
 
+	// --- Link audit (console table) ---
+	if (window.DEBUG && !window.__ptLinkAuditInstalled) {
+	  window.__ptLinkAuditInstalled = true;
+	
+	  window.runLinkAudit = function runLinkAudit() {
+	    function normalizePath(href){
+	      try { return new URL(href, location.origin).pathname.replace(/\/+$/,'') || '/'; }
+	      catch { return (href || '').replace(/\/+$/,'') || '/'; }
+	    }
+	    function whyNotNavigable(a) {
+	      if (!a) return 'no <a>';
+	      const raw = a.getAttribute('href') || a.href || '';
+	      if (!raw) return 'empty href';
+	      try {
+	        const url = new URL(raw, location.href);
+	        if (normalizePath(url.pathname) === normalizePath(location.pathname) && url.hash) return 'same-page hash';
+	        if (!/^https?:$/.test(url.protocol)) return 'non-http(s)';
+	        if (url.origin !== location.origin) return 'cross-origin';
+	        if (a.target === '_blank') return 'target=_blank';
+	        if (a.hasAttribute('download')) return 'download';
+	        if (/\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(url.pathname)) return 'file-ext';
+	        if (a.closest('[data-barba-prevent]')) return 'data-barba-prevent ancestor';
+	        return ''; // OK for Barba
+	      } catch {
+	        return 'bad URL';
+	      }
+	    }
+	
+	    const ns = getNS(document);
+	    const rows = [...document.querySelectorAll('a[href]')]
+	      .filter(a => a.offsetParent) // visible-ish
+	      .map(a => {
+	        const reason = whyNotNavigable(a);
+	        return {
+	          ns,
+	          text: (a.textContent || '').trim().slice(0, 80),
+	          href: a.getAttribute('href') || a.href,
+	          reason: reason || '(will be intercepted by Barba)'
+	        };
+	      });
+	
+	    console.log('[PT][audit] namespace:', ns);
+	    console.table(rows);
+	    return rows;
+	  };
+	
+	  // Run once on first load:
+	  try { window.runLinkAudit(); } catch {}
+	}
+
 // Barba Init
 	function initBarba() {
 		if (window.__barbaInited) return;
@@ -324,6 +374,7 @@
 			        	logPT('afterEnter', { ns: getNS(next.container) });
 			        	requestAnimationFrame(() => reinitWebflowModules());
 			        	next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
+						if (window.DEBUG && window.runLinkAudit) window.runLinkAudit();
 			      	}
 			    }
 			]
