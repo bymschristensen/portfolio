@@ -27,6 +27,125 @@
 		  }
 	}
 
+// NavigationManager
+	window.NavigationManager = (function () {
+		const state = {
+			debug: false,
+			installed: false,
+			linkProbeInstalled: false,
+			locks: new Set(),
+			clickHandler: null,
+		};
+	
+		function dlog(...args) { if (state.debug) console.debug('[Nav]', ...args); }
+	
+		function isInternalAnchor(ev) {
+			if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return null;
+			const a = ev.target && (ev.target.tagName === 'A' ? ev.target : ev.target.closest?.('a'));
+			if (!a) return null;
+			if (a.hasAttribute('download') || a.target === '_blank' || a.getAttribute('rel') === 'external') return null;
+			if (a.closest('[data-router-ignore="true"], .w-lightbox')) return null;
+			
+			const raw = a.getAttribute('href') || a.href || '';
+			if (!raw) return null;
+			let url;
+			try { url = new URL(raw, location.href); } catch { return null; }
+			
+			// internal, not same-path-with-hash
+			const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
+			if (url.origin !== location.origin) return null;
+			if (samePath && url.hash) return null;
+			return { a, url };
+		}
+	
+		function installLinkInterceptor() {
+			if (state.installed) return;
+			state.clickHandler = (ev) => {
+				const hit = isInternalAnchor(ev);
+				if (!hit) return;
+				
+				// Allow page-specific opt-out (your old rule)
+				const ns = document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace || '';
+				if (!(ns === 'archive' || ns === 'resources')) {
+					const blocker = hit.a.closest('[data-barba-prevent]');
+					if (blocker && blocker.getAttribute('data-barba-prevent') === 'true') return;
+				}
+	
+				// NAV LOCK: block if locked
+				if (state.locks.size) {
+					dlog('blocked by lock(s):', [...state.locks]);
+					ev.preventDefault();
+					ev.stopPropagation();
+					ev.stopImmediatePropagation();
+					return;
+				}
+	
+				// Route via Barba if available
+				ev.preventDefault();
+				ev.stopPropagation();
+				ev.stopImmediatePropagation();
+				if (window.barba?.go) barba.go(hit.url.href);
+				else location.href = hit.url.href;
+			};
+	
+		    document.addEventListener('pointerdown', state.clickHandler, { capture: true });
+		    document.addEventListener('click', state.clickHandler, { capture: true });
+		    state.installed = true;
+		    dlog('link interceptor installed');
+	  	}
+	
+		// Simple lock API
+		function installNavLock() {
+			dlog('nav lock ready (use NavigationManager.setLock(label, true/false))');
+		}
+	
+		function setLock(label, on) {
+			if (!label) return;
+			on ? state.locks.add(label) : state.locks.delete(label);
+			dlog(on ? 'lock +' : 'lock -', label, '| active:', [...state.locks]);
+		}
+	
+		function isLocked() { return state.locks.size > 0; }
+		function reason() { return [...state.locks]; }
+	
+		function init({ debug = false } = {}) {
+			state.debug = !!debug;
+			dlog('init');
+		}
+
+		function attachMenuLocks(root = document) {
+			const wraps = root.querySelectorAll('.nav-primary-wrap');
+			wraps.forEach(w => {
+				const menuTL   = w._menuTimeline;
+				const filterTL = w._filterTimeline;
+				
+				const hook = (tl, label) => {
+					if (!tl || tl.__navLockHooked) return;
+					tl.__navLockHooked = true;
+					
+					// Lock while animating open OR close
+					tl.eventCallback('onStart',           () => NavigationManager.setLock(label, true));
+					tl.eventCallback('onReverse',         () => NavigationManager.setLock(label, false));
+					tl.eventCallback('onComplete',        () => NavigationManager.setLock(label, false));
+					tl.eventCallback('onReverseComplete', () => NavigationManager.setLock(label, false));
+				};
+				
+				hook(menuTL,   'menu');
+				hook(filterTL, 'filter');
+			});
+		}
+	
+		return {
+			init,
+			installLinkInterceptor,
+			installNavLock,
+			setLock,
+			isLocked,
+			reason,
+			attachMenuLocks,
+		};
+	})();
+
 // System Helpers
 	function registerGsapObserver(e){return window._gsapObservers.push(e),e}function registerTicker(e){return window._activeTickers.push(e),e}function registerObserver(e){return window._activeObservers.push(e),e}window._gsapObservers=window._gsapObservers||[],window._activeTickers=window._activeTickers||[],window._activeObservers=window._activeObservers||[];
 	let destroyCursor = null;	
@@ -113,8 +232,7 @@
 	async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
 	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await coverOut(),await runSafeInit(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
 	function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,l=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),l&&l.progress()>0&&l.timeScale(2).reverse();const n=e.querySelector(".menu-wrapper"),o=e.querySelector(".menu-container"),t=e.querySelector(".filters-container");n?.style&&(n.style.display="none"),o?.style&&(o.style.display="none"),t?.style&&(t.style.display="none")})),document.body.style.overflow=""}
-	function ensureBarbaClickRouting(){if(window.__globalRouterInstalled)return;window.__globalRouterInstalled=!0;const t=t=>{const e=(t=>{if(t.defaultPrevented||0!==t.button||t.metaKey||t.ctrlKey||t.shiftKey||t.altKey)return null;const e=t.target&&("A"===t.target.tagName?t.target:t.target.closest?.("a"));if(!e)return null;if(e.hasAttribute("download")||"_blank"===e.target)return null;if(e.closest('[data-router-ignore="true"], .w-lightbox'))return null;const r=e.getAttribute("href")||e.href||"";if(!r)return null;let a;try{a=new URL(r,location.href)}catch{return null}return a.origin!==location.origin||a.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"")&&a.hash?null:{a:e,url:a}})(t);if(!e)return;const r=document.querySelector('[data-barba="container"]')?.getAttribute("data-barba-namespace")||"";if(!("resources"===r||"archive"===r)){const t=e.a.closest("[data-barba-prevent]");if(t&&"true"===t.getAttribute("data-barba-prevent"))return}t.preventDefault(),t.stopPropagation(),t.stopImmediatePropagation(),window.barba?.go?barba.go(e.url.href):location.href=e.url.href};document.addEventListener("pointerdown",t,{capture:!0}),document.addEventListener("click",t,{capture:!0})}
-
+	
 // ===== Debug helpers =====
 function logBarbaSanity() {
   try {
@@ -220,7 +338,15 @@ function installDebugProbes() {
   }
 }
 
-	!function(){function n(){ensureBarbaClickRouting(),window.initBarba&&window.initBarba()}"loading"!==document.readyState?n():document.addEventListener("DOMContentLoaded",n,{once:!0})}();
+	!function(){
+		function boot() {
+			NavigationManager.init({ debug: DEBUG });
+			NavigationManager.installLinkInterceptor();
+			window.initBarba && window.initBarba();
+		}
+		if (document.readyState !== "loading") boot();
+		else document.addEventListener("DOMContentLoaded", boot, { once: true });
+	}();
 
 // Barba Init
 	function initBarba() {
@@ -275,6 +401,7 @@ function installDebugProbes() {
 					from: { namespace: ['selected','archive','resources'] },
     				to: { namespace: ['selected','archive','resources'] },
 					async leave({ current }) {
+						NavigationManager?.setLock('overlay', true);
 						window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
 						saveScroll();
 						await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
@@ -283,6 +410,7 @@ function installDebugProbes() {
 					},
 					async enter({ next }) {
 						resetWebflow({ next });
+						NavigationManager?.setLock('overlay', false);
 						const entries = performance.getEntriesByType('navigation');
 						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
 						if (isHistory) {
@@ -308,6 +436,7 @@ function installDebugProbes() {
 						return !(work.includes(current?.namespace) && work.includes(next?.namespace));
 					},
 					async leave({ current }) {
+						NavigationManager?.setLock('overlay', true);
 						window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
 						document.body.style.overflow = "";
 						saveScroll();
@@ -318,6 +447,7 @@ function installDebugProbes() {
 					},
 					async enter({ next }) {
 						resetWebflow({ next });
+						NavigationManager?.setLock('overlay', false);
 						const entries = performance.getEntriesByType('navigation');
 						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
 						if (isHistory) {
@@ -357,6 +487,7 @@ function installDebugProbes() {
 		initNavigation(root);
 		initMenuLinkHover(root);
 		initCaseStudyCloseButton(root);
+		NavigationManager.attachMenuLocks(root);
 		initThemeSwitch(root);
 		initAccordions(root);
 		
