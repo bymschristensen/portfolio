@@ -5,6 +5,27 @@
 	gsap.registerPlugin(ScrollTrigger,Flip,SplitText,TextPlugin,Observer);
 	const DEBUG = true;
 	window.DEBUG = true;
+	if (DEBUG) {
+		  // 1) Log unhandled errors (including async)
+		  window.addEventListener('error',  e => console.error('[Error]', e.message, e.filename, e.lineno, e.error));
+		  window.addEventListener('unhandledrejection', e => console.error('[Unhandled Rejection]', e.reason));
+		
+		  // 2) Loud logging wrapper
+		  window.dlog = (...args) => console.debug('[DEBUG]', ...args);
+		
+		  // 3) ScrollTrigger markers + quick sanity settings
+		  if (window.ScrollTrigger) {
+		    ScrollTrigger.defaults({ markers: true });               // see triggers on page
+		    ScrollTrigger.config({ ignoreMobileResize: true });       // reduces noisy refreshes
+		  }
+		
+		  // 4) Barba lifecycle breadcrumbs
+		  if (window.barba) {
+		    barba.hooks.beforeEnter(({ next }) => dlog('barba:beforeEnter', next?.container?.dataset?.barbaNamespace));
+		    barba.hooks.afterEnter(({ next })  => dlog('barba:afterEnter', next?.container?.dataset?.barbaNamespace));
+		    barba.hooks.after   (()            => dlog('barba:after (transition complete)'));
+		  }
+	}
 
 // System Helpers
 	function registerGsapObserver(e){return window._gsapObservers.push(e),e}function registerTicker(e){return window._activeTickers.push(e),e}function registerObserver(e){return window._activeObservers.push(e),e}window._gsapObservers=window._gsapObservers||[],window._activeTickers=window._activeTickers||[],window._activeObservers=window._activeObservers||[];
