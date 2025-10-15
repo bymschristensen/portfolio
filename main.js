@@ -113,7 +113,7 @@
 	async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
 	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await coverOut(),await runSafeInit(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
 	function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,l=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),l&&l.progress()>0&&l.timeScale(2).reverse();const n=e.querySelector(".menu-wrapper"),o=e.querySelector(".menu-container"),t=e.querySelector(".filters-container");n?.style&&(n.style.display="none"),o?.style&&(o.style.display="none"),t?.style&&(t.style.display="none")})),document.body.style.overflow=""}
-	function ensureBarbaClickRouting(){if(window.__globalRouterInstalled)return;window.__globalRouterInstalled=!0;document.addEventListener("click",(t=>{const e=t.target&&("A"===t.target.tagName?t.target:t.target.closest?.("a"));if(!e)return;if(e.closest('[data-router-ignore="true"], .w-lightbox'))return;if("external"===e.getAttribute("rel"))return;if(e.closest('[data-barba-prevent="true"]'))return;const r=e.getAttribute("href")||e.href||"";if(r&&!(t=>t.defaultPrevented||t.metaKey||t.ctrlKey||t.shiftKey||t.altKey||0!==t.button)(t)&&!e.hasAttribute("download")&&"_blank"!==e.target&&(t=>{try{return new URL(t,location.href).origin===location.origin}catch{return!1}})(r)){try{const t=new URL(r,location.href);if(t.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"")&&t.hash)return}catch{}t.preventDefault(),t.stopPropagation(),t.stopImmediatePropagation(),window.barba?.go?barba.go(r):location.href=r}}),!0)}
+	function ensureBarbaClickRouting(){if(window.__globalRouterInstalled)return;window.__globalRouterInstalled=!0;const t=t=>{const e=(t=>{if(t.defaultPrevented||0!==t.button||t.metaKey||t.ctrlKey||t.shiftKey||t.altKey)return null;const e=t.target&&("A"===t.target.tagName?t.target:t.target.closest?.("a"));if(!e)return null;if(e.hasAttribute("download")||"_blank"===e.target)return null;if(e.closest('[data-router-ignore="true"], .w-lightbox'))return null;const r=e.getAttribute("href")||e.href||"";if(!r)return null;let a;try{a=new URL(r,location.href)}catch{return null}return a.origin!==location.origin||a.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"")&&a.hash?null:{a:e,url:a}})(t);if(!e)return;const r=document.querySelector('[data-barba="container"]')?.getAttribute("data-barba-namespace")||"";if(!("resources"===r||"archive"===r)){const t=e.a.closest("[data-barba-prevent]");if(t&&"true"===t.getAttribute("data-barba-prevent"))return}t.preventDefault(),t.stopPropagation(),t.stopImmediatePropagation(),window.barba?.go?barba.go(e.url.href):location.href=e.url.href};document.addEventListener("pointerdown",t,{capture:!0}),document.addEventListener("click",t,{capture:!0})}
 
 // ===== Debug helpers =====
 function logBarbaSanity() {
@@ -238,9 +238,14 @@ function installDebugProbes() {
 					const url = new URL(a.getAttribute('href') || a.href, location.href);
 					const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
 					if (samePath && url.hash) return true;
-				} catch(_) {}
-				const blocker = a.closest('[data-barba-prevent]');
-				return blocker ? blocker.getAttribute('data-barba-prevent') === 'true' : false;
+				} catch {}
+				if (a.hasAttribute('download') || a.target === '_blank' || a.getAttribute('rel') === 'external') return true;
+				const ns = document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace || '';
+				if (ns !== 'archive' && ns !== 'resources') {
+					const blocker = a.closest('[data-barba-prevent]');
+					if (blocker && blocker.getAttribute('data-barba-prevent') === 'true') return true;
+				}
+				return false;
 			},
 			transitions: [
 			// 1) first-load / preloader
@@ -266,11 +271,41 @@ function installDebugProbes() {
 			        	if (!location.hash) window.scrollTo(0, 0);
 			      	}
 				},{
+					name: 'fade',
+					from: { namespace: ['selected','archive','resources'] },
+    				to: { namespace: ['selected','archive','resources'] },
+					async leave({ current }) {
+						window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
+						saveScroll();
+						await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+						destroyAllYourInits();
+						current.container.remove();
+					},
+					async enter({ next }) {
+						resetWebflow({ next });
+						const entries = performance.getEntriesByType('navigation');
+						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
+						if (isHistory) {
+						const pos = readScroll();
+							if (pos) window.scrollTo(pos.x, pos.y);
+						} else if (!location.hash) {
+							window.scrollTo(0, 0);
+						}
+						await runEntryFlow(next.container, { withCoverOut: false });
+					},
+					afterEnter({ next }) {
+						requestAnimationFrame(() => reinitWebflowModules());
+						requestAnimationFrame(() => {
+							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+							if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
+						});
+						next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
+					}
+				},{
 					name: 'swipe',
 					custom({ current, next }) {
 						const work = ['selected','archive','resources'];
-						const isWorkToWork = work.includes(current?.namespace) && work.includes(next?.namespace);
-						return !isWorkToWork;
+						return !(work.includes(current?.namespace) && work.includes(next?.namespace));
 					},
 					async leave({ current }) {
 						window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
@@ -295,37 +330,6 @@ function installDebugProbes() {
 					},
 					afterEnter({ next }) {
 						forceCloseMenus();
-						requestAnimationFrame(() => reinitWebflowModules());
-						requestAnimationFrame(() => {
-							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-							if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
-						});
-						next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
-					}
-				},{
-					name: 'fade',
-					from: { namespace: ['selected','archive','resources'] },
-					to: { namespace: ['selected','archive','resources'] },
-					async leave({ current }) {
-						window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
-						saveScroll();
-						await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-						destroyAllYourInits();
-						current.container.remove();
-					},
-					async enter({ next }) {
-						resetWebflow({ next });
-						const entries = performance.getEntriesByType('navigation');
-						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
-						if (isHistory) {
-						const pos = readScroll();
-							if (pos) window.scrollTo(pos.x, pos.y);
-						} else if (!location.hash) {
-							window.scrollTo(0, 0);
-						}
-						await runEntryFlow(next.container, { withCoverOut: false });
-					},
-					afterEnter({ next }) {
 						requestAnimationFrame(() => reinitWebflowModules());
 						requestAnimationFrame(() => {
 							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
