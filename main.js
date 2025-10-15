@@ -78,70 +78,6 @@
 	    return null;
 	  }
 	}
-	let __historyNav = false;
-	let __navModeFade=!1;function getClickedAnchor(t){return t&&1===t.nodeType?("A"===t.tagName?t:t.closest("a[href]")):null}
-	document.addEventListener("pointerdown",(ev=>{
-	  if(0!==ev.button){logPT("pointerdown-skip","non-left button");return}
-	  if(ev.metaKey||ev.ctrlKey||ev.shiftKey||ev.altKey){logPT("pointerdown-skip","modifier held");return}
-	  const a=getClickedAnchor(ev.target);if(!a){logPT("pointerdown-skip","no anchor under pointer");return}
-	  const href=a.getAttribute("href")||a.href||"";if(!href){logPT("pointerdown-skip","empty href");return}
-	  const isExternal=/^https?:\/\//i.test(href)&&!href.startsWith(location.origin);
-	  const isSpecial=/^(mailto:|tel:)/i.test(href)||a.target==="_blank"||a.hasAttribute("download")||/\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(href);
-	  if(!isExternal&&!isSpecial){
-	    try{
-	      const u=new URL(href,location.href);
-	      const samePath=(u.pathname.replace(/\/+$/,"")||"/")===(location.pathname.replace(/\/+$/,"")||"/");
-	      if(samePath&&u.hash){logPT("pointerdown-skip","same-page hash",{href});return}
-	    }catch(_){}
-	    __navModeFade=(a.getAttribute("data-pagetransition")?.toLowerCase()==="fade")
-	  }
-	  const attr=a.getAttribute("data-pagetransition");
-	  logPT("pointerdown",{href,attr,decidedMode:__navModeFade?"fade":"swipe",fromNS:getNS(document)})
-	}),!0);
-	// Force internal <a> to use Barba (workaround when Barba skips clicks on some pages)
-	document.addEventListener("click", (ev) => {
-	  // Only left-click without modifiers
-	  if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
-	
-	  const a = ev.target && (ev.target.closest ? ev.target.closest("a[href]") : null);
-	  if (!a) return;
-	
-	  // Same checks we already log in pointerdown
-	  const href = a.getAttribute("href") || a.href || "";
-	  if (!href) return;
-	
-	  // External / special links → let browser handle
-	  const isExternal = /^https?:\/\//i.test(href) && !href.startsWith(location.origin);
-	  const isSpecial  = /^(mailto:|tel:)/i.test(href) || a.target === "_blank" || a.hasAttribute("download") ||
-	                     /\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(href);
-	  if (isExternal || isSpecial) return;
-	
-	  // Same-page hash → allow browser scroll, no transition
-	  const samePath = (() => {
-	    try {
-	      const u = new URL(href, location.href);
-	      const clean = (p) => (p.replace(/\/+$/,"") || "/");
-	      return clean(u.pathname) === clean(location.pathname);
-	    } catch(_) { return false; }
-	  })();
-	  if (samePath && a.hash) return;
-	
-	  // Decide fade vs swipe based on attribute (like our pointerdown)
-	  __navModeFade = (a.getAttribute("data-pagetransition") || "").toLowerCase() === "fade";
-	
-	  // Hand it to Barba
-	  ev.preventDefault();
-	  logPT("router-shim → barba.go()", { href, fromNS: getNS(document), mode: __navModeFade ? "fade" : "swipe" });
-	  try {
-	    barba.go(href);
-	  } catch (err) {
-	    console.error("[PT] router-shim error", err);
-	    // Fallback to hard navigate if something goes wrong
-	    location.assign(href);
-	  }
-	}, true); // use capture to run before other handlers
-	window.addEventListener("popstate",()=>{__historyNav=!0;logPT("popstate → history navigation detected")},{passive:!0});
-	window.addEventListener("popstate",()=>{__navModeFade=!1;logPT("popstate → set mode=swipe")},{passive:!0});
 
 // Text Animation + Appear in Line
 	function splitAndMask(e){if(e._originalHTML||(e._originalHTML=e.innerHTML),e._split)return e._split;const t=getComputedStyle(e).whiteSpace||"normal",i=e.style.whiteSpace,l=e.style.display;e.style.whiteSpace=t,"inline"===getComputedStyle(e).display&&(e.style.display="block"),e.clientWidth;const s=new SplitText(e,{type:"lines",linesClass:"line",reduceWhiteSpace:!1});return s.lines.forEach(n=>{const a=n.getBoundingClientRect().height||n.offsetHeight||0,o=document.createElement("div");o.className="text-mask",o.style.overflow="hidden",o.style.display="block",o.style.height=a+"px",n.style.whiteSpace=t,n.style.display="block",n.parentNode.insertBefore(o,n),o.appendChild(n)}),gsap.set(s.lines,{yPercent:100,rotation:10,transformOrigin:"0 10%",willChange:"transform,opacity"}),e.style.whiteSpace=i,e.style.display=l,e._split=s,s}
@@ -249,27 +185,56 @@
 	function runPageEntryAnimations(e){const{delayHero:t,entryOffset:a}=getEntryConfig(e),n=gsap.timeline();return"info"===e.dataset.barbaNamespace&&n.add(animateInfoEntry(e),0),e.querySelector(".section-table-of-contents")&&n.add(animateCapabilitiesEntry(e,{delayHero:t}),0),e.querySelector(".selected-item-outer")&&n.add(animateSelectedEntries(e),0),e.querySelector(".cs-hero-image")&&n.add(animateCaseStudyEntry(e),0),{tl:n,entryOffset:a}}
 	async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
 	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await coverOut(),await runSafeInit(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
-	function normalizePath(e){try{return new URL(e,location.origin).pathname.replace(/\/+$/,"")||"/"}catch{return(e||"").replace(/\/+$/,"")||"/"}}
-	function isPageTransition(data) {
-	  const i = getClickedAnchor(data?.trigger);
-	  if (!i) { logPT("isPageTransition → true (no trigger)"); return true; }
+	function normalizePath(href) {
+	  try { return new URL(href, location.origin).pathname.replace(/\/+$/,'') || '/'; }
+	  catch { return (href || '').replace(/\/+$/,'') || '/'; }
+	}
 	
-	  const r = i.getAttribute("href") || i.href || "";
-	  if (!r) { logPT("isPageTransition → true (empty href)"); return true; }
+	function getClickedAnchor(trigger) {
+	  if (!trigger || trigger.nodeType !== 1) return null;
+	  return trigger.tagName === 'A' ? trigger : (trigger.closest ? trigger.closest('a[href]') : null);
+	}
 	
-	  // same-page anchor → no transition
-	  if (normalizePath(r) === normalizePath(location.pathname) && i.hash) {
-	    logPT("isPageTransition → false (same-page hash)", { href: r });
-	    return false;
-	  }
+	function isBarbaNavigable(trigger) {
+	  const a = getClickedAnchor(trigger);
+	  if (!a) return true;
 	
-	  const external = /^https?:\/\//i.test(r) && !r.startsWith(location.origin);
-	  const special  = /^(mailto:|tel:)/i.test(r) || "_blank" === i.target || i.hasAttribute("download") ||
-	                   /\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(r);
+	  const href = a.getAttribute('href') || a.href || '';
+	  if (!href) return false;
 	
-	  const result = !(external || special);
-	  logPT("isPageTransition", { href: r, external, special, result });
-	  return result;
+	  if (normalizePath(href) === normalizePath(location.pathname) && a.hash) return false;
+	
+	  let url;
+	  try { url = new URL(href, location.href); } catch { return false; }
+	
+	  if (!/^https?:$/.test(url.protocol)) return false;
+	  if (url.origin !== location.origin) return false;
+	  if (
+	    a.target === '_blank' ||
+	    a.hasAttribute('download') ||
+	    /\.(pdf|zip|rar|7z|docx?|xlsx?|pptx?)($|\?|\#)/i.test(url.pathname)
+	  ) return false;
+	
+	  return true;
+	}
+	
+	/** Decide the mode (default swipe, only fade when data-pagetransition="fade") */
+	function getTransitionMode(trigger) {
+	  const a = getClickedAnchor(trigger);
+	  const val = (a && (a.getAttribute('data-pagetransition') || '')).toLowerCase();
+	  return val === 'fade' ? 'fade' : 'swipe';
+	}
+
+	if (window.DEBUG && !window.__ptClickDebugInstalled) {
+	  window.__ptClickDebugInstalled = true;
+	  document.addEventListener('click', (e) => {
+	    const a = e.target.closest?.('a[href]');
+	    if (!a) return;
+	    const href = a.getAttribute('href') || a.href || '';
+	    const navigable = isBarbaNavigable(a);
+	    const mode = getTransitionMode(a);
+	    console.log('[PT][click]', { href, navigable, mode, ns: getNS(document) });
+	  }, true);
 	}
 
 // Barba Init
@@ -303,55 +268,64 @@
 				// }
 			// },
 				{
-					name: "initial-load",
-					once: async ({ next }) => {
-						await runEntryFlow(next.container);
-					    reinitWebflowModules();
-						if (!location.hash) window.scrollTo(0, 0);
-					}
+				    name: 'initial-load',
+				    once: async ({ next }) => {
+				    	await runEntryFlow(next.container);
+				    	reinitWebflowModules();
+				    	if (!location.hash) window.scrollTo(0, 0);
+				    }
 				},{
-					name: "page-transitions",
-					custom: (data) => isPageTransition(data),
-					leave: async ({ current, trigger }) => {
-						saveScroll();
-						const mode = __navModeFade ? "fade" : "swipe";
-						logPT("LEAVE start", { fromNS: getNS(current.container), href: hrefFrom(trigger), mode });
+					name: 'page-transitions',
+			      	custom: ({ trigger }) => isBarbaNavigable(trigger),
+			    	leave: async ({ current, trigger }) => {
+			        	saveScroll();
+			        	const mode = getTransitionMode(trigger); // <-- no globals
+			
+			        	logPT('LEAVE start', {
+			          		fromNS: getNS(current.container),
+			          		href: hrefFrom(trigger),
+			          		mode
+			        	});
+			
+			        	if (mode === 'fade') {
+			          		await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+			        	} else {
+			          		const ok = await coverIn();
+			          		if (!ok) {
+			            		await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+			            		logPT('LEAVE anim', 'swipe requested but overlay missing → fallback fade');
+			          		}
+			        	}
+			
+			        	destroyAllYourInits();
+			        	current.container.remove();
+			        	logPT('LEAVE done');
+			    	},
+			    	enter: async ({ next, trigger }) => {
+			    		resetWebflow({ next });
 						
-						if (__navModeFade) {
-							await gsap.to(current.container,{autoAlpha:0,duration:.45,ease:"power1.out"});
-						} else {
-							const ok = await coverIn();
-						if (!ok) {
-							await gsap.to(current.container,{autoAlpha:0,duration:.45,ease:"power1.out"});
-								logPT("LEAVE anim","swipe requested but overlay missing → fallback fade");
-							}
-						}
-						
-						destroyAllYourInits();
-						current.container.remove();
-						logPT("LEAVE done");
-					},
-					enter: async ({ next, trigger }) => {
-						resetWebflow({ next });
-						
-						const wasHistory = __historyNav; __historyNav = false;
-						if (wasHistory) {
-							const pos = readScroll(); if (pos) window.scrollTo(pos.x,pos.y);
-						} else if (!location.hash) {
-							window.scrollTo(0,0);
-						}
-						
-						const usedCoverOut = !__navModeFade && await coverOut();
-						await runEntryFlow(next.container, { withCoverOut:false });
-						logPT("ENTER anim finished", { usedCoverOut });
-						__navModeFade = false;
-					},
-					afterEnter: ({ next }) => {
-						logPT("afterEnter", { ns: getNS(next.container) });
-						requestAnimationFrame(() => reinitWebflowModules());
-						next.container.querySelectorAll("video[autoplay]").forEach(v => { v.muted = true; v.play().catch(()=>{}) });
-					}
-				}
+			        	const entries = performance.getEntriesByType('navigation');
+			        	const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
+			
+			        	if (isHistory) {
+			          		const pos = readScroll();
+			          		if (pos) window.scrollTo(pos.x, pos.y);
+			        	} else if (!location.hash) {
+			          		window.scrollTo(0, 0);
+			        	}
+			
+			        	const mode = getTransitionMode(trigger);
+			        	const usedCoverOut = (mode === 'swipe') && await coverOut();
+			
+			        	await runEntryFlow(next.container, { withCoverOut: false });
+			        	logPT('ENTER anim finished', { usedCoverOut });
+			    	},
+			      	afterEnter: ({ next }) => {
+			        	logPT('afterEnter', { ns: getNS(next.container) });
+			        	requestAnimationFrame(() => reinitWebflowModules());
+			        	next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
+			      	}
+			    }
 			]
 		});
 	}
