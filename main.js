@@ -611,4 +611,8 @@ function installDebugProbes() {
 	}
 
 if(typeof initBarba==="function")window.initBarba=initBarba;
+if (typeof runEntryFlow === 'function')      window.runEntryFlow = runEntryFlow;
+if (typeof finalizeAfterEntry === 'function') window.finalizeAfterEntry = finalizeAfterEntry;
+if (typeof runPageEntryAnimations === 'function') window.runPageEntryAnimations = runPageEntryAnimations;
+if (typeof getEntryConfig === 'function')    window.getEntryConfig = getEntryConfig;
 if(typeof initAllYourInits==="function")window.initAllYourInits=initAllYourInits;
