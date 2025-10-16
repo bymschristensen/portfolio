@@ -6,7 +6,7 @@
 	const DEBUG = true;
 	window.DEBUG = true;
 
-// 1. NavigationManager
+// NavigationManager
 	window.NavigationManager = (function () {
 		const state = {
 			debug: false,
@@ -38,7 +38,7 @@
 		};
 	})();
 
-// 2. WebflowAdapter
+// WebflowAdapter
 	window.WebflowAdapter = (function () {
 		function reset({next:t}){if(!t?.html)return;const e=(new DOMParser).parseFromString(t.html,"text/html"),a=e.querySelector("html").getAttribute("data-wf-page"),r=e.querySelector("script[data-wf-site-data]")?.textContent;if(document.documentElement.setAttribute("data-wf-page",a),document.querySelectorAll("script[data-wf-site-data]").forEach((t=>t.remove())),r){const t=document.createElement("script");t.type="application/json",t.setAttribute("data-wf-site-data",""),t.textContent=r,document.head.appendChild(t)}window.Webflow?.destroy?.(),window.Webflow?.ready?.();const n=Webflow.require?.("ix2");n?.init()}
 		function reinit(){if(window.Webflow&&Webflow.require){try{Webflow.ready&&Webflow.ready()}catch(e){}try{const e=Webflow.require("tabs");e?.ready&&e.ready()}catch(e){}try{const e=Webflow.require("slider");e?.ready&&e.ready()}catch(e){}}}
@@ -50,7 +50,7 @@
 		};
 	})();
 
-// 3. Core Utilities
+// Core Utilities
 	window.CoreUtilities = (function () {
 		const state={gsapObservers:[],domObservers:[],tickers:[],cursorDestroy:null};
 		const Observers={addGsap:e=>(e&&state.gsapObservers.push(e),e),addDom:e=>(e&&state.domObservers.push(e),e),addTicker:e=>(window.gsap&&"function"==typeof e&&(gsap.ticker.add(e),state.tickers.push(e)),e),clearAll({preserveServicePins:e=!1}={}){try{window.ScrollTrigger&&ScrollTrigger.getAll().forEach((s=>{e&&s.trigger?.classList?.contains("section-single-service")||s.kill()}))}catch{}try{state.gsapObservers.forEach((e=>{try{e.kill&&e.kill()}catch{}}))}catch{}state.gsapObservers=[];try{state.tickers.forEach((e=>{try{gsap.ticker.remove(e)}catch{}}))}catch{}state.tickers=[];try{state.domObservers.forEach((e=>{try{e.disconnect&&e.disconnect()}catch{}}))}catch{}state.domObservers=[]}};
@@ -65,7 +65,7 @@
 		};
 	})();
 
-// 4. PreloaderService
+// PreloaderService
 	window.PreloaderService = (function () {
 		let _enabled = false;
 		let _built = false;
@@ -118,21 +118,27 @@
 		};
 	})();
 
-// 5. ScrollState
+// ScrollState
 	window.ScrollState = (function () {
-		const PREFIX = 'scroll:';
-		let config = { maxAgeMs: null };
-		const KEY = (p) => `${PREFIX}${p}`;
+		const PREFIX="scroll:";
+		let config={maxAgeMs:null};
+		const KEY=E=>`${PREFIX}${E}`;
+		const nextFrame=()=>new Promise((e=>requestAnimationFrame(e)));
+		async function afterTwoFrames(){await nextFrame(),await nextFrame()}
+		function readXY(){document.body;const o=document.scrollingElement||document.documentElement||document.body||{};let e=("number"==typeof window.scrollX?window.scrollX:window.pageXOffset)??0,n=("number"==typeof window.scrollY?window.scrollY:window.pageYOffset)??0;return 0===e&&o.scrollLeft&&(e=o.scrollLeft),0===n&&o.scrollTop&&(n=o.scrollTop),{x:Math.round(e),y:Math.round(n)}}
 		function init(n={}){config={...config,...n};try{prune({maxAgeMs:config.maxAgeMs})}catch{}}
-		function save(o=location.pathname+location.search){try{const e=document.scrollingElement||document.documentElement||document.body||{},n=("number"==typeof window.scrollX?window.scrollX:window.pageXOffset)??e.scrollLeft??0,t=("number"==typeof window.scrollY?window.scrollY:window.pageYOffset)??e.scrollTop??0,c=`${Math.round(n)},${Math.round(t)},${Date.now()}`;sessionStorage.setItem(KEY(o),c)}catch{}}
-		async function saveAsync(a=location.pathname+location.search){await new Promise((a=>requestAnimationFrame(a))),save(a)}
-		function read(n=location.pathname+location.search,t={}){try{const e=sessionStorage.getItem(KEY(n));if(!e)return null;const l=e.split(","),a=parseInt(l[0],10)||0,r=parseInt(l[1],10)||0,s=l[2]?parseInt(l[2],10):null,o=t.maxAgeMs??config.maxAgeMs;return null!=o&&null!=s&&Date.now()-s>o?null:{x:a,y:r}}catch{return null}}
-		function prune({maxAgeMs:t=null}={}){if(null!=t)try{const e=Date.now();for(let s=sessionStorage.length-1;s>=0;s--){const n=sessionStorage.key(s);if(!n||!n.startsWith(PREFIX))continue;const o=sessionStorage.getItem(n),i=o?.split(",")[2];i&&(e-parseInt(i,10)>t&&sessionStorage.removeItem(n))}}catch{}}
-		try { history.scrollRestoration = 'manual'; } catch {}
-		return { init, KEY, save, saveAsync, read, prune, get config(){ return config; } };
+		function save(a=location.pathname+location.search){try{save._raf&&cancelAnimationFrame(save._raf),save._raf=requestAnimationFrame((async()=>{save._raf=0,await afterTwoFrames();const{x:e,y:t}=readXY();sessionStorage.setItem(KEY(a),`${e},${t},${Date.now()}`)}))}catch{}}
+		async function saveAsync(a=location.pathname+location.search){try{await afterTwoFrames();const{x:t,y:e}=readXY();sessionStorage.setItem(KEY(a),`${t},${e},${Date.now()}`)}catch{}}
+		function read(n=location.pathname+location.search,t={}){try{const e=sessionStorage.getItem(KEY(n));if(!e)return null;const[l,a,r]=e.split(","),s=parseInt(l,10)||0,o=parseInt(a,10)||0,u=r?parseInt(r,10):null,c=t.maxAgeMs??config.maxAgeMs;return null!=c&&null!=u&&Date.now()-u>c?null:{x:s,y:o}}catch{return null}}
+		function prune({maxAgeMs:t=null}={}){if(null!=t)try{const e=Date.now();for(let s=sessionStorage.length-1;s>=0;s--){const n=sessionStorage.key(s);if(!n||!n.startsWith(PREFIX))continue;const o=sessionStorage.getItem(n)?.split(",")[2];o&&e-parseInt(o,10)>t&&sessionStorage.removeItem(n)}}catch{}}
+		try{history.scrollRestoration="manual"}catch{}
+		return {
+			init, KEY, save, saveAsync, read, prune,
+			get config() { return config; }
+		};
 	})();
 
-// 7. TransitionEffects
+// TransitionEffects
 	window.TransitionEffects = (function () {
 		let runningCoverOut = null;
 		function getOverlay(){const e=document.querySelector(".page-overlay"),t=e?.querySelector(".page-overlay-tint")||null;return{el:e,tint:t}}
@@ -141,7 +147,7 @@
 		return { coverIn, coverOut };
 	})();
 
-// 8. EntryOrchestrator
+// EntryOrchestrator
 	window.EntryOrchestrator = window.EntryOrchestrator || (function () {
 		const entryConfigByNamespace={selected:{delayHero:!1,entryOffset:-.2},archive:{delayHero:!1,entryOffset:-.2},resources:{delayHero:!1,entryOffset:-.2},capabilities:{delayHero:!0,entryOffset:.1},info:{delayHero:!1,entryOffset:-.2}};
 		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
@@ -349,6 +355,8 @@ window.forceCloseMenus        = (...args) => window.EntryOrchestrator.forceClose
 	!function(){
 		function boot() {
 			ScrollState.init({ maxAgeMs: 30 * 60 * 1000 });
+			addEventListener('pagehide', () => { try { ScrollState.save(); } catch {} }, { capture: true });
+			addEventListener('visibilitychange', () => {if (document.hidden) {try { ScrollState.save(); } catch {}}}, { capture: true });
 			NavigationManager.init({ debug: DEBUG });
 			NavigationManager.ensureBarbaClickRouting();
 			DebugCore.install();
