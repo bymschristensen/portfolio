@@ -5,27 +5,6 @@
 	gsap.registerPlugin(ScrollTrigger,Flip,SplitText,TextPlugin,Observer);
 	const DEBUG = true;
 	window.DEBUG = true;
-	if (DEBUG) {
-		  // 1) Log unhandled errors (including async)
-		  window.addEventListener('error',  e => console.error('[Error]', e.message, e.filename, e.lineno, e.error));
-		  window.addEventListener('unhandledrejection', e => console.error('[Unhandled Rejection]', e.reason));
-		
-		  // 2) Loud logging wrapper
-		  window.dlog = (...args) => console.debug('[DEBUG]', ...args);
-		
-		  // 3) ScrollTrigger markers + quick sanity settings
-		  if (window.ScrollTrigger) {
-		    ScrollTrigger.defaults({ markers: true });               // see triggers on page
-		    ScrollTrigger.config({ ignoreMobileResize: true });       // reduces noisy refreshes
-		  }
-		
-		  // 4) Barba lifecycle breadcrumbs
-		  if (window.barba) {
-		    barba.hooks.beforeEnter(({ next }) => dlog('barba:beforeEnter', next?.container?.dataset?.barbaNamespace));
-		    barba.hooks.afterEnter(({ next })  => dlog('barba:afterEnter', next?.container?.dataset?.barbaNamespace));
-		    barba.hooks.after   (()            => dlog('barba:after (transition complete)'));
-		  }
-	}
 
 // 1. NavigationManager
 	window.NavigationManager = (function () {
@@ -161,6 +140,163 @@
 		return { coverIn, coverOut };
 	})();
 
+// 8. EntryOrchestrator
+	window.EntryOrchestrator = window.EntryOrchestrator || (function () {
+		const entryConfigByNamespace={selected:{delayHero:!1,entryOffset:-.2},archive:{delayHero:!1,entryOffset:-.2},resources:{delayHero:!1,entryOffset:-.2},capabilities:{delayHero:!0,entryOffset:.1},info:{delayHero:!1,entryOffset:-.2}};
+		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
+		function runPageEntryAnimations(e){const{delayHero:t,entryOffset:a}=getEntryConfig(e),n=gsap.timeline();return"info"===e.dataset.barbaNamespace&&n.add(animateInfoEntry(e),0),e.querySelector(".section-table-of-contents")&&n.add(animateCapabilitiesEntry(e,{delayHero:t}),0),e.querySelector(".selected-item-outer")&&n.add(animateSelectedEntries(e),0),e.querySelector(".cs-hero-image")&&n.add(animateCaseStudyEntry(e),0),{tl:n,entryOffset:a}}
+		async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
+		async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await TransitionEffects.coverOut(),await CoreUtilities.InitManager.run(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
+		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
+		
+		// Barba init
+		function init() {
+			if (window.__barbaInited) return;
+			window.__barbaInited = true;
+		
+			if (typeof logBarbaSanity === 'function') logBarbaSanity();
+		
+			barba.init({
+				debug: window.DEBUG,
+				timeout: 8000,
+				prevent: ({ el }) => {
+					const a = el && (el.tagName === 'A' ? el : el.closest('a'));
+					if (!a) return false;
+					try {
+						const url = new URL(a.getAttribute('href') || a.href, location.href);
+						const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
+						if (samePath && url.hash) return true;
+					} catch {}
+					if (a.hasAttribute('download') || a.target === '_blank' || a.getAttribute('rel') === 'external') return true;
+					const ns = document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace || '';
+					if (ns !== 'archive' && ns !== 'resources') {
+						const blocker = a.closest('[data-barba-prevent]');
+						if (blocker && blocker.getAttribute('data-barba-prevent') === 'true') return true;
+					}
+					return false;
+				},
+				transitions: [
+					{
+						name: 'initial-preloader',
+						once: async ({ next }) => {
+							// PreloaderService.enable(true) // enable when needed
+							if (PreloaderService.shouldRun()) { await PreloaderService.maybeRun(); }
+							await runEntryFlow(next.container);
+							WebflowAdapter.reinit();
+							if (!location.hash) window.scrollTo(0, 0);
+						}
+					},{
+						name: 'fade',
+						from: { namespace: ['selected','archive','resources'] },
+						to: { namespace: ['selected','archive','resources'] },
+						async leave({ current }) {
+							NavigationManager?.setLock('overlay', true);
+							window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
+							ScrollState.save();
+							await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+							CoreUtilities.InitManager.cleanup();
+							current.container.remove();
+						},
+						async enter({ next }) {
+							WebflowAdapter.reset({ next });
+							NavigationManager?.setLock('overlay', false);
+							const entries = performance.getEntriesByType('navigation');
+							const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
+							if (isHistory) {
+								const pos = ScrollState.read();
+								if (pos) window.scrollTo(pos.x, pos.y);
+							} else if (!location.hash) {
+								window.scrollTo(0, 0);
+							}
+							await runEntryFlow(next.container, { withCoverOut: false });
+						},
+						afterEnter({ next }) {
+							requestAnimationFrame(() => WebflowAdapter.reinit());
+							requestAnimationFrame(() => {
+								const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+								if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
+							});
+							next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
+						}
+					},{
+						name: 'swipe',
+						custom({ current, next }) {
+							const work = ['selected','archive','resources'];
+							return !(work.includes(current?.namespace) && work.includes(next?.namespace));
+						},
+						async leave({ current }) {
+							NavigationManager?.setLock('overlay', true);
+							window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
+							document.body.style.overflow = '';
+							ScrollState.save();
+							const ok = await TransitionEffects.coverIn();
+							if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
+							CoreUtilities.InitManager.cleanup();
+							current.container.remove();
+						},
+						async enter({ next }) {
+							WebflowAdapter.reset({ next });
+							NavigationManager?.setLock('overlay', false);
+							const entries = performance.getEntriesByType('navigation');
+							const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
+							if (isHistory) {
+								const pos = ScrollState.read();
+								if (pos) window.scrollTo(pos.x, pos.y);
+							}
+							if (!location.hash) window.scrollTo(0, 0);
+							await TransitionEffects.coverOut();
+							await runEntryFlow(next.container, { withCoverOut: false });
+						},
+						afterEnter({ next }) {
+							forceCloseMenus();
+							requestAnimationFrame(() => WebflowAdapter.reinit());
+							requestAnimationFrame(() => {
+								const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+								if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
+							});
+							next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
+						}
+					}
+				]
+			});
+		
+			// keep your probes/sanity after barba init
+			if (typeof installDebugProbes === 'function') installDebugProbes();
+			if (typeof logBarbaSanity    === 'function') logBarbaSanity();
+		}
+		
+		return { init, getEntryConfig, runPageEntryAnimations, finalizeAfterEntry, runEntryFlow, forceCloseMenus };
+	})();
+
+// (Optional) BC aliases – keep old globals working
+window.initBarba              = () => window.EntryOrchestrator.init();
+window.runEntryFlow           = (...args) => window.EntryOrchestrator.runEntryFlow(...args);
+window.finalizeAfterEntry     = (...args) => window.EntryOrchestrator.finalizeAfterEntry(...args);
+window.runPageEntryAnimations = (...args) => window.EntryOrchestrator.runPageEntryAnimations(...args);
+window.getEntryConfig         = (...args) => window.EntryOrchestrator.getEntryConfig(...args);
+window.forceCloseMenus        = (...args) => window.EntryOrchestrator.forceCloseMenus(...args);
+
+
+
+
+
+// Debug Core
+	window.DebugCore = window.DebugCore || (function () {
+		function logBarbaSanity(){try{const e=document.querySelector('[data-barba="container"]')?.getAttribute("data-barba-namespace")||"(none)",o=!!document.querySelector(".page-overlay"),t=["selected","archive","resources"];console.group("%c[Sanity] Page state","color:#0aa; font-weight:bold"),console.log("Namespace:",e),console.log("Overlay present:",o);[["/new-index","selected"],["/archive","archive"],["/resources","resources"],["/capabilities","capabilities"],["/info","info"]].forEach((([e,o])=>{const t=[...document.querySelectorAll(`a[href*="${e}"]`)];t.length&&(console.groupCollapsed(`Links → ${o} (${t.length})`),t.forEach(((e,o)=>{const t=e.closest("[data-barba-prevent]"),r=t?.getAttribute("data-barba-prevent");console.log(`#${o+1}`,{text:(e.textContent||"").trim().slice(0,60),href:e.getAttribute("href")||e.href,hasPreventAncestor:!!t,preventValue:r??null})})),console.groupEnd())})),console.log("Work set:",t.join(", ")," | work→work should be FADE, others SWIPE"),console.groupEnd()}catch(e){console.warn("[Sanity] Failed:",e)}}
+		function installDebugProbes(){if(window.barba&&!barba.__preventWrapped&&barba.options&&"function"==typeof barba.options.prevent){const e=barba.options.prevent;barba.options.prevent=t=>{const a=e(t);if(a){const e=t.el&&("A"===t.el.tagName?t.el:t.el.closest?.("a"));console.warn("[barba][prevent] blocked",{text:e?(e.textContent||"").trim().slice(0,80):null,href:e?e.getAttribute("href")||e.href:null,el:e})}return a},barba.__preventWrapped=!0}window.__linkProbeInstalled||(document.addEventListener("click",(e=>{const t=e.target&&("A"===e.target.tagName?e.target:e.target.closest?.("a"));if(!t)return;const a=t.closest("[data-barba-prevent]"),n=a?.getAttribute("data-barba-prevent");console.log("[link]",{href:t.getAttribute("href")||t.href,text:(t.textContent||"").trim().slice(0,80),hasPreventAncestor:!!a,preventValue:n??null})}),!0),window.__linkProbeInstalled=!0),window.__logTransitionChoice||(window.__logTransitionChoice=(e,t)=>{const a=t?.current?.container?.dataset?.barbaNamespace||"(none)",n=t?.next?.container?.dataset?.barbaNamespace||"(none)";console.info(`[transition] ${e}`,{from:a,to:n})}),window.barba&&barba.hooks&&!window.__barbaHooksInstalled&&(barba.hooks.before((({current:e,next:t})=>{const a=e?.container?.dataset?.barbaNamespace||"(none)",n=t?.container?.dataset?.barbaNamespace||"(none)";console.group("%c[barba] navigating","color:#6a0dad; font-weight:bold"),console.log("from → to:",a,"→",n),console.groupEnd()})),barba.hooks.after((()=>setTimeout(logBarbaSanity,0))),window.__barbaHooksInstalled=!0)}
+		function install(){if(window.DEBUG){if(window.__debugCoreErrors||(window.addEventListener("error",(e=>console.error("[Error]",e.message,e.filename,e.lineno,e.error))),window.addEventListener("unhandledrejection",(e=>console.error("[Unhandled Rejection]",e.reason))),window.__debugCoreErrors=!0),window.dlog||(window.dlog=(...e)=>console.debug("[DEBUG]",...e)),window.ScrollTrigger&&!window.__debugCoreST){try{ScrollTrigger.defaults({markers:!0})}catch{}try{ScrollTrigger.config({ignoreMobileResize:!0})}catch{}window.__debugCoreST=!0}installDebugProbes(),setTimeout(logBarbaSanity,0)}}
+		function probes () { installDebugProbes(); }
+		function sanity () { logBarbaSanity(); }
+		window.logBarbaSanity     = logBarbaSanity;
+		window.installDebugProbes = installDebugProbes;
+		
+		return {
+			install,
+			probes,
+			sanity
+		};
+	})();
+
 // Site Helpers
 	function setActiveTab(e){document.querySelectorAll("[data-tab-link] a, [data-tab-link].is-active, a.is-active").forEach((e=>e.classList.remove("is-active")));const c="selected"===e?"selectedOpen":"archive"===e?"archiveOpen":"resources"===e?"resourcesOpen":"",t=c?document.querySelector(`#${c} a`)||document.querySelector(`#${c}`):null;t&&t.classList.add("is-active")}
 	function applyOverscroll(e){const o="selected"===e?"none":"auto";document.documentElement.style.setProperty("overscroll-behavior",o,"important"),document.documentElement.style.setProperty("overscroll-behavior-y",o,"important"),document.body.style.setProperty("overscroll-behavior",o,"important"),document.body.style.setProperty("overscroll-behavior-y",o,"important")}
@@ -208,246 +344,20 @@
 	function animateInfoEntry(e){const t=gsap.timeline(),a=e.querySelectorAll(".section-scroll-track .w-layout-cell"),o=e.querySelector(".section-hero .subpage-intro h1"),l=e.querySelector(".section-hero .subpage-intro a");if(a.forEach((e=>gsap.set(e,{scaleY:0,transformOrigin:"bottom center"}))),t.to(a,{scaleY:1,duration:1,ease:"power2.out",stagger:{each:.15,from:"start"}},0),o){gsap.set(o,{autoAlpha:0});const e=splitAndMask(o);t.set(o,{autoAlpha:1},.35).call((()=>animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,o)))),null,.35)}return l&&(gsap.set(l,{autoAlpha:0,y:20,filter:"blur(10px)"}),t.to(l,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},.6)),t}
 	function animateCaseStudyEntry(e){const t=gsap.timeline(),l=e.querySelector(".cs-hero-image"),a=e.querySelector(".cs-headline"),n=e.querySelectorAll(".cs-titles-inner div");return l&&gsap.set(l,{autoAlpha:0,y:80,filter:"blur(10px)"}),a&&gsap.set(a,{autoAlpha:0}),n.length&&gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),l&&t.to(l,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},0),a&&t.addLabel("headline",.35).set(a,{autoAlpha:1,display:"block"},"headline").call((()=>{const e=splitAndMask(a);animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,a)))}),null,"headline"),n.length&&t.to(n,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out",stagger:.05},.6),t}
 	
-// Barba helpers
-	const entryConfigByNamespace={selected:{delayHero:!1,entryOffset:-.2},archive:{delayHero:!1,entryOffset:-.2},resources:{delayHero:!1,entryOffset:-.2},capabilities:{delayHero:!0,entryOffset:.1},info:{delayHero:!1,entryOffset:-.2}};
-	function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
-	function runPageEntryAnimations(e){const{delayHero:t,entryOffset:a}=getEntryConfig(e),n=gsap.timeline();return"info"===e.dataset.barbaNamespace&&n.add(animateInfoEntry(e),0),e.querySelector(".section-table-of-contents")&&n.add(animateCapabilitiesEntry(e,{delayHero:t}),0),e.querySelector(".selected-item-outer")&&n.add(animateSelectedEntries(e),0),e.querySelector(".cs-hero-image")&&n.add(animateCaseStudyEntry(e),0),{tl:n,entryOffset:a}}
-	async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
-	async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await TransitionEffects.coverOut(),await CoreUtilities.InitManager.run(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
-	function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,l=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),l&&l.progress()>0&&l.timeScale(2).reverse();const n=e.querySelector(".menu-wrapper"),o=e.querySelector(".menu-container"),t=e.querySelector(".filters-container");n?.style&&(n.style.display="none"),o?.style&&(o.style.display="none"),t?.style&&(t.style.display="none")})),document.body.style.overflow=""}
-	
-// ===== Debug helpers =====
-function logBarbaSanity() {
-  try {
-    const ns = document.querySelector('[data-barba="container"]')?.getAttribute('data-barba-namespace') || '(none)';
-    const overlay = !!document.querySelector('.page-overlay');
-    const work = ['selected','archive','resources'];
-
-    // Log overlay + current namespace
-    console.group('%c[Sanity] Page state', 'color:#0aa; font-weight:bold');
-    console.log('Namespace:', ns);
-    console.log('Overlay present:', overlay);
-
-    // Log all links that go to each namespace + whether they’re prevented
-    const targets = [
-      ['/new-index',      'selected'],
-      ['/archive',        'archive'],
-      ['/resources',      'resources'],
-      ['/capabilities',   'capabilities'],
-      ['/info',           'info'],
-    ];
-
-    targets.forEach(([path, label]) => {
-      const links = [...document.querySelectorAll(`a[href*="${path}"]`)];
-      if (!links.length) return;
-      console.groupCollapsed(`Links → ${label} (${links.length})`);
-      links.forEach((a, i) => {
-        const preventNode = a.closest('[data-barba-prevent]');
-        const preventVal  = preventNode?.getAttribute('data-barba-prevent');
-        console.log(`#${i+1}`, {
-          text: (a.textContent||'').trim().slice(0,60),
-          href: a.getAttribute('href') || a.href,
-          hasPreventAncestor: !!preventNode,
-          preventValue: preventVal ?? null
-        });
-      });
-      console.groupEnd();
-    });
-
-    // Quick rule preview: would work→work be fade?
-    console.log('Work set:', work.join(', '), ' | work→work should be FADE, others SWIPE');
-    console.groupEnd();
-  } catch (err) {
-    console.warn('[Sanity] Failed:', err);
-  }
-}
-
-function installDebugProbes() {
-  // 1) Wrap prevent() ONLY if it exists
-  if (window.barba && !barba.__preventWrapped && barba.options && typeof barba.options.prevent === 'function') {
-    const originalPrevent = barba.options.prevent;
-    barba.options.prevent = (args) => {
-      const blocked = originalPrevent(args);
-      if (blocked) {
-        const a = args.el && (args.el.tagName === 'A' ? args.el : args.el.closest?.('a'));
-        console.warn('[barba][prevent] blocked', {
-          text: a ? (a.textContent||'').trim().slice(0,80) : null,
-          href: a ? (a.getAttribute('href') || a.href) : null,
-          el: a
-        });
-      }
-      return blocked;
-    };
-    barba.__preventWrapped = true;
-  }
-
-  // 2) Link probe (idempotent)
-  if (!window.__linkProbeInstalled) {
-    document.addEventListener('click', (ev) => {
-      const a = ev.target && (ev.target.tagName === 'A' ? ev.target : ev.target.closest?.('a'));
-      if (!a) return;
-      const preventNode = a.closest('[data-barba-prevent]');
-      const preventVal  = preventNode?.getAttribute('data-barba-prevent');
-      console.log('[link]', {
-        href: a.getAttribute('href') || a.href,
-        text: (a.textContent||'').trim().slice(0,80),
-        hasPreventAncestor: !!preventNode,
-        preventValue: preventVal ?? null
-      });
-    }, true);
-    window.__linkProbeInstalled = true;
-  }
-
-  // 3) Transition logger (idempotent)
-  if (!window.__logTransitionChoice) {
-    window.__logTransitionChoice = (name, data) => {
-      const from = data?.current?.container?.dataset?.barbaNamespace || '(none)';
-      const to   = data?.next?.container?.dataset?.barbaNamespace || '(none)';
-      console.info(`[transition] ${name}`, { from, to });
-    };
-  }
-
-  // 4) Barba hooks (only if hooks exist)
-  if (window.barba && barba.hooks && !window.__barbaHooksInstalled) {
-    barba.hooks.before(({ current, next }) => {
-      const from = current?.container?.dataset?.barbaNamespace || '(none)';
-      const to   = next?.container?.dataset?.barbaNamespace || '(none)';
-      console.group('%c[barba] navigating', 'color:#6a0dad; font-weight:bold');
-      console.log('from → to:', from, '→', to);
-      console.groupEnd();
-    });
-    barba.hooks.after(() => setTimeout(logBarbaSanity, 0));
-    window.__barbaHooksInstalled = true;
-  }
-}
 
 	!function(){
 		function boot() {
 			ScrollState.init({ maxAgeMs: 30 * 60 * 1000 });
 			NavigationManager.init({ debug: DEBUG });
-			NavigationManager.installLinkInterceptor();
-			window.initBarba && window.initBarba();
+			NavigationManager.ensureBarbaClickRouting();
+			DebugCore.install();
+			EntryOrchestrator.init();
 		}
 		if (document.readyState !== "loading") boot();
 		else document.addEventListener("DOMContentLoaded", boot, { once: true });
 	}();
 
-// Barba Init
-	function initBarba() {
-		logBarbaSanity();
-		if (window.__barbaInited) return;
-  		window.__barbaInited = true;
-		
-		barba.init({
-			debug: DEBUG,
-			timeout: 8000,
-		  	prevent: ({ el }) => {
-				const a = el && (el.tagName === 'A' ? el : el.closest('a'));
-				if (!a) return false;
-				try {
-					const url = new URL(a.getAttribute('href') || a.href, location.href);
-					const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
-					if (samePath && url.hash) return true;
-				} catch {}
-				if (a.hasAttribute('download') || a.target === '_blank' || a.getAttribute('rel') === 'external') return true;
-				const ns = document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace || '';
-				if (ns !== 'archive' && ns !== 'resources') {
-					const blocker = a.closest('[data-barba-prevent]');
-					if (blocker && blocker.getAttribute('data-barba-prevent') === 'true') return true;
-				}
-				return false;
-			},
-			transitions: [
-				{
-					name: "initial-preloader",
-					once: async ({ next }) => {
-						// Toggle when you want it live:
-						// PreloaderService.enable(true);
-						if (PreloaderService.shouldRun()) { await PreloaderService.maybeRun(); }
-						await runEntryFlow(next.container);
-						WebflowAdapter.reinit();
-						if (!location.hash) window.scrollTo(0, 0);
-					}
-				},{
-					name: 'fade',
-					from: { namespace: ['selected','archive','resources'] },
-    				to: { namespace: ['selected','archive','resources'] },
-					async leave({ current }) {
-						NavigationManager?.setLock('overlay', true);
-						window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
-						ScrollState.save();
-						await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-						CoreUtilities.InitManager.cleanup();
-						current.container.remove();
-					},
-					async enter({ next }) {
-						WebflowAdapter.reset({ next });
-						NavigationManager?.setLock('overlay', false);
-						const entries = performance.getEntriesByType('navigation');
-						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
-						if (isHistory) {
-							const pos = ScrollState.read();
-							if (pos) window.scrollTo(pos.x, pos.y);
-						} else if (!location.hash) {
-							window.scrollTo(0, 0);
-						}
-						await runEntryFlow(next.container, { withCoverOut: false });
-					},
-					afterEnter({ next }) {
-						requestAnimationFrame(() => WebflowAdapter.reinit());
-						requestAnimationFrame(() => {
-							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-							if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
-						});
-						next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
-					}
-				},{
-					name: 'swipe',
-					custom({ current, next }) {
-						const work = ['selected','archive','resources'];
-						return !(work.includes(current?.namespace) && work.includes(next?.namespace));
-					},
-					async leave({ current }) {
-						NavigationManager?.setLock('overlay', true);
-						window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
-						document.body.style.overflow = "";
-						ScrollState.save();
-						const ok = await TransitionEffects.coverIn();
-						if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
-						CoreUtilities.InitManager.cleanup();
-						current.container.remove();
-					},
-					async enter({ next }) {
-						WebflowAdapter.reset({ next });
-						NavigationManager?.setLock('overlay', false);
-						const entries = performance.getEntriesByType('navigation');
-						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
-						if (isHistory) {
-							const pos = ScrollState.read();
-							if (pos) window.scrollTo(pos.x, pos.y);
-						}
-						if (!location.hash) window.scrollTo(0, 0);
-						await TransitionEffects.coverOut();
-						await runEntryFlow(next.container, { withCoverOut: false });
-					},
-					afterEnter({ next }) {
-						forceCloseMenus();
-						requestAnimationFrame(() => WebflowAdapter.reinit());
-						requestAnimationFrame(() => {
-							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-							if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
-						});
-						next.container.querySelectorAll('video[autoplay]').forEach(v => { v.muted = true; v.play().catch(()=>{}); });
-					}
-				}
-			]
-		});
-		installDebugProbes();
-		logBarbaSanity();
-	}
-
 // Run All Initialisers
-	let _firstLoadDone = false;
 	function initAllYourInits(root = document) {
 		const ns = root?.dataset?.barbaNamespace || root.getAttribute("data-barba-namespace") || "";
 		setActiveTab(ns);
@@ -480,9 +390,3 @@ function installDebugProbes() {
 		}
 	}
 
-if(typeof initBarba==="function")window.initBarba=initBarba;
-if (typeof runEntryFlow === 'function')      window.runEntryFlow = runEntryFlow;
-if (typeof finalizeAfterEntry === 'function') window.finalizeAfterEntry = finalizeAfterEntry;
-if (typeof runPageEntryAnimations === 'function') window.runPageEntryAnimations = runPageEntryAnimations;
-if (typeof getEntryConfig === 'function')    window.getEntryConfig = getEntryConfig;
-if(typeof initAllYourInits==="function")window.initAllYourInits=initAllYourInits;
