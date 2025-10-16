@@ -38,103 +38,14 @@
 		};
 	
 		function dlog(...args) { if (state.debug) console.debug('[Nav]', ...args); }
-	
-		function isInternalAnchor(ev) {
-			if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return null;
-			const a = ev.target && (ev.target.tagName === 'A' ? ev.target : ev.target.closest?.('a'));
-			if (!a) return null;
-			if (a.hasAttribute('download') || a.target === '_blank' || a.getAttribute('rel') === 'external') return null;
-			if (a.closest('[data-router-ignore="true"], .w-lightbox')) return null;
-			
-			const raw = a.getAttribute('href') || a.href || '';
-			if (!raw) return null;
-			let url;
-			try { url = new URL(raw, location.href); } catch { return null; }
-			
-			// internal, not same-path-with-hash
-			const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
-			if (url.origin !== location.origin) return null;
-			if (samePath && url.hash) return null;
-			return { a, url };
-		}
-	
-		function installLinkInterceptor() {
-			if (state.installed) return;
-			state.clickHandler = (ev) => {
-				const hit = isInternalAnchor(ev);
-				if (!hit) return;
-				
-				// Allow page-specific opt-out (your old rule)
-				const ns = document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace || '';
-				if (!(ns === 'archive' || ns === 'resources')) {
-					const blocker = hit.a.closest('[data-barba-prevent]');
-					if (blocker && blocker.getAttribute('data-barba-prevent') === 'true') return;
-				}
-	
-				// NAV LOCK: block if locked
-				if (state.locks.size) {
-					dlog('blocked by lock(s):', [...state.locks]);
-					ev.preventDefault();
-					ev.stopPropagation();
-					ev.stopImmediatePropagation();
-					return;
-				}
-	
-				// Route via Barba if available
-				ev.preventDefault();
-				ev.stopPropagation();
-				ev.stopImmediatePropagation();
-				console.info('[intercept→barba]', hit.url.href, 'locks:', [...state.locks]);
-				if (window.barba?.go) barba.go(hit.url.href);
-				else location.href = hit.url.href;
-			};
-	
-		    window.addEventListener('pointerdown', state.clickHandler, { capture: true });
-		    window.addEventListener('click', state.clickHandler, { capture: true });
-		    state.installed = true;
-		    dlog('link interceptor installed');
-	  	}
-	
-		// Simple lock API
-		function installNavLock() {
-			dlog('nav lock ready (use NavigationManager.setLock(label, true/false))');
-		}
-	
-		function setLock(label, on) {
-			if (!label) return;
-			on ? state.locks.add(label) : state.locks.delete(label);
-			dlog(on ? 'lock +' : 'lock -', label, '| active:', [...state.locks]);
-		}
-	
+		function isInternalAnchor(t){if(t.defaultPrevented||0!==t.button||t.metaKey||t.ctrlKey||t.shiftKey||t.altKey)return null;const e=t.target&&("A"===t.target.tagName?t.target:t.target.closest?.("a"));if(!e)return null;if(e.hasAttribute("download")||"_blank"===e.target||"external"===e.getAttribute("rel"))return null;if(e.closest('[data-router-ignore="true"], .w-lightbox'))return null;const r=e.getAttribute("href")||e.href||"";if(!r)return null;let n;try{n=new URL(r,location.href)}catch{return null}const l=n.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"");return n.origin!==location.origin||l&&n.hash?null:{a:e,url:n}}
+		function installLinkInterceptor(){state.installed||(state.clickHandler=t=>{const e=isInternalAnchor(t);if(!e)return;const a=document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace||"";if("archive"!==a&&"resources"!==a){const t=e.a.closest("[data-barba-prevent]");if(t&&"true"===t.getAttribute("data-barba-prevent"))return}if(state.locks.size)return dlog("blocked by lock(s):",[...state.locks]),t.preventDefault(),t.stopPropagation(),void t.stopImmediatePropagation();t.preventDefault(),t.stopPropagation(),t.stopImmediatePropagation(),console.info("[intercept→barba]",e.url.href,"locks:",[...state.locks]),window.barba?.go?barba.go(e.url.href):location.href=e.url.href},window.addEventListener("pointerdown",state.clickHandler,{capture:!0}),window.addEventListener("click",state.clickHandler,{capture:!0}),state.installed=!0,dlog("link interceptor installed"))}
+		function installNavLock(){dlog("nav lock ready (use NavigationManager.setLock(label, true/false))")}
+		function setLock(t,c){t&&(c?state.locks.add(t):state.locks.delete(t),dlog(c?"lock +":"lock -",t,"| active:",[...state.locks]))}
 		function isLocked() { return state.locks.size > 0; }
 		function reason() { return [...state.locks]; }
-	
-		function init({ debug = false } = {}) {
-			state.debug = !!debug;
-			dlog('init');
-		}
-
-		function attachMenuLocks(root = document) {
-			const wraps = root.querySelectorAll('.nav-primary-wrap');
-			wraps.forEach(w => {
-				const menuTL   = w._menuTimeline;
-				const filterTL = w._filterTimeline;
-				
-				const hook = (tl, label) => {
-					if (!tl || tl.__navLockHooked) return;
-					tl.__navLockHooked = true;
-					
-					// Lock while animating open OR close
-					tl.eventCallback('onStart',           () => NavigationManager.setLock(label, true));
-					tl.eventCallback('onReverse',         () => NavigationManager.setLock(label, false));
-					tl.eventCallback('onComplete',        () => NavigationManager.setLock(label, false));
-					tl.eventCallback('onReverseComplete', () => NavigationManager.setLock(label, false));
-				};
-				
-				hook(menuTL,   'menu');
-				hook(filterTL, 'filter');
-			});
-		}
+		function init({debug:i=!1}={}){state.debug=!!i,dlog("init")}
+		function attachMenuLocks(e=document){e.querySelectorAll(".nav-primary-wrap").forEach((e=>{const a=e._menuTimeline,n=e._filterTimeline,o=(e,a)=>{e&&!e.__navLockHooked&&(e.__navLockHooked=!0,e.eventCallback("onStart",(()=>NavigationManager.setLock(a,!0))),e.eventCallback("onReverse",(()=>NavigationManager.setLock(a,!1))),e.eventCallback("onComplete",(()=>NavigationManager.setLock(a,!1))),e.eventCallback("onReverseComplete",(()=>NavigationManager.setLock(a,!1))))};o(a,"menu"),o(n,"filter")}))}
 	
 		return {
 			init,
@@ -147,125 +58,99 @@
 		};
 	})();
 
+// 2. WebflowAdapter
+	window.WebflowAdapter = (function () {
+		function reset({next:t}){if(!t?.html)return;const e=(new DOMParser).parseFromString(t.html,"text/html"),a=e.querySelector("html").getAttribute("data-wf-page"),r=e.querySelector("script[data-wf-site-data]")?.textContent;if(document.documentElement.setAttribute("data-wf-page",a),document.querySelectorAll("script[data-wf-site-data]").forEach((t=>t.remove())),r){const t=document.createElement("script");t.type="application/json",t.setAttribute("data-wf-site-data",""),t.textContent=r,document.head.appendChild(t)}window.Webflow?.destroy?.(),window.Webflow?.ready?.();const n=Webflow.require?.("ix2");n?.init()}
+		function reinit(){if(window.Webflow&&Webflow.require){try{Webflow.ready&&Webflow.ready()}catch(e){}try{const e=Webflow.require("tabs");e?.ready&&e.ready()}catch(e){}try{const e=Webflow.require("slider");e?.ready&&e.ready()}catch(e){}}}
+		function reparent(t=document){t.querySelectorAll("[data-child]").forEach((e=>{if(e.matches(".w-tab-link, .w-tab-pane")||e.closest(".w-tabs"))return;const a=e.getAttribute("data-child");let r=t.querySelector(`[data-parent="${a}"]`);r||t===document||(r=document.querySelector(`[data-parent="${a}"]`)),r&&r.appendChild(e)}))}
+		
+		return {
+			reset,
+			reinit,
+			reparent,
+		};
+	})();
+
+// === Module 4: PreloaderService (OFF by default) ===
+	window.PreloaderService = (function () {
+		let _enabled = false;
+		let _built = false;
+		let runIntroTimeline = async () => {};
+		let runPreloader     = async () => {};
+		
+		function isSlowConnection(){const e=navigator.connection||{};return!(!e.effectiveType||"4g"===e.effectiveType)}
+		function isReload(){const e=performance.getEntriesByType("navigation");return e.length?"reload"===e[0].type:1===performance.navigation?.type}
+		function shouldShowPreloader() {
+			// keep off for now
+			// return isSlowConnection() || isReload() || !sessionStorage.getItem("preloaderSeen");
+			return false;
+		}
+		function buildOnce() {
+			if (_built) return;
+			_built = true;
+			
+			(function () {
+				const pre = document.querySelector(".preloader");
+				if (!pre) {
+					runIntroTimeline = async () => {};
+					runPreloader = async () => {};
+					return;
+				}
+				const $ = gsap.utils.selector(pre);
+				const title = $(".preloader-title")[0];
+				const subtitle = $(".preloader-subtitle")[0];
+				const imageWrap = $(".preloader-image-wrap")[0];
+				const counter = $(".preloader-counter")[0];
+				const bar = $(".preloader-visual-counter")[0];
+			
+				let slides, preW = 0, winH = window.innerHeight;
+				function measure() { preW = pre.clientWidth; winH = window.innerHeight; }
+			
+				slides=isSlowConnection()?["#93A8AC","#BA5A31","#111D4A","#FFCF99","#C9FBC6"].map((e=>{const a=document.createElement("div");return a.className="preloader-slide placeholder",a.style.backgroundColor=e,imageWrap.appendChild(a),a})):$(".preloader-image"),measure(),window.addEventListener("resize",measure);
+				function morphCrossfade(t,e,o,{w:i,h:r},n=.8){const a=.2*n,u=.25*n;return gsap.timeline().to(o,{width:i,height:r,duration:n,ease:"power2.out"},0).to(o,{filter:"blur(2px)",duration:a,ease:"power2.inOut"},u).to(t,{opacity:0,duration:a,ease:"power2.inOut"},u).to(e,{opacity:1,duration:a,ease:"power2.inOut"},u).set(o,{filter:"none"},u+a)}
+				runIntroTimeline=function(){return new Promise((t=>{title._originalHTML=title.innerHTML,gsap.set([title,subtitle,imageWrap,counter],{autoAlpha:0,visibility:"hidden"}),gsap.set(title,{autoAlpha:1,visibility:"visible"});const i=splitAndMask(title);gsap.timeline({onComplete(){safelyRevertSplit(i,title),t()}}).to(title,{height:title.scrollHeight,duration:.8,ease:"power2.out"},0).to(i.lines,{yPercent:0,rotation:0,duration:.8,ease:"power2.out",stagger:.08},0).to(subtitle,{autoAlpha:1,visibility:"visible",height:subtitle.scrollHeight,paddingTop:"0.5rem",y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},"-=0.2").to(imageWrap,{autoAlpha:1,visibility:"visible",marginTop:"2rem",marginBottom:"2rem",duration:.8,ease:"power2.out"},"+=0.3").to(counter,{autoAlpha:1,visibility:"visible",height:counter.scrollHeight,filter:"blur(0)",duration:.6,ease:"power2.out"},"<")}))};
+				runPreloader=async function(){if(runPreloader._started)return;pre.style.display="flex",runPreloader._started=!0;const e=[{ratio:2.5/3,heightVh:40,hold:.05},{ratio:16/9,heightVh:50,hold:.05},{ratio:1,heightVh:34,hold:.05},{ratio:4/3,heightVh:50,hold:.05},{ratio:1.5,heightVh:40,hold:.6}];slides.forEach(((e,t)=>e.style.opacity=0===t?1:0));const t=e.length;let o=0;const a=e.map(((e,a)=>{const r=Math.round((a+1)/t*100),i=Math.round(10*Math.random()-5),n=Math.min(100,Math.max(o+1,r+i));return o=n,n}));function r(t){const{ratio:o,heightVh:a}=e[t%e.length];let r=winH*(a/100),i=r*o;return i>preW&&(i=preW,r=i/o),{w:i,h:r}}for(let t=0;t<slides.length;t++){const o=a[t],i=r(t),n=e[t%e.length].hold,h=gsap.to(bar,{height:o+"%",duration:.8+n,ease:"power1.inOut"}),s={v:0===t?0:a[t-1]},d=gsap.to(s,{v:o,duration:.8+n,ease:"power1.inOut",onUpdate(){counter.textContent=Math.round(s.v)+"%"}});0===t?await gsap.to(imageWrap,{width:i.w,height:i.h,duration:.8,ease:"power2.out"}):await morphCrossfade(slides[t-1],slides[t],imageWrap,i,.8),await new Promise((e=>setTimeout(e,Math.round(1e3*n)))),await Promise.all([h,d])}await gsap.to(bar,{height:"100%",duration:.2,ease:"none"}),counter.textContent="100%",await new Promise((e=>setTimeout(e,200))),await gsap.to(pre,{yPercent:-100,duration:.8,ease:"power2.inOut",onStart(){window.initAllYourInits&&window.initAllYourInits()},onComplete(){sessionStorage.setItem("preloaderSeen","1"),window.removeEventListener("resize",measure),pre.remove()}})};
+			})();
+		}
+		function enable(e=!0){_enabled=!!e}
+		function isEnabled(){return _enabled}
+		function shouldRun(){return _enabled&&shouldShowPreloader()}
+		async function maybeRun(){return!!shouldRun()&&(_built||buildOnce(),await runIntroTimeline(),await runPreloader(),!0)}
+		
+		return {
+			enable, isEnabled,
+			isSlowConnection, isReload, shouldShowPreloader, shouldRun,
+			maybeRun,
+		};
+	})();
+
 // 5. ScrollState
 	window.ScrollState = (function () {
-		const KEY = (p) => `scroll:${p}`;
-	
-		function save(path = location.pathname + location.search) {
-			try {
-				const pos = `${window.scrollX},${window.scrollY}`;
-				sessionStorage.setItem(KEY(path), pos);
-			} catch {}
-		}
-	
-		function read(path = location.pathname + location.search) {
-			try {
-				const raw = sessionStorage.getItem(KEY(path));
-				if (!raw) return null;
-				const [x, y] = raw.split(',').map((n) => parseInt(n, 10) || 0);
-				return { x, y };
-			} catch {
-				return null;
-			}
-		}
-	
-		// history handling belongs here too
+		const PREFIX = 'scroll:';
+		let config = { maxAgeMs: null };
+		const KEY = (p) => `${PREFIX}${p}`;
+		function init(n={}){config={...config,...n};try{prune({maxAgeMs:config.maxAgeMs})}catch{}}
+		function save(o=location.pathname+location.search){try{const t=`${window.scrollX},${window.scrollY},${Date.now()}`;sessionStorage.setItem(KEY(o),t)}catch{}}
+		function read(n=location.pathname+location.search,t={}){try{const e=sessionStorage.getItem(KEY(n));if(!e)return null;const l=e.split(","),a=parseInt(l[0],10)||0,r=parseInt(l[1],10)||0,s=l[2]?parseInt(l[2],10):null,o=t.maxAgeMs??config.maxAgeMs;return null!=o&&null!=s&&Date.now()-s>o?null:{x:a,y:r}}catch{return null}}
+		function prune({maxAgeMs:t=null}={}){if(null!=t)try{const e=Date.now();for(let s=sessionStorage.length-1;s>=0;s--){const n=sessionStorage.key(s);if(!n||!n.startsWith(PREFIX))continue;const o=sessionStorage.getItem(n),i=o?.split(",")[2];i&&(e-parseInt(i,10)>t&&sessionStorage.removeItem(n))}}catch{}}
 		try { history.scrollRestoration = 'manual'; } catch {}
-	
-		return { KEY, save, read };
+		return { init, KEY, save, read, prune, get config(){ return config; } };
 	})();
 
 // 7. TransitionEffects
 	window.TransitionEffects = (function () {
 		let runningCoverOut = null;
-		
-		function getOverlay() {
-			const el = document.querySelector('.page-overlay');
-			const tint = el?.querySelector('.page-overlay-tint') || null;
-			return { el, tint };
-		}
-		
-		async function coverIn() {
-			const { el, tint } = getOverlay();
-			if (!el) return true;
-			try { window.NavigationManager?.setLock('overlay', true); } catch {}
-		
-			el.style.display = 'block';
-			el.style.pointerEvents = 'auto';
-			gsap.set(el, {
-				y: '100%',
-				clipPath: 'polygon(0% 0%,100% 20%,100% 100%,0% 100%)',
-				willChange: 'transform,clip-path'
-			});
-			if (tint) gsap.set(tint, { opacity: 0, willChange: 'opacity' });
-		
-			return new Promise((resolve) => {
-				gsap.timeline({
-					defaults: { duration: 1.35, ease: 'power4.inOut' },
-					onComplete: () => resolve(true)
-				})
-				.to(el, { y: '0%' }, 0)
-				.to(el, { clipPath: 'polygon(0% 0%,100% 0%,100% 100%,0% 100%)' }, 0)
-				.to(tint || el, { opacity: 1, ease: 'none' }, 0.6);
-			});
-		}
-		
-		async function coverOut({ closeMenus = true } = {}) {
-			const { el, tint } = (function getOverlay() {
-				const el = document.querySelector('.page-overlay');
-				const tint = el?.querySelector('.page-overlay-tint') || null;
-				return { el, tint };
-			})();
-			
-			if (!el) {
-				try { window.NavigationManager?.setLock('overlay', false); } catch {}
-				return true;
-			}
-			
-			if (closeMenus) {try { window.forceCloseMenus?.(document); } catch {}}
-			
-			if (coverOut._running) return coverOut._running;
-			
-			coverOut._running = new Promise((resolve) => {
-				if (getComputedStyle(el).display === 'none') {
-					el.style.display = 'none';
-					el.style.pointerEvents = 'none';
-					try { window.NavigationManager?.setLock('overlay', false); } catch {}
-					coverOut._running = null;
-					return resolve(true);
-				}
-			
-				gsap.timeline({
-					onStart() {
-						el.style.pointerEvents = 'auto';
-					},
-					onComplete() {
-						gsap.set(el, { clearProps: 'transform,clipPath' });
-						if (tint) gsap.set(tint, { clearProps: 'opacity' });
-						el.style.display = 'none';
-						el.style.pointerEvents = 'none';
-						try { window.NavigationManager?.setLock('overlay', false); } catch {}
-						coverOut._running = null;
-						resolve(true);
-					}
-				})
-				.to(el, { duration: 0.6, ease: 'power4.in', y: '-100%' }, 0)
-				.to(tint || el, { duration: 0.6, ease: 'none',      opacity: 0   }, 0); // fade DOWN
-			});
-			
-			return coverOut._running;
-		}
-		
+		function getOverlay(){const e=document.querySelector(".page-overlay"),t=e?.querySelector(".page-overlay-tint")||null;return{el:e,tint:t}}
+		async function coverIn(){const{el:t,tint:e}=getOverlay();if(!t)return!0;try{window.NavigationManager?.setLock("overlay",!0)}catch{}return t.style.display="block",t.style.pointerEvents="auto",gsap.set(t,{y:"100%",clipPath:"polygon(0% 0%,100% 20%,100% 100%,0% 100%)",willChange:"transform,clip-path"}),e&&gsap.set(e,{opacity:0,willChange:"opacity"}),new Promise((o=>{gsap.timeline({defaults:{duration:1.35,ease:"power4.inOut"},onComplete:()=>o(!0)}).to(t,{y:"0%"},0).to(t,{clipPath:"polygon(0% 0%,100% 0%,100% 100%,0% 100%)"},0).to(e||t,{opacity:1,ease:"none"},.6)}))}
+		async function coverOut({closeMenus:n=!0}={}){const{el:e,tint:t}=getOverlay();if(!e){try{window.NavigationManager?.setLock("overlay",!1)}catch{}return!0}if(n)try{window.forceCloseMenus?.(document)}catch{}return runningCoverOut||(runningCoverOut=new Promise((n=>{if("none"===getComputedStyle(e).display){e.style.display="none",e.style.pointerEvents="none";try{window.NavigationManager?.setLock("overlay",!1)}catch{}return runningCoverOut=null,n(!0)}gsap.timeline({onStart(){e.style.pointerEvents="auto"},onComplete(){gsap.set(e,{clearProps:"transform,clipPath"}),t&&gsap.set(t,{clearProps:"opacity"}),e.style.display="none",e.style.pointerEvents="none";try{window.NavigationManager?.setLock("overlay",!1)}catch{}runningCoverOut=null,n(!0)}}).to(e,{duration:.6,ease:"power4.in",y:"-100%"},0).to(t||e,{duration:.6,ease:"none",opacity:0},0)})),runningCoverOut)}
 		return { coverIn, coverOut };
 	})();
 
 // System Helpers
 	function registerGsapObserver(e){return window._gsapObservers.push(e),e}function registerTicker(e){return window._activeTickers.push(e),e}function registerObserver(e){return window._activeObservers.push(e),e}window._gsapObservers=window._gsapObservers||[],window._activeTickers=window._activeTickers||[],window._activeObservers=window._activeObservers||[];
 	let destroyCursor = null;	
-	function resetWebflow(t){if(!t?.next?.html)return;const e=(new DOMParser).parseFromString(t.next.html,"text/html"),a=e.querySelector("html").getAttribute("data-wf-page"),o=e.querySelector("script[data-wf-site-data]")?.textContent;if(document.documentElement.setAttribute("data-wf-page",a),document.querySelectorAll("script[data-wf-site-data]").forEach((t=>t.remove())),o){const t=document.createElement("script");t.type="application/json",t.setAttribute("data-wf-site-data",""),t.textContent=o,document.head.appendChild(t)}window.Webflow?.destroy?.(),window.Webflow?.ready?.();const n=Webflow.require?.("ix2");n?.init()}
 	function destroyAllYourInits(){document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((r=>{try{r.remove()}catch(r){}}));try{window.ScrollTrigger&&ScrollTrigger.getAll().forEach((r=>r.kill()))}catch(r){}if(window.Observer&&Observer.getAll)try{Observer.getAll().forEach((r=>{try{r.kill&&r.kill()}catch(r){}}))}catch(r){}try{Array.isArray(window._gsapObservers)&&(window._gsapObservers.forEach((r=>{try{r.kill&&r.kill()}catch(r){}})),window._gsapObservers=[])}catch(r){}try{Array.isArray(window._activeTickers)&&(window._activeTickers.forEach((r=>{try{gsap.ticker.remove(r)}catch(r){}})),window._activeTickers=[])}catch(r){}try{Array.isArray(window._activeObservers)&&(window._activeObservers.forEach((r=>{try{r.disconnect&&r.disconnect()}catch(r){}})),window._activeObservers=[])}catch(r){}try{"function"==typeof destroyCursor&&(destroyCursor(),destroyCursor=null)}catch(r){}}	
 	function runSafeInit(e,{preserveServicePins:r=!1}={}){return new Promise(i=>{const n=async()=>{if(window.ScrollTrigger)ScrollTrigger.getAll().forEach(s=>{(r&&s.trigger?.classList?.contains("section-single-service"))||s.kill()});(window._activeObservers||[]).forEach(s=>{try{"function"==typeof s.disconnect&&s.disconnect()}catch{}}),window._activeObservers=[];initAllYourInits(e),await new Promise(s=>requestAnimationFrame(s)),await new Promise(s=>requestAnimationFrame(s)),window.ScrollTrigger&&ScrollTrigger.refresh(),i()};/^((?!chrome|android).)*safari/i.test(navigator.userAgent)?requestAnimationFrame(n):document.fonts&&document.fonts.ready?document.fonts.ready.then(()=>{requestAnimationFrame(()=>{requestAnimationFrame(()=>{"requestIdleCallback"in window?requestIdleCallback(n):setTimeout(n,0)})})}):setTimeout(n,600)})}
-	function reinitWebflowModules(){if(window.Webflow&&Webflow.require){try{Webflow.ready&&Webflow.ready()}catch(e){}try{const e=Webflow.require("tabs");e?.ready&&e.ready()}catch(e){}try{const e=Webflow.require("slider");e?.ready&&e.ready()}catch(e){}}}
 	function isSlowConnection() { const nav = navigator.connection || {};	return nav.effectiveType && nav.effectiveType !== "4g"; }
 	function isReload() { const entries = performance.getEntriesByType("navigation"); return entries.length ? entries[0].type === "reload" : performance.navigation?.type === 1; }
 	function shouldShowPreloader() {
@@ -286,7 +171,6 @@
 	function initAppearInLine(e=document,t=".appear-in-line",r=":scope > *"){const o=.15,n=.8;e.querySelectorAll(t).forEach((t=>{const a=[],s=[];Array.from(t.querySelectorAll(r)).forEach((e=>{const t=getComputedStyle(e),r=parseInt(t.columnCount,10)||1,o=e.getBoundingClientRect();if(r>1){const t=new SplitText(e,{type:"lines",linesClass:"split-line"});a.push(t);const n=o.width/r,i=Array.from({length:r},(()=>[]));t.lines.forEach((e=>{const t=e.getBoundingClientRect().left-o.left,a=Math.min(Math.floor(t/n),r-1);i[a].push(e),gsap.set(e,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"})})),i.forEach((e=>s.push(e)))}else gsap.set(e,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"}),s.push([e])}));const i=registerObserver(new IntersectionObserver(((e,t)=>{e.forEach((e=>{if(!e.isIntersecting)return;t.unobserve(e.target),s.forEach(((e,t)=>{gsap.to(e,{y:0,opacity:1,filter:"blur(0px)",duration:n,ease:"power2.out",delay:t*o})}));const r=(s.length-1)*o+n;gsap.delayedCall(r+.05,(()=>{a.forEach((e=>e.revert()))}))}))}),{root:null,rootMargin:"0px 0px -10% 0px",threshold:0}));t._appearData={splits:a,groups:s,observer:i},i.observe(t);const l=t.getBoundingClientRect();if(l.top<window.innerHeight&&l.bottom>0){i.unobserve(t),s.forEach(((e,t)=>{gsap.to(e,{y:0,opacity:1,filter:"blur(0px)",duration:n,ease:"power2.out",delay:t*o})}));const e=(s.length-1)*o+n;gsap.delayedCall(e+.05,(()=>a.forEach((e=>e.revert()))))}if(e.querySelector(".w-tabs")){const e=t.closest(".w-tab-pane");e&&registerObserver(new MutationObserver((()=>{if(!e.classList.contains("w--tab-active"))return;i.observe(t);const r=t.getBoundingClientRect();if(r.top<window.innerHeight&&r.bottom>0){i.unobserve(t),s.forEach(((e,t)=>{gsap.to(e,{y:0,opacity:1,filter:"blur(0px)",duration:n,ease:"power2.out",delay:t*o})}));const e=(s.length-1)*o+n;gsap.delayedCall(e+.05,(()=>a.forEach((e=>e.revert()))))}}))).observe(e,{attributes:!0,attributeFilter:["class"]})}}))}
 
 // Reparent data-child into matching data-parent + Theme Switch + Custom Cursor + Accordions (incl. group behavior)
-	function initReparentChildren(t=document){t.querySelectorAll("[data-child]").forEach((e=>{if(e.matches(".w-tab-link, .w-tab-pane")||e.closest(".w-tabs"))return;const a=e.getAttribute("data-child");let n=t.querySelector(`[data-parent="${a}"]`);n||t===document||(n=document.querySelector(`[data-parent="${a}"]`)),n&&n.appendChild(e)}))}
 	function initThemeSwitch(t=document){const e=t.querySelector(".theme-switch");if(!e)return;const c=document.documentElement.getAttribute("data-theme");e.classList.toggle("dark","dark"===c),e.addEventListener("click",(()=>{const t="dark"===document.documentElement.getAttribute("data-theme")?"light":"dark";document.documentElement.setAttribute("data-theme",t),localStorage.setItem("theme",t),e.classList.toggle("dark","dark"===t)}))}
 	function initCustomCursor(e=document){if(e.__customCursorDestroy)return e.__customCursorDestroy;if(!matchMedia("(pointer:fine)").matches&&!matchMedia("(hover:hover)").matches)return document.body.classList.remove("cursor--disable-all-cursors"),e.__customCursorDestroy=()=>{},e.__customCursorDestroy;const t=document.createElement("canvas");t.className="cursor-webgl",document.body.appendChild(t);const s=t.getContext("2d"),o=document.createElement("div");o.className="custom-cursor";const n=document.createElement("div");n.className="cursor-content",o.appendChild(n),document.body.appendChild(o);const r=innerWidth/2,i=innerHeight/2,a={x:r,y:i,tx:r,ty:i};gsap.set(o,{x:a.x,y:a.y,scale:1,opacity:0,transformOrigin:"center center"}),gsap.set(n,{scale:1,transformOrigin:"center center"});const c=Array.from({length:40},(()=>({x:a.x,y:a.y,vx:0,vy:0}))),u={s:1};let l=0,d=0;function m(){l=innerWidth,d=innerHeight,t.width=l,t.height=d}m();let v=null,y=null,h=null;const p=gsap.quickSetter(o,"x","px"),g=gsap.quickSetter(o,"y","px");let x=null,f=!1,L=!1;const C=.01,E=.005;let b=a.x,w=a.y;function _(){clearTimeout(x),x=setTimeout(F,1e4)}function A(){const e=document.documentElement,t=e.clientWidth,s=e.clientHeight;b=(.25+.5*Math.random())*t,w=(.25+.5*Math.random())*s}function F(){if(f||L)return;f=!0,A();const e=()=>{f&&!L&&(Math.random()<E&&A(),a.tx+=(b-a.tx)*C,a.ty+=(w-a.ty)*C,h=requestAnimationFrame(e))};h=requestAnimationFrame(e)}function q(){f=!1,h&&cancelAnimationFrame(h),h=null}const M=e=>{L||(q(),_(),a.tx=e.clientX,a.ty=e.clientY)},T=()=>{document.hidden?q():_()},k=e=>{const t=e.target.closest("[data-cursor]");if(!t)return;n.innerHTML="",o.className="custom-cursor",document.body.classList.remove("cursor--disable-all-cursors"),u.s=1;const s=(t.dataset.cursor||"").toLowerCase();let r=1;if("hide"===s)return o.classList.add("cursor--hide"),document.body.classList.add("cursor--disable-all-cursors"),gsap.set(o,{scale:0,opacity:0,overwrite:!0}),void gsap.set(u,{s:0,overwrite:!0});if("scaleup"===s)r=3,o.classList.add("cursor--scaleup");else if("text"===s)n.textContent=t.dataset.text||"",o.classList.add("cursor--active"),r=3;else if("icon"===s){const e=(t.dataset.icon||"").trim();if(e.toLowerCase().endsWith(".svg")){const t=new Image;t.src=e,t.style.width=t.style.height="1em",n.appendChild(t)}else if(e){const t=document.createElement("i");t.className=e,n.appendChild(t)}o.classList.add("cursor--active"),r=3}gsap.killTweensOf(n),gsap.set(n,{scale:1/r}),gsap.to(o,{scale:r,opacity:1,duration:.6,ease:"elastic.out(0.6, 0.3)",overwrite:!0}),gsap.to(u,{s:r,duration:.6,ease:"elastic.out(0.6, 0.3)",overwrite:!0})},D=e=>{e.target.closest("[data-cursor]")&&(n.innerHTML="",o.className="custom-cursor",document.body.classList.remove("cursor--disable-all-cursors"),gsap.killTweensOf(n),gsap.set(n,{scale:1}),gsap.to(o,{scale:1,opacity:0,duration:.6,ease:"elastic.out(0.6, 0.3)",overwrite:!0}),gsap.to(u,{s:1,duration:.6,ease:"elastic.out(0.6, 0.3)",overwrite:!0}))};function N(){if(!L){L=!0,q(),v&&cancelAnimationFrame(v),y&&cancelAnimationFrame(y),removeEventListener("resize",m),document.removeEventListener("mousemove",M),document.removeEventListener("pointerover",k),document.removeEventListener("pointerout",D),document.removeEventListener("visibilitychange",T);try{t.remove()}catch(e){}try{o.remove()}catch(e){}e.__customCursorDestroy=null}}return addEventListener("resize",m),document.addEventListener("mousemove",M,{passive:!0}),document.addEventListener("pointerover",k,{passive:!0}),document.addEventListener("pointerout",D,{passive:!0}),document.addEventListener("visibilitychange",T),v=requestAnimationFrame((function e(){s.clearRect(0,0,l,d),a.x+=.45*(a.tx-a.x),a.y+=.45*(a.ty-a.y),c.forEach(((e,t)=>{if(0===t)return e.x=a.x,void(e.y=a.y);const s=c[t-1];e.vx+=.4*(s.x-e.x),e.vy+=.4*(s.y-e.y),e.vx*=.5,e.vy*=.5,e.x+=e.vx,e.y+=e.vy}));const t=getComputedStyle(document.documentElement).getPropertyValue("--colors--highlight").trim()||"#000";s.strokeStyle=t;for(let e=0;e<c.length-1;e++){const t=c[e],o=c[e+1],n=e/(c.length-1);s.lineWidth=16*(1-n)+2*n,s.lineCap="round",s.beginPath(),s.moveTo(t.x,t.y),s.lineTo(o.x,o.y),s.stroke()}s.beginPath(),s.fillStyle=t,s.arc(a.x,a.y,10*u.s,0,2*Math.PI),s.fill(),v=requestAnimationFrame(e)})),y=requestAnimationFrame((function e(){p(a.x),g(a.y),y=requestAnimationFrame(e)})),_(),e.__customCursorDestroy=N,N}
 	function initAccordions(e=document){const o=e.querySelectorAll(".accordion-list");if(!o.length)return;let t;const i=()=>{clearTimeout(t),t=setTimeout((()=>ScrollTrigger.refresh()),100)};o.forEach((e=>{const o=e.querySelectorAll(".accordion-subservice, .accordion-mindset, .accordion-quote");o.length&&o.forEach((e=>{const t=e.querySelector(".accordion-header"),c=e.querySelector(".cross-line-animating"),r=e.querySelector(".accordion-content"),a=e.querySelector(".accordion-icon-quote"),n=e.classList.contains("accordion-quote");if(!t||!c||!r)return;gsap.set(r,{maxHeight:0,opacity:0,paddingBottom:0,paddingTop:n?0:void 0});const s=gsap.timeline({paused:!0,defaults:{ease:"power2.out"}}).to(t,{paddingTop:"2rem",duration:.4},0).to(c,{rotation:0,duration:.4},0).to(r,{maxHeight:600,opacity:1,paddingBottom:n?"0rem":"2rem",paddingTop:n?"2rem":void 0,duration:.5,onUpdate:i,onComplete:()=>gsap.set(r,{maxHeight:"none"})},0);n&&a&&s.from(a,{opacity:0,duration:.4},0),e._accordionTimeline=s,e.addEventListener("click",(()=>{if(s.isActive())return;const c=t.classList.contains("accordion-active");o.forEach((o=>{if(o!==e){const e=o.querySelector(".accordion-header"),t=o._accordionTimeline;e.classList.contains("accordion-active")&&!t.isActive()&&(e.classList.remove("accordion-active"),t.reverse())}})),c?(gsap.set(r,{maxHeight:r.offsetHeight}),s.eventCallback("onReverseComplete",i),s.reverse()):(gsap.set(r,{maxHeight:0}),s.play()),t.classList.toggle("accordion-active",!c)}))}))}))}
@@ -447,6 +331,7 @@ function installDebugProbes() {
 
 	!function(){
 		function boot() {
+			ScrollState.init({ maxAgeMs: 30 * 60 * 1000 });
 			NavigationManager.init({ debug: DEBUG });
 			NavigationManager.installLinkInterceptor();
 			window.initBarba && window.initBarba();
@@ -500,7 +385,7 @@ function installDebugProbes() {
 				    name: 'initial-load',
 			      	once: async ({ next }) => {
 			        	await runEntryFlow(next.container);
-			        	reinitWebflowModules();
+			        	WebflowAdapter.reinit();
 			        	if (!location.hash) window.scrollTo(0, 0);
 			      	}
 				},{
@@ -516,12 +401,12 @@ function installDebugProbes() {
 						current.container.remove();
 					},
 					async enter({ next }) {
-						resetWebflow({ next });
+						WebflowAdapter.reset({ next });
 						NavigationManager?.setLock('overlay', false);
 						const entries = performance.getEntriesByType('navigation');
 						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
 						if (isHistory) {
-						const pos = ScrollState.read();
+							const pos = ScrollState.read();
 							if (pos) window.scrollTo(pos.x, pos.y);
 						} else if (!location.hash) {
 							window.scrollTo(0, 0);
@@ -529,7 +414,7 @@ function installDebugProbes() {
 						await runEntryFlow(next.container, { withCoverOut: false });
 					},
 					afterEnter({ next }) {
-						requestAnimationFrame(() => reinitWebflowModules());
+						requestAnimationFrame(() => WebflowAdapter.reinit());
 						requestAnimationFrame(() => {
 							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
 							if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
@@ -553,7 +438,7 @@ function installDebugProbes() {
 						current.container.remove();
 					},
 					async enter({ next }) {
-						resetWebflow({ next });
+						WebflowAdapter.reset({ next });
 						NavigationManager?.setLock('overlay', false);
 						const entries = performance.getEntriesByType('navigation');
 						const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
@@ -567,7 +452,7 @@ function installDebugProbes() {
 					},
 					afterEnter({ next }) {
 						forceCloseMenus();
-						requestAnimationFrame(() => reinitWebflowModules());
+						requestAnimationFrame(() => WebflowAdapter.reinit());
 						requestAnimationFrame(() => {
 							const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
 							if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
@@ -588,7 +473,7 @@ function installDebugProbes() {
 		setActiveTab(ns);
   		applyOverscroll(ns);
 		
-		initReparentChildren(root);
+		WebflowAdapter.reparent(root);
 		initTextAnimationOne(root);
 		initAppearInLine(root);
 		initNavigation(root);
@@ -608,7 +493,7 @@ function installDebugProbes() {
 			initResourcesPinnedSections(root);
 		}
 		
-		requestAnimationFrame(() => reinitWebflowModules());
+		requestAnimationFrame(() => WebflowAdapter.reinit());
 		if (destroyCursor) { destroyCursor(); destroyCursor = null; }
 		if (window.matchMedia('(pointer:fine)').matches) {
 			destroyCursor = initCustomCursor(root);
