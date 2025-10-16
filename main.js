@@ -193,7 +193,7 @@
 						async leave({ current }) {
 							NavigationManager?.setLock('overlay', true);
 							window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
-							ScrollState.save();
+							await ScrollState.saveAsync();
 							await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
 							CoreUtilities.InitManager.cleanup();
 							current.container.remove();
@@ -229,7 +229,7 @@
 							NavigationManager?.setLock('overlay', true);
 							window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
 							document.body.style.overflow = '';
-							ScrollState.save();
+							await ScrollState.saveAsync();
 							const ok = await TransitionEffects.coverIn();
 							if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
 							CoreUtilities.InitManager.cleanup();
