@@ -1,0 +1,12 @@
+name: Purge jsDelivr cache
+on:
+  push:
+    branches: [ main ]
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: gacts/purge-jsdelivr-cache@v1
+        with:
+          url: |
+            https://cdn.jsdelivr.net/gh/bymschristensen/portfolio@main/main.js
