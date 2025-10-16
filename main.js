@@ -124,11 +124,12 @@
 		let config = { maxAgeMs: null };
 		const KEY = (p) => `${PREFIX}${p}`;
 		function init(n={}){config={...config,...n};try{prune({maxAgeMs:config.maxAgeMs})}catch{}}
-		function save(o=location.pathname+location.search){try{const t=`${window.scrollX},${window.scrollY},${Date.now()}`;sessionStorage.setItem(KEY(o),t)}catch{}}
+		function save(o=location.pathname+location.search){try{const e=document.scrollingElement||document.documentElement||document.body||{},n=("number"==typeof window.scrollX?window.scrollX:window.pageXOffset)??e.scrollLeft??0,t=("number"==typeof window.scrollY?window.scrollY:window.pageYOffset)??e.scrollTop??0,c=`${Math.round(n)},${Math.round(t)},${Date.now()}`;sessionStorage.setItem(KEY(o),c)}catch{}}
+		async function saveAsync(a=location.pathname+location.search){await new Promise((a=>requestAnimationFrame(a))),save(a)}
 		function read(n=location.pathname+location.search,t={}){try{const e=sessionStorage.getItem(KEY(n));if(!e)return null;const l=e.split(","),a=parseInt(l[0],10)||0,r=parseInt(l[1],10)||0,s=l[2]?parseInt(l[2],10):null,o=t.maxAgeMs??config.maxAgeMs;return null!=o&&null!=s&&Date.now()-s>o?null:{x:a,y:r}}catch{return null}}
 		function prune({maxAgeMs:t=null}={}){if(null!=t)try{const e=Date.now();for(let s=sessionStorage.length-1;s>=0;s--){const n=sessionStorage.key(s);if(!n||!n.startsWith(PREFIX))continue;const o=sessionStorage.getItem(n),i=o?.split(",")[2];i&&(e-parseInt(i,10)>t&&sessionStorage.removeItem(n))}}catch{}}
 		try { history.scrollRestoration = 'manual'; } catch {}
-		return { init, KEY, save, read, prune, get config(){ return config; } };
+		return { init, KEY, save, saveAsync, read, prune, get config(){ return config; } };
 	})();
 
 // 7. TransitionEffects
