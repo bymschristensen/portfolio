@@ -6,7 +6,7 @@
 	const DEBUG = true;
 	window.DEBUG = true;
 
-// NavigationManager
+// Navigation Manager
 	window.NavigationManager = (function () {
 		const state = {
 			debug: false,
@@ -38,7 +38,7 @@
 		};
 	})();
 
-// WebflowAdapter
+// Webflow Adapter
 	window.WebflowAdapter = (function () {
 		function reset({next:t}){if(!t?.html)return;const e=(new DOMParser).parseFromString(t.html,"text/html"),a=e.querySelector("html").getAttribute("data-wf-page"),r=e.querySelector("script[data-wf-site-data]")?.textContent;if(document.documentElement.setAttribute("data-wf-page",a),document.querySelectorAll("script[data-wf-site-data]").forEach((t=>t.remove())),r){const t=document.createElement("script");t.type="application/json",t.setAttribute("data-wf-site-data",""),t.textContent=r,document.head.appendChild(t)}window.Webflow?.destroy?.(),window.Webflow?.ready?.();const n=Webflow.require?.("ix2");n?.init()}
 		function reinit(){if(window.Webflow&&Webflow.require){try{Webflow.ready&&Webflow.ready()}catch(e){}try{const e=Webflow.require("tabs");e?.ready&&e.ready()}catch(e){}try{const e=Webflow.require("slider");e?.ready&&e.ready()}catch(e){}}}
@@ -65,7 +65,275 @@
 		};
 	})();
 
-// PreloaderService
+// Init Manager
+	window.InitManager = (function () {
+		const state = { installed:false, features:[], featuresById: new Map() };
+		function nsOf(a){return a?.dataset?.barbaNamespace||a.getAttribute?.("data-barba-namespace")||""}
+		function hasAny(r,n){if(!n||!n.length)return!0;for(const e of n)if(r.querySelector(e))return!0;return!1}
+		function inNamespaces(n,r){return!r||"*"===r||("string"==typeof r?n===r:Array.isArray(r)?r.includes(n):"function"==typeof r&&!!r(n))}
+		function feature(e){const t={id:e.id,stage:e.stage||"main",namespaces:e.namespaces||"*",selectors:e.selectors||[],enabled:!1!==e.enabled,init:e.init||(async()=>{}),destroy:e.destroy||null};if(!t.id)throw new Error("InitManager: feature missing id");if(state.featuresById.has(t.id))throw new Error("InitManager: duplicate feature id: "+t.id);return state.features.push(t),state.featuresById.set(t.id,t),t}
+		
+		// Registration
+		const registries = {
+			common: [],
+			pages: {
+				selected: [],
+				archive: [],
+				resources: [],
+				capabilities: [],
+				caseStudy: [],
+			}
+		};
+	
+	// Global
+		registries.common.push(
+			feature({
+				id: 'activeTab',
+				stage: 'early',
+				namespaces: '*',
+				selectors: [],
+				init: async (root) => { setActiveTab(root?.dataset?.barbaNamespace || root.getAttribute('data-barba-namespace') || ''); }
+			}),
+			
+			feature({
+				id: 'overscroll',
+				stage: 'early',
+				namespaces: '*',
+				selectors: [],
+				init: async (root) => { applyOverscroll(root?.dataset?.barbaNamespace || root.getAttribute('data-barba-namespace') || ''); }
+			}),
+			
+			feature({
+				id: 'webflowReparent',
+				stage: 'early',
+				namespaces: '*',
+				selectors: ['[data-child]'],
+				init: async (root) => {
+					// TODO: move body here or keep it as a single call:
+					// WebflowAdapter.reparent(root);
+				}
+			}),
+	
+			feature({
+				id: 'textAnimationOne',
+				stage: 'main',
+				namespaces: '*',
+				selectors: ['.ta-one'],
+				init: async (root) => {
+					// TODO: paste the body of initTextAnimationOne(root)
+				}
+			}),
+	
+			feature({
+				id: 'appearInLine',
+				stage: 'main',
+				namespaces: '*',
+				selectors: ['.appear-in-line'],
+				init: async (root) => {
+					// TODO: paste the body of initAppearInLine(root)
+				}
+			}),
+	
+			feature({
+				id: 'navigation',
+				stage: 'main',
+				namespaces: '*',
+				selectors: ['.nav-primary-wrap'],
+				init: async (root) => {
+					// TODO: paste the body of initNavigation(root)
+				}
+			}),
+	
+			feature({
+				id: 'menuLinkHover',
+				stage: 'main',
+				namespaces: '*',
+				selectors: ['.menu-link'],
+				init: async (root) => {
+					// TODO: paste the body of initMenuLinkHover(root)
+				}
+			}),
+	
+			feature({
+				id: 'caseStudyCloseButton',
+				stage: 'main',
+				namespaces: '*',
+				selectors: ['.nav-button-close-case'],
+				init: async (root) => {
+					// TODO: paste the body of initCaseStudyCloseButton(root)
+				}
+			}),
+	
+	feature({
+		id: 'navLocks',
+		stage: 'late',
+		namespaces: '*',
+		selectors: ['.nav-primary-wrap'],
+		init: async (root) => {
+			// NavigationManager.attachMenuLocks(root);
+		}
+	}),
+	
+	feature({
+		id: 'themeSwitch',
+		stage: 'main',
+		namespaces: '*',
+		selectors: ['.theme-switch'],
+		init: async (root) => {
+			// TODO: paste the body of initThemeSwitch(root)
+		}
+	}),
+	
+	feature({
+		id: 'accordions',
+		stage: 'main',
+		namespaces: '*',
+		selectors: ['.accordion-list'],
+		init: async (root) => {
+			// TODO: paste the body of initAccordions(root)
+		}
+	}),
+	
+	feature({
+		id: 'customCursor',
+		stage: 'late',
+		namespaces: '*',
+		selectors: [], // gated by media query
+		// MOVE: initCustomCursor(root) + CoreUtilities.Cursor.setDestroy
+		init: async (root) => {
+		if (!window.matchMedia('(pointer:fine)').matches) return;
+			// TODO: paste the body of initCustomCursor(root)
+			// and remember to call CoreUtilities.Cursor.setDestroy(destroyFn) if your code returns one
+		},
+		destroy: async () => {
+			// usually covered by CoreUtilities.Cursor.destroy()
+		}
+	}),
+	
+		feature({
+			id: 'webflowReinitAfterAll',
+			stage: 'late',
+			namespaces: '*',
+			selectors: [],
+			init: async () => {
+				// TODO: keep as single call:
+				// requestAnimationFrame(() => WebflowAdapter.reinit());
+			}
+		})
+	);
+	
+	// Page: Index
+	registries.pages.selected.push(
+		feature({
+			id: 'selectedWorkLoop',
+			stage: 'main',
+			namespaces: ['selected'],
+			selectors: ['.selected-container', '.selected-content'],
+			init: async (root) => {
+				// TODO: paste the body of initSelectedWorkLoop(root)
+			}
+		})
+	);
+	
+	// Page: Archive
+	registries.pages.archive.push(
+		feature({
+			id: 'archiveFilters',
+			stage: 'main',
+			namespaces: ['archive'],
+			selectors: ['.filters-tab', '.list-item-archive-project'],
+			init: async (root) => {
+				// TODO: paste the body of initArchiveFilters(root)
+			}
+		})
+	);
+	
+	// Page: Resources
+	registries.pages.resources.push(
+		feature({
+			id: 'resourcesPinnedSections',
+			stage: 'main',
+			namespaces: ['resources'],
+			selectors: ['.section-resources .resource-item'],
+			init: async (root) => {
+				// TODO: paste the body of initResourcesPinnedSections(root)
+			}
+		})
+	);
+	
+	// Page: Capabilities
+	registries.pages.capabilities.push(
+		feature({
+			id: 'servicesPinnedSections',
+			stage: 'main',
+			namespaces: ['capabilities'],
+			selectors: ['.section-single-service'],
+			init: async (root) => {
+				// TODO: paste the body of initServicesPinnedSections(root)
+			}
+		}),
+		feature({
+			id: 'servicesGallery',
+			stage: 'late',
+			namespaces: ['capabilities'],
+			selectors: ['.infinite-gallery'],
+			init: async (root) => {
+				// TODO: paste the body of initServicesGallery(root)
+			}
+		})
+	);
+	
+	// Page: Case Study
+	registries.pages.caseStudy.push(
+		feature({
+			id: 'caseStudyBackground',
+			stage: 'main',
+			namespaces: ['selected', 'archive', 'resources', 'capabilities', 'info', 'case-study'], // adjust if you have a dedicated ns
+			selectors: ['.cs-hero-image', '.cs-details', '.cs-morework'],
+			init: async (root) => {
+				// TODO: adapt to find the section and pass it to the original code
+				// const section = root.querySelector('.cs-hero-image')?.closest('.barba-container') || root;
+				// initCaseStudyBackgroundScroll(sectionOrElement)
+			}
+		}),
+		feature({
+			id: 'dynamicPortraitColumns',
+			stage: 'late',
+			namespaces: ['selected', 'archive', 'case-study'], // narrow if needed
+			selectors: ['.cs-gallery-inner'],
+			init: async (root) => {
+				// TODO: paste the body of initDynamicPortraitColumns(root)
+			}
+		})
+	);
+	
+	// ---- execution order (early → main → late) ------------------------------
+	function sortByStage(t){const e={early:0,main:1,late:2};return t.slice().sort(((t,a)=>(e[t.stage]??1)-(e[a.stage]??1)))}
+	
+	// build the flattened, ordered list once
+	function buildIndex(){if(state.installed)return;const e=[...registries.common,...registries.pages.selected,...registries.pages.archive,...registries.pages.resources,...registries.pages.capabilities,...registries.pages.caseStudy];state.features=sortByStage(e),state.installed=!0}
+	
+	// ---- public API ----------------------------------------------------------
+	async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((e=>{try{e.remove()}catch{}}))}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(e){console.warn("[InitManager]",r.id,"init failed:",e)}try{await new Promise((e=>requestAnimationFrame(e))),await new Promise((e=>requestAnimationFrame(e))),window.ScrollTrigger&&ScrollTrigger.refresh()}catch{}}
+	async function cleanup({preserveServicePins:e=!1}={}){for(const e of state.features)if("function"==typeof e.destroy)try{await e.destroy(document,{})}catch(r){console.warn("[InitManager]",e.id,"destroy failed:",r)}try{CoreUtilities.Observers.clearAll({preserveServicePins:e})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((e=>{try{e.remove()}catch{}}))}catch{}}
+	
+	function enable(id, on = true)   { const f = state.featuresById.get(id); if (f) f.enabled = !!on; }
+	function disable(id)             { enable(id, false); }
+	function getFeature(id)          { return state.featuresById.get(id) || null; }
+	function getState()              { return { ...state, features: state.features.map(f => ({ id: f.id, stage: f.stage, enabled: f.enabled })) }; }
+	
+	return {
+		run,
+		cleanup,
+		enable,
+		disable,
+		getFeature,
+		getState,
+		_registries: registries
+		};
+	})();
+
+// Preloader Service
 	window.PreloaderService = (function () {
 		let _enabled = false;
 		let _built = false;
@@ -118,7 +386,7 @@
 		};
 	})();
 
-// ScrollState
+// Scroll State
 	window.ScrollState = (function () {
 		const PREFIX="scroll:";
 		let config={maxAgeMs:null};
@@ -138,7 +406,7 @@
 		};
 	})();
 
-// TransitionEffects
+// Transition Effects
 	window.TransitionEffects = (function () {
 		let runningCoverOut = null;
 		function getOverlay(){const e=document.querySelector(".page-overlay"),t=e?.querySelector(".page-overlay-tint")||null;return{el:e,tint:t}}
@@ -147,14 +415,14 @@
 		return { coverIn, coverOut };
 	})();
 
-// EntryOrchestrator
+// Entry Orchestrator
 	window.EntryOrchestrator = window.EntryOrchestrator || (function () {
 		const entryConfigByNamespace={selected:{delayHero:!1,entryOffset:-.2},archive:{delayHero:!1,entryOffset:-.2},resources:{delayHero:!1,entryOffset:-.2},capabilities:{delayHero:!0,entryOffset:.1},info:{delayHero:!1,entryOffset:-.2}};
 		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
 		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
 		async function finalizeAfterEntry(i){await new Promise((i=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(i,30))))))),"function"==typeof initDynamicPortraitColumns&&initDynamicPortraitColumns(i),"function"==typeof initServicesPinnedSections&&initServicesPinnedSections(i),"function"==typeof initServicesGallery&&initServicesGallery(i),i.querySelector(".cs-hero-image")&&"function"==typeof initCaseStudyBackgroundScroll&&initCaseStudyBackgroundScroll(i),requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}
-		async function runEntryFlow(t,{withCoverOut:n=!1}={}){t.style.visibility="",n&&await TransitionEffects.coverOut(),await CoreUtilities.InitManager.run(t,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(t);await new Promise((n=>{e.call((()=>finalizeAfterEntry(t)),null,i+e.duration()),e.eventCallback("onComplete",n)}))}
-
+		async function runEntryFlow(n,{withCoverOut:t=!1}={}){n.style.visibility="",t&&await TransitionEffects.coverOut(),await InitManager.run(n,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(n);await new Promise((t=>{e.call((()=>finalizeAfterEntry(n)),null,i+e.duration()),e.eventCallback("onComplete",t)}))}
+		
 		// Entry Animations
 		const EntryAnimations = {
 			selected(e=document){const t=e.querySelector(".selected-container"),a=t?.querySelector(".selected-content"),o=Array.from(e.querySelectorAll(".selected-item-outer")),l=gsap.timeline();return t&&a&&o.length?(o.forEach((e=>{if(e.__entryDone)return;const t=e.querySelector(".selected-visual"),a=e.querySelector(".selected-item-header .headline-m"),o=e.querySelector(".selected-item-details"),l=e.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:0,transformOrigin:"bottom center",opacity:0}),a&&gsap.set(a,{opacity:0}),o&&gsap.set(o,{opacity:0,height:0}),l.length&&gsap.set(l,{opacity:0,y:20,filter:"blur(10px)"})})),(e=>{const o=()=>{requestAnimationFrame((()=>requestAnimationFrame(e)))};if(t.hasAttribute("data-loop-ready"))return o();const l=()=>{a.removeEventListener("selected:loop-ready",l,!0),o()};a.addEventListener("selected:loop-ready",l,!0),setTimeout((()=>{a.removeEventListener("selected:loop-ready",l,!0),o()}),600)})((()=>{const e=window.innerWidth||document.documentElement.clientWidth,t=window.innerHeight||document.documentElement.clientHeight,a=o.map((a=>{const o=a.getBoundingClientRect();return{o:a,r:o,area:Math.max(0,Math.min(o.right,e)-Math.max(o.left,0))*Math.max(0,Math.min(o.bottom,t)-Math.max(o.top,0)),center:.5*(o.left+o.right)}}));let r=a.filter((e=>e.area>1)).sort(((e,t)=>e.r.left-t.r.left));if(!r.length){const t=.5*e;r=a.slice().sort(((e,a)=>Math.abs(e.center-t)-Math.abs(a.center-t))).slice(0,2).sort(((e,t)=>e.r.left-t.r.left))}const s=new Set(r.map((e=>e.o)));a.forEach((e=>{if(e.o.__entryDone||s.has(e.o))return;const t=e.o.querySelector(".selected-visual"),a=e.o.querySelector(".selected-item-header .headline-m"),o=e.o.querySelector(".selected-item-details"),l=e.o.querySelectorAll(".selected-item-details .body-s");t&&gsap.set(t,{scaleY:1,opacity:1}),a&&gsap.set(a,{opacity:1}),o&&gsap.set(o,{opacity:1,height:"auto"}),l.length&&gsap.set(l,{opacity:1,y:0,filter:"blur(0px)"}),e.o.__entryDone=!0})),r.forEach(((e,t)=>{const a=e.o;if(a.__entryDone)return;const o=a.querySelector(".selected-visual"),r=a.querySelector(".selected-item-header .headline-m"),s=a.querySelector(".selected-item-details"),n=a.querySelectorAll(".selected-item-details .body-s"),i=.15*t;o&&l.set(o,{opacity:1},i).to(o,{scaleY:1,duration:.8,ease:"power2.out"},i),r&&l.set(r,{opacity:1},i+.2).call((()=>{if(r.__splitRun)return;r.__splitRun=!0;const e=splitAndMask(r);gsap.delayedCall(.15,(()=>{animateLines(e.lines).eventCallback("onComplete",(()=>safelyRevertSplit(e,r)))}))}),null,i+.2),s&&l.to(s,{opacity:1,height:"auto",duration:.4,ease:"power2.out"},i+.6),n.length&&l.to(n,{opacity:1,y:0,filter:"blur(0px)",duration:.4,ease:"power2.out",stagger:.15},i+.6),a.__entryDone=!0}))})),l):l},
