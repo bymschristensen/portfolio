@@ -58,10 +58,21 @@
 		function nukeCursorDom(){try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((r=>{try{r.remove()}catch{}}))}catch{}}
 		async function doubleRAF(){await new Promise((e=>requestAnimationFrame(e))),await new Promise((e=>requestAnimationFrame(e)))}
 		const InitManager={async run(r=document,{preserveServicePins:e=!1}={}){Observers.clearAll({preserveServicePins:e}),Cursor.destroy(),nukeCursorDom(),"function"==typeof window.initAllYourInits&&window.initAllYourInits(r),await doubleRAF(),await doubleRAF();try{window.ScrollTrigger&&ScrollTrigger.refresh()}catch{}},cleanup(r={}){Observers.clearAll(r),Cursor.destroy(),nukeCursorDom()}};
+		const Text={
+			splitAndMask(e){if(!e)return null;if(e._originalHTML||(e._originalHTML=e.innerHTML),e._split)return e._split;const t=getComputedStyle(e).whiteSpace||"normal",i=e.style.whiteSpace,l=e.style.display;e.style.whiteSpace=t,"inline"===getComputedStyle(e).display&&(e.style.display="block"),e.clientWidth;const n=new SplitText(e,{type:"lines",linesClass:"line",reduceWhiteSpace:!1});return n.lines.forEach((e=>{const i=e.getBoundingClientRect().height||e.offsetHeight||0,l=document.createElement("div");l.className="text-mask",l.style.overflow="hidden",l.style.display="block",l.style.height=i+"px",e.style.whiteSpace=t,e.style.display="block",e.parentNode.insertBefore(l,e),l.appendChild(e)})),gsap.set(n.lines,{yPercent:100,rotation:10,transformOrigin:"0 10%",willChange:"transform,opacity"}),e.style.whiteSpace=i,e.style.display=l,e._split=n,n},
+			safelyRevertSplit(e,t){if(e&&t){try{e.revert()}catch{}t._originalHTML&&(t.innerHTML=t._originalHTML,delete t._originalHTML),delete t._split}},
+			animateLines:e=>(gsap.set(e,{transformOrigin:"0 10%",rotation:10,yPercent:100,willChange:"transform, opacity"}),gsap.to(e,{yPercent:0,rotation:0,duration:.8,ease:"power2.out",stagger:.08}))
+		};
+		
+		window.splitAndMask       ||= Text.splitAndMask;
+		window.safelyRevertSplit  ||= Text.safelyRevertSplit;
+		window.animateLines       ||= Text.animateLines;
+		
 		return {
 			Observers,
 			Cursor,
-			InitManager
+			InitManager,
+			Text
 		};
 	})();
 
@@ -85,14 +96,14 @@
 			}
 		};
 	
-	// Global
+		// Global
 		registries.common.push(
 			feature({
 				id: 'activeTab',
 				stage: 'early',
 				namespaces: '*',
-				selectors: [],
-				init: async (root) => { setActiveTab(root?.dataset?.barbaNamespace || root.getAttribute('data-barba-namespace') || ''); }
+				selectors: ['[data-tab-link]'],
+				init: async r=>{try{const e=r?.dataset?.barbaNamespace||r.getAttribute?.("data-barba-namespace")||"";document.querySelectorAll("[data-tab-link] a,[data-tab-link].is-active,a.is-active").forEach(e=>e.classList.remove("is-active"));const t="selected"===e?"selectedOpen":"archive"===e?"archiveOpen":"resources"===e?"resourcesOpen":"";if(!t)return;(document.querySelector(`#${t} a`)||document.querySelector(`#${t}`))?.classList.add("is-active")}catch(e){console.warn("[InitManager] activeTab failed:",e)}},
 			}),
 			
 			feature({
@@ -100,28 +111,31 @@
 				stage: 'early',
 				namespaces: '*',
 				selectors: [],
-				init: async (root) => { applyOverscroll(root?.dataset?.barbaNamespace || root.getAttribute('data-barba-namespace') || ''); }
+				init: async r=>{const e=r?.dataset?.barbaNamespace||r.getAttribute?.("data-barba-namespace")||"",o="selected"===e?"none":"auto";document.documentElement.style.setProperty("overscroll-behavior",o,"important"),document.documentElement.style.setProperty("overscroll-behavior-y",o,"important"),document.body.style.setProperty("overscroll-behavior",o,"important"),document.body.style.setProperty("overscroll-behavior-y",o,"important")},
 			}),
-			
+
 			feature({
 				id: 'webflowReparent',
 				stage: 'early',
 				namespaces: '*',
 				selectors: ['[data-child]'],
-				init: async (root) => {
-					// TODO: move body here or keep it as a single call:
-					// WebflowAdapter.reparent(root);
-				}
+				init: async r => { try { WebflowAdapter.reparent(r); } catch(e) { console.warn('[InitManager] webflowReparent failed:', e); } }
+			}),
+			
+			feature({
+				id: 'webflowReinitAfterAll',
+				stage: 'late',
+				namespaces: '*',
+				selectors: [],
+				init: async()=>{requestAnimationFrame(()=>requestAnimationFrame(()=>WebflowAdapter?.reinit?.()))},
 			}),
 	
 			feature({
-				id: 'textAnimationOne',
-				stage: 'main',
-				namespaces: '*',
-				selectors: ['.ta-one'],
-				init: async (root) => {
-					// TODO: paste the body of initTextAnimationOne(root)
-				}
+				id:'textAnimation',
+				stage:'main',
+				namespaces:'*',
+				selectors:['.ta-one'],
+				init: async r=>{const{splitAndMask:a,safelyRevertSplit:t,animateLines:e}=CoreUtilities.Text,n=".ta-one",o=[...r.querySelectorAll(n)];o.forEach(r=>{gsap.set(r,{autoAlpha:0}),t(r._split,r)});const s=(r,i)=>{if(!r||r.__taDone||r.__taOneDone)return;gsap.set(r,{autoAlpha:1});const n=a(r);e(n.lines).eventCallback("onComplete",()=>{t(n,r),r.__taDone=!0}),i&&i.unobserve(r)},c=CoreUtilities.Observers.addDom(new IntersectionObserver((r,i)=>{r.forEach(r=>{r.isIntersecting&&s(r.target,i)})},{root:null,rootMargin:"0px 0px -5% 0px",threshold:0}));o.forEach(r=>{if(r.__taDone||r.__taOneDone)return;c.observe(r);const i=r.getBoundingClientRect();i.top<innerHeight&&i.bottom>0&&s(r,c)}),r.querySelectorAll(".w-tabs .w-tab-pane").forEach(r=>{CoreUtilities.Observers.addDom(new MutationObserver(()=>{if(!r.classList.contains("w--tab-active"))return;r.querySelectorAll(n).forEach(r=>{if(r.__taDone||r.__taOneDone)return;const i=r.getBoundingClientRect();i.top<innerHeight&&i.bottom>0&&s(r)})})).observe(r,{attributes:!0,attributeFilter:["class"]})})}
 			}),
 	
 			feature({
@@ -129,9 +143,7 @@
 				stage: 'main',
 				namespaces: '*',
 				selectors: ['.appear-in-line'],
-				init: async (root) => {
-					// TODO: paste the body of initAppearInLine(root)
-				}
+				init: async r=>{const t=".appear-in-line",o=":scope > *";r.querySelectorAll(t).forEach(t=>{if(t.__ailInit)return;t.__ailInit=!0;const e=[],n=[];Array.from(t.querySelectorAll(o)).forEach(t=>{const o=getComputedStyle(t),i=parseInt(o.columnCount,10)||1,s=t.getBoundingClientRect();if(i>1){const o=new SplitText(t,{type:"lines",linesClass:"split-line"});e.push(o);const a=s.width/i,l=Array.from({length:i},(()=>[]));o.lines.forEach(t=>{const e=t.getBoundingClientRect().left-s.left,o=Math.min(i-1,Math.max(0,Math.floor(e/a)));l[o].push(t),gsap.set(t,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"})}),l.forEach(t=>n.push(t))}else gsap.set(t,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"}),n.push([t])});const i=()=>{if(t.__ailDone)return;n.forEach((t,o=>gsap.to(t,{y:0,opacity:1,filter:"blur(0px)",duration:.8,ease:"power2.out",delay:.15*o})));const o=.15*(n.length-1)+.8;gsap.delayedCall(o+.05,(()=>{e.forEach((t=>t.revert())),t.__ailDone=!0}))},s=CoreUtilities.Observers.addDom(new IntersectionObserver(((e,o)=>{e.forEach((e=>{e.isIntersecting&&(o.unobserve(t),i())}))}),{root:null,rootMargin:"0px 0px -10% 0px",threshold:0}));t._appearData={splits:e,groups:n,observer:s},s.observe(t);const a=t.getBoundingClientRect();a.top<innerHeight&&a.bottom>0&&(s.unobserve(t),i());const l=r.querySelector(".w-tabs")?t.closest(".w-tab-pane"):null;l&&CoreUtilities.Observers.addDom(new MutationObserver((()=>{if(!l.classList.contains("w--tab-active"))return;s.observe(t);const e=t.getBoundingClientRect();e.top<innerHeight&&e.bottom>0&&(s.unobserve(t),i())}))).observe(l,{attributes:!0,attributeFilter:["class"]})})}
 			}),
 	
 			feature({
@@ -164,172 +176,161 @@
 				}
 			}),
 	
-	feature({
-		id: 'navLocks',
-		stage: 'late',
-		namespaces: '*',
-		selectors: ['.nav-primary-wrap'],
-		init: async (root) => {
-			// NavigationManager.attachMenuLocks(root);
-		}
-	}),
+			feature({
+				id: 'navLocks',
+				stage: 'late',
+				namespaces: '*',
+				selectors: ['.nav-primary-wrap'],
+				init: async (root) => {
+					// NavigationManager.attachMenuLocks(root);
+				}
+			}),
+			
+			feature({
+				id: 'themeSwitch',
+				stage: 'main',
+				namespaces: '*',
+				selectors: ['.theme-switch'],
+				init: async (root) => {
+					// TODO: paste the body of initThemeSwitch(root)
+				}
+			}),
+			
+			feature({
+				id: 'accordions',
+				stage: 'main',
+				namespaces: '*',
+				selectors: ['.accordion-list'],
+				init: async (root) => {
+					// TODO: paste the body of initAccordions(root)
+				}
+			}),
+			
+			feature({
+				id: 'customCursor',
+				stage: 'late',
+				namespaces: '*',
+				selectors: [], // gated by media query
+				// MOVE: initCustomCursor(root) + CoreUtilities.Cursor.setDestroy
+				init: async (root) => {
+				if (!window.matchMedia('(pointer:fine)').matches) return;
+					// TODO: paste the body of initCustomCursor(root)
+					// and remember to call CoreUtilities.Cursor.setDestroy(destroyFn) if your code returns one
+				},
+				destroy: async () => {
+					// usually covered by CoreUtilities.Cursor.destroy()
+				}
+			}),
+		);
 	
-	feature({
-		id: 'themeSwitch',
-		stage: 'main',
-		namespaces: '*',
-		selectors: ['.theme-switch'],
-		init: async (root) => {
-			// TODO: paste the body of initThemeSwitch(root)
-		}
-	}),
+		// Page: Index
+		registries.pages.selected.push(
+			feature({
+				id: 'selectedWorkLoop',
+				stage: 'main',
+				namespaces: ['selected'],
+				selectors: ['.selected-container', '.selected-content'],
+				init: async (root) => {
+					// TODO: paste the body of initSelectedWorkLoop(root)
+				}
+			})
+		);
+		
+		// Page: Archive
+		registries.pages.archive.push(
+			feature({
+				id: 'archiveFilters',
+				stage: 'main',
+				namespaces: ['archive'],
+				selectors: ['.filters-tab', '.list-item-archive-project'],
+				init: async (root) => {
+					// TODO: paste the body of initArchiveFilters(root)
+				}
+			})
+		);
+		
+		// Page: Resources
+		registries.pages.resources.push(
+			feature({
+				id: 'resourcesPinnedSections',
+				stage: 'main',
+				namespaces: ['resources'],
+				selectors: ['.section-resources .resource-item'],
+				init: async (root) => {
+					// TODO: paste the body of initResourcesPinnedSections(root)
+				}
+			})
+		);
 	
-	feature({
-		id: 'accordions',
-		stage: 'main',
-		namespaces: '*',
-		selectors: ['.accordion-list'],
-		init: async (root) => {
-			// TODO: paste the body of initAccordions(root)
-		}
-	}),
+		// Page: Capabilities
+		registries.pages.capabilities.push(
+			feature({
+				id: 'servicesPinnedSections',
+				stage: 'main',
+				namespaces: ['capabilities'],
+				selectors: ['.section-single-service'],
+				init: async (root) => {
+					// TODO: paste the body of initServicesPinnedSections(root)
+				}
+			}),
+			feature({
+				id: 'servicesGallery',
+				stage: 'late',
+				namespaces: ['capabilities'],
+				selectors: ['.infinite-gallery'],
+				init: async (root) => {
+					// TODO: paste the body of initServicesGallery(root)
+				}
+			})
+		);
 	
-	feature({
-		id: 'customCursor',
-		stage: 'late',
-		namespaces: '*',
-		selectors: [], // gated by media query
-		// MOVE: initCustomCursor(root) + CoreUtilities.Cursor.setDestroy
-		init: async (root) => {
-		if (!window.matchMedia('(pointer:fine)').matches) return;
-			// TODO: paste the body of initCustomCursor(root)
-			// and remember to call CoreUtilities.Cursor.setDestroy(destroyFn) if your code returns one
-		},
-		destroy: async () => {
-			// usually covered by CoreUtilities.Cursor.destroy()
-		}
-	}),
+		// Page: Case Study
+		registries.pages.caseStudy.push(
+			feature({
+				id: 'caseStudyBackground',
+				stage: 'main',
+				namespaces: ['selected', 'archive', 'resources', 'capabilities', 'info', 'case-study'], // adjust if you have a dedicated ns
+				selectors: ['.cs-hero-image', '.cs-details', '.cs-morework'],
+				init: async (root) => {
+					// TODO: adapt to find the section and pass it to the original code
+					// const section = root.querySelector('.cs-hero-image')?.closest('.barba-container') || root;
+					// initCaseStudyBackgroundScroll(sectionOrElement)
+				}
+			}),
+			feature({
+				id: 'dynamicPortraitColumns',
+				stage: 'late',
+				namespaces: ['selected', 'archive', 'case-study'], // narrow if needed
+				selectors: ['.cs-gallery-inner'],
+				init: async (root) => {
+					// TODO: paste the body of initDynamicPortraitColumns(root)
+				}
+			})
+		);
 	
-		feature({
-			id: 'webflowReinitAfterAll',
-			stage: 'late',
-			namespaces: '*',
-			selectors: [],
-			init: async () => {
-				// TODO: keep as single call:
-				// requestAnimationFrame(() => WebflowAdapter.reinit());
-			}
-		})
-	);
-	
-	// Page: Index
-	registries.pages.selected.push(
-		feature({
-			id: 'selectedWorkLoop',
-			stage: 'main',
-			namespaces: ['selected'],
-			selectors: ['.selected-container', '.selected-content'],
-			init: async (root) => {
-				// TODO: paste the body of initSelectedWorkLoop(root)
-			}
-		})
-	);
-	
-	// Page: Archive
-	registries.pages.archive.push(
-		feature({
-			id: 'archiveFilters',
-			stage: 'main',
-			namespaces: ['archive'],
-			selectors: ['.filters-tab', '.list-item-archive-project'],
-			init: async (root) => {
-				// TODO: paste the body of initArchiveFilters(root)
-			}
-		})
-	);
-	
-	// Page: Resources
-	registries.pages.resources.push(
-		feature({
-			id: 'resourcesPinnedSections',
-			stage: 'main',
-			namespaces: ['resources'],
-			selectors: ['.section-resources .resource-item'],
-			init: async (root) => {
-				// TODO: paste the body of initResourcesPinnedSections(root)
-			}
-		})
-	);
-	
-	// Page: Capabilities
-	registries.pages.capabilities.push(
-		feature({
-			id: 'servicesPinnedSections',
-			stage: 'main',
-			namespaces: ['capabilities'],
-			selectors: ['.section-single-service'],
-			init: async (root) => {
-				// TODO: paste the body of initServicesPinnedSections(root)
-			}
-		}),
-		feature({
-			id: 'servicesGallery',
-			stage: 'late',
-			namespaces: ['capabilities'],
-			selectors: ['.infinite-gallery'],
-			init: async (root) => {
-				// TODO: paste the body of initServicesGallery(root)
-			}
-		})
-	);
-	
-	// Page: Case Study
-	registries.pages.caseStudy.push(
-		feature({
-			id: 'caseStudyBackground',
-			stage: 'main',
-			namespaces: ['selected', 'archive', 'resources', 'capabilities', 'info', 'case-study'], // adjust if you have a dedicated ns
-			selectors: ['.cs-hero-image', '.cs-details', '.cs-morework'],
-			init: async (root) => {
-				// TODO: adapt to find the section and pass it to the original code
-				// const section = root.querySelector('.cs-hero-image')?.closest('.barba-container') || root;
-				// initCaseStudyBackgroundScroll(sectionOrElement)
-			}
-		}),
-		feature({
-			id: 'dynamicPortraitColumns',
-			stage: 'late',
-			namespaces: ['selected', 'archive', 'case-study'], // narrow if needed
-			selectors: ['.cs-gallery-inner'],
-			init: async (root) => {
-				// TODO: paste the body of initDynamicPortraitColumns(root)
-			}
-		})
-	);
-	
-	// ---- execution order (early → main → late) ------------------------------
-	function sortByStage(t){const e={early:0,main:1,late:2};return t.slice().sort(((t,a)=>(e[t.stage]??1)-(e[a.stage]??1)))}
-	
-	// build the flattened, ordered list once
-	function buildIndex(){if(state.installed)return;const e=[...registries.common,...registries.pages.selected,...registries.pages.archive,...registries.pages.resources,...registries.pages.capabilities,...registries.pages.caseStudy];state.features=sortByStage(e),state.installed=!0}
-	
-	// ---- public API ----------------------------------------------------------
-	async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((e=>{try{e.remove()}catch{}}))}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(e){console.warn("[InitManager]",r.id,"init failed:",e)}try{await new Promise((e=>requestAnimationFrame(e))),await new Promise((e=>requestAnimationFrame(e))),window.ScrollTrigger&&ScrollTrigger.refresh()}catch{}}
-	async function cleanup({preserveServicePins:e=!1}={}){for(const e of state.features)if("function"==typeof e.destroy)try{await e.destroy(document,{})}catch(r){console.warn("[InitManager]",e.id,"destroy failed:",r)}try{CoreUtilities.Observers.clearAll({preserveServicePins:e})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((e=>{try{e.remove()}catch{}}))}catch{}}
-	
-	function enable(id, on = true)   { const f = state.featuresById.get(id); if (f) f.enabled = !!on; }
-	function disable(id)             { enable(id, false); }
-	function getFeature(id)          { return state.featuresById.get(id) || null; }
-	function getState()              { return { ...state, features: state.features.map(f => ({ id: f.id, stage: f.stage, enabled: f.enabled })) }; }
-	
-	return {
-		run,
-		cleanup,
-		enable,
-		disable,
-		getFeature,
-		getState,
-		_registries: registries
+		// ---- execution order (early → main → late) ------------------------------
+		function sortByStage(t){const e={early:0,main:1,late:2};return t.slice().sort(((t,a)=>(e[t.stage]??1)-(e[a.stage]??1)))}
+		
+		// build the flattened, ordered list once
+		function buildIndex(){if(state.installed)return;const e=[...registries.common,...registries.pages.selected,...registries.pages.archive,...registries.pages.resources,...registries.pages.capabilities,...registries.pages.caseStudy];state.features=sortByStage(e),state.installed=!0}
+		
+		// ---- public API ----------------------------------------------------------
+		async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((e=>{try{e.remove()}catch{}}))}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(e){console.warn("[InitManager]",r.id,"init failed:",e)}try{await new Promise((e=>requestAnimationFrame(e))),await new Promise((e=>requestAnimationFrame(e))),window.ScrollTrigger&&ScrollTrigger.refresh()}catch{}}
+		async function cleanup({preserveServicePins:e=!1}={}){for(const e of state.features)if("function"==typeof e.destroy)try{await e.destroy(document,{})}catch(r){console.warn("[InitManager]",e.id,"destroy failed:",r)}try{CoreUtilities.Observers.clearAll({preserveServicePins:e})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((e=>{try{e.remove()}catch{}}))}catch{}}
+		
+		function enable(id, on = true)   { const f = state.featuresById.get(id); if (f) f.enabled = !!on; }
+		function disable(id)             { enable(id, false); }
+		function getFeature(id)          { return state.featuresById.get(id) || null; }
+		function getState()              { return { ...state, features: state.features.map(f => ({ id: f.id, stage: f.stage, enabled: f.enabled })) }; }
+		
+		return {
+			run,
+			cleanup,
+			enable,
+			disable,
+			getFeature,
+			getState,
+			_registries: registries
 		};
 	})();
 
@@ -589,16 +590,9 @@ window.forceCloseMenus        = (...args) => window.EntryOrchestrator.forceClose
 		};
 	})();
 
-// Site Helpers
-	function setActiveTab(e){document.querySelectorAll("[data-tab-link] a, [data-tab-link].is-active, a.is-active").forEach((e=>e.classList.remove("is-active")));const c="selected"===e?"selectedOpen":"archive"===e?"archiveOpen":"resources"===e?"resourcesOpen":"",t=c?document.querySelector(`#${c} a`)||document.querySelector(`#${c}`):null;t&&t.classList.add("is-active")}
-	function applyOverscroll(e){const o="selected"===e?"none":"auto";document.documentElement.style.setProperty("overscroll-behavior",o,"important"),document.documentElement.style.setProperty("overscroll-behavior-y",o,"important"),document.body.style.setProperty("overscroll-behavior",o,"important"),document.body.style.setProperty("overscroll-behavior-y",o,"important")}
-	
-// Text Animation + Appear in Line
-	function splitAndMask(e){if(e._originalHTML||(e._originalHTML=e.innerHTML),e._split)return e._split;const t=getComputedStyle(e).whiteSpace||"normal",i=e.style.whiteSpace,l=e.style.display;e.style.whiteSpace=t,"inline"===getComputedStyle(e).display&&(e.style.display="block"),e.clientWidth;const s=new SplitText(e,{type:"lines",linesClass:"line",reduceWhiteSpace:!1});return s.lines.forEach(n=>{const a=n.getBoundingClientRect().height||n.offsetHeight||0,o=document.createElement("div");o.className="text-mask",o.style.overflow="hidden",o.style.display="block",o.style.height=a+"px",n.style.whiteSpace=t,n.style.display="block",n.parentNode.insertBefore(o,n),o.appendChild(n)}),gsap.set(s.lines,{yPercent:100,rotation:10,transformOrigin:"0 10%",willChange:"transform,opacity"}),e.style.whiteSpace=i,e.style.display=l,e._split=s,s}
-	function safelyRevertSplit(e,i){e&&i&&(e.revert(),i._originalHTML&&(i.innerHTML=i._originalHTML,delete i._originalHTML),delete i._split)}
-	function animateLines(t){return gsap.set(t,{transformOrigin:"0 10%",rotation:10,yPercent:100,willChange:"transform, opacity"}),gsap.to(t,{yPercent:0,rotation:0,duration:.8,ease:"power2.out",stagger:.08})}
-	function initTextAnimationOne(e=document,t=".ta-one"){const n=[...e.querySelectorAll(t)];n.forEach((e=>{gsap.set(e,{autoAlpha:0}),safelyRevertSplit(e._split,e)}));const o=CoreUtilities.Observers.addDom(new IntersectionObserver(((e,t)=>{e.forEach((e=>{if(!e.isIntersecting)return;const n=e.target;if(n.__taOneDone)return void t.unobserve(n);gsap.set(n,{autoAlpha:1});const o=splitAndMask(n);animateLines(o.lines).eventCallback("onComplete",(()=>{safelyRevertSplit(o,n),n.__taOneDone=!0})),t.unobserve(n)}))}),{root:null,rootMargin:"0px 0px -5% 0px",threshold:0}));n.forEach((e=>{if(e.__taOneDone)return;o.observe(e);const t=e.getBoundingClientRect();if(t.top<window.innerHeight&&t.bottom>0){gsap.set(e,{autoAlpha:1});const t=splitAndMask(e);animateLines(t.lines).eventCallback("onComplete",(()=>{safelyRevertSplit(t,e),e.__taOneDone=!0})),o.unobserve(e)}}));e.querySelectorAll(".w-tabs .w-tab-pane").forEach((e=>{CoreUtilities.Observers.addDom(new MutationObserver((()=>{e.classList.contains("w--tab-active")&&e.querySelectorAll(t).forEach((e=>{if(e.__taOneDone)return;const t=e.getBoundingClientRect();if(t.top<window.innerHeight&&t.bottom>0){gsap.set(e,{autoAlpha:1});const t=splitAndMask(e);animateLines(t.lines).eventCallback("onComplete",(()=>{safelyRevertSplit(t,e),e.__taOneDone=!0}))}}))}))).observe(e,{attributes:!0,attributeFilter:["class"]})}))}
-	function initAppearInLine(e=document,t=".appear-in-line",o=":scope > *"){e.querySelectorAll(t).forEach((t=>{if(t.__ailInit)return;t.__ailInit=!0;const n=[],r=[];Array.from(t.querySelectorAll(o)).forEach((e=>{const t=getComputedStyle(e),o=parseInt(t.columnCount,10)||1,i=e.getBoundingClientRect();if(o>1){const t=new SplitText(e,{type:"lines",linesClass:"split-line"});n.push(t);const s=i.width/o,a=Array.from({length:o},(()=>[]));t.lines.forEach((e=>{const t=e.getBoundingClientRect().left-i.left,n=Math.min(o-1,Math.max(0,Math.floor(t/s)));a[n].push(e),gsap.set(e,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"})})),a.forEach((e=>r.push(e)))}else gsap.set(e,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"}),r.push([e])}));const i=()=>{if(t.__ailDone)return;r.forEach(((e,t)=>gsap.to(e,{y:0,opacity:1,filter:"blur(0px)",duration:.8,ease:"power2.out",delay:.15*t})));const e=.15*(r.length-1)+.8;gsap.delayedCall(e+.05,(()=>{n.forEach((e=>e.revert())),t.__ailDone=!0}))},s=CoreUtilities.Observers.addDom(new IntersectionObserver(((e,o)=>{e.forEach((e=>{e.isIntersecting&&(o.unobserve(t),i())}))}),{root:null,rootMargin:"0px 0px -10% 0px",threshold:0}));t._appearData={splits:n,groups:r,observer:s},s.observe(t);const a=t.getBoundingClientRect();a.top<window.innerHeight&&a.bottom>0&&(s.unobserve(t),i());const l=e.querySelector(".w-tabs")?t.closest(".w-tab-pane"):null;l&&CoreUtilities.Observers.addDom(new MutationObserver((()=>{if(!l.classList.contains("w--tab-active"))return;s.observe(t);const e=t.getBoundingClientRect();e.top<window.innerHeight&&e.bottom>0&&(s.unobserve(t),i())}))).observe(l,{attributes:!0,attributeFilter:["class"]})}))}
+
+
+		
 
 // Reparent data-child into matching data-parent + Theme Switch + Custom Cursor + Accordions (incl. group behavior)
 	function initThemeSwitch(t=document){const e=t.querySelector(".theme-switch");if(!e)return;const c=document.documentElement.getAttribute("data-theme");e.classList.toggle("dark","dark"===c),e.addEventListener("click",(()=>{const t="dark"===document.documentElement.getAttribute("data-theme")?"light":"dark";document.documentElement.setAttribute("data-theme",t),localStorage.setItem("theme",t),e.classList.toggle("dark","dark"===t)}))}
@@ -630,6 +624,8 @@ window.forceCloseMenus        = (...args) => window.EntryOrchestrator.forceClose
 	function initCaseStudyBackgroundScroll(o){const r=o.closest(".barba-container"),e=o.querySelector(".cs-details"),t=o.querySelector(".cs-morework");if(!r||!e||!t)return;const a=getComputedStyle(r).backgroundColor,n="var(--colors--background)";ScrollTrigger.create({trigger:e,start:"top bottom-=15%",onEnter:()=>gsap.to(r,{backgroundColor:n,duration:.6,ease:"power1.inOut"}),onLeaveBack:()=>gsap.to(r,{backgroundColor:a,duration:.6,ease:"power1.inOut"})}),ScrollTrigger.create({trigger:t,start:"top bottom-=15%",onEnter:()=>gsap.to(r,{backgroundColor:"var(--colors--border)",duration:.6,ease:"power1.inOut"}),onLeaveBack:()=>gsap.to(r,{backgroundColor:n,duration:.6,ease:"power1.inOut"})})}
 	function initDynamicPortraitColumns(e=document){const t=Array.from(e.querySelectorAll(".cs-gallery-inner"));if(!t.length)return;const r=e=>{if(e.naturalWidth>0&&e.naturalHeight>0)return e.naturalHeight/e.naturalWidth;const t=(e=>{const t=parseInt(e.getAttribute("width"),10),r=parseInt(e.getAttribute("height"),10);return t>0&&r>0?r/t:null})(e);if(t)return t;const r=e.clientWidth,n=e.clientHeight;return r>0&&n>0?n/r:null};let n=0;const i=e=>{cancelAnimationFrame(n),n=requestAnimationFrame((()=>{e()}))},o=()=>{if(t.forEach((e=>{e.style.removeProperty("width"),e.classList.remove("is-portrait","is-paired")})),!(window.innerWidth>=1024))return;const e=t.map((e=>e.querySelector("img"))).filter(Boolean).map((e=>{const t=r(e),n=!!t&&t>1;return n&&e.closest(".cs-gallery-inner")?.classList.add("is-portrait"),n}));for(let r=0;r<t.length-1;r++)e[r]&&e[r+1]&&([t[r],t[r+1]].forEach((e=>{e.style.width="calc(50% - 0.5rem)",e.classList.add("is-paired")})),r+=1)},s=t.map((e=>e.querySelector("img"))).filter(Boolean);if(!s.length)return;Promise.all(s.map((e=>{const t=()=>e.naturalWidth>0&&e.naturalHeight>0;if(t())return Promise.resolve();const r="function"==typeof e.decode?e.decode().catch((()=>{})):Promise.resolve(),n=new Promise((e=>{let r=0;const n=()=>t()?e():(r+=50,r>=3e3?e():void setTimeout(n,50));n()})),i=new Promise((t=>{const r=()=>{e.removeEventListener("load",r),t()};e.addEventListener("load",r,{once:!0})}));return Promise.race([r,n,i])}))).then((()=>{i(o)}));const a=new ResizeObserver((()=>i(o)));s.forEach((e=>a.observe(e)));const c=()=>i(o);window.addEventListener("resize",c,{passive:!0});const l=new MutationObserver((()=>{document.body.contains(e)||(a.disconnect(),window.removeEventListener("resize",c),l.disconnect())}));l.observe(document.body,{childList:!0,subtree:!0})}
 
+
+		
 	!function(){
 		function boot() {
 			ScrollState.init({ maxAgeMs: 30 * 60 * 1000 });
@@ -647,12 +643,7 @@ window.forceCloseMenus        = (...args) => window.EntryOrchestrator.forceClose
 // Run All Initialisers
 	function initAllYourInits(root = document) {
 		const ns = root?.dataset?.barbaNamespace || root.getAttribute("data-barba-namespace") || "";
-		setActiveTab(ns);
-  		applyOverscroll(ns);
 		
-		WebflowAdapter.reparent(root);
-		initTextAnimationOne(root);
-		initAppearInLine(root);
 		initNavigation(root);
 		initMenuLinkHover(root);
 		initCaseStudyCloseButton(root);
