@@ -3,7 +3,7 @@
 
 // GSAP
 	gsap.registerPlugin(ScrollTrigger,Flip,SplitText,TextPlugin,Observer);
-	const DEBUG = false;
+	const DEBUG = true;
 	window.DEBUG = DEBUG;
 
 // Navigation Manager
