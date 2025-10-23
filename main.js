@@ -250,10 +250,12 @@
 		registries.pages.info.push(
 			feature({
 				id: "infoTabJumpers",
-				stage:"main",
-				namespaces:["info"],
-				selectors:["[data-tab]:not([data-w-tab])"],
-				init:async r=>{const g=e=>e&&"string"==typeof e?e.trim():null,h=(e,t)=>{if(!e)return null;const n=g(t)||"";let a=e.querySelector('.w-tab-link[data-w-tab="'+n+'"]');if(a)return a;const l=[...e.querySelectorAll(".w-tab-link")].find(e=>(e.textContent||"").trim().toLowerCase()===n.toLowerCase());return l||null},m=(e,t)=>{if(!e)return null;const n=g(t)||"";let a=e.querySelector('.w-tab-pane[data-w-tab="'+n+'"]');if(a)return a;const l=[...e.querySelectorAll(".w-tab-pane")].find(e=>(e.getAttribute("data-w-tab")||"").trim().toLowerCase()===n.toLowerCase());return l||null},p=(e,t)=>{try{e.scrollIntoView({block:"start",behavior:"smooth"})}catch{try{const n=(t?.top||0)-24;window.scrollTo({top:n,behavior:"smooth"})}catch{}}},y=e=>{const t=e.closest(".w-tabs")||r.querySelector(".w-tabs");return t},v=(e,t)=>new Promise(n=>{let a=0;const l=()=>{a>20?n():requestAnimationFrame(()=>{a++,t(),l()})};l()}),b=(e,t)=>{const n=y(e);if(!n)return;const a=g(e.dataset.tab)||g(e.getAttribute("href")||"");if(!a)return;const l=h(n,a),o=m(n,a),c=g(e.dataset.scroll);l&&l.click(),v(0,()=>{}).then(()=>{if(c){const s=document.querySelector(c)||n,i=s?.getBoundingClientRect();p(s,i)}setTimeout(()=>{try{o?.querySelectorAll&&o.querySelectorAll(".appear-in-line").forEach(d=>{d.__ailReplay&&d.__ailReplay()})}catch{}},60)})};r.querySelectorAll(".js-tab-jump").forEach(e=>{if(e.__tjBound)return;e.__tjBound=!0;e.addEventListener("click",t=>{t.preventDefault(),t.stopPropagation(),b(e,t)},{passive:!1})});}}));
+				stage: "main",
+				namespaces: ["info"],
+				selectors: ["[data-tab]:not([data-w-tab])"],
+				init: async r=>{const f=e=>e&&"string"==typeof e?e.trim():null,u=(e,t)=>{if(!e)return null;const n=f(t)||"";let a=e.querySelector('.w-tab-link[data-w-tab="'+n+'"]');if(a)return a;const l=[...e.querySelectorAll(".w-tab-link")].find(e=>(e.textContent||"").trim().toLowerCase()===n.toLowerCase());return l||null},p=(e,t)=>{if(!e)return null;const n=f(t)||"";let a=e.querySelector('.w-tab-pane[data-w-tab="'+n+'"]');if(a)return a;const l=[...e.querySelectorAll(".w-tab-pane")].find(e=>(e.getAttribute("data-w-tab")||"").trim().toLowerCase()===n.toLowerCase());return l||null},d=e=>e?.closest(".w-tabs")||r.querySelector(".w-tabs"),m=e=>new Promise(t=>{let n=0;(function a(){if(n++>=e)return t();requestAnimationFrame(a)})()}),h=(e,t)=>{try{e.scrollIntoView({block:"start",behavior:"smooth"})}catch{try{const n=(t?.top||0)-24;window.scrollTo({top:n,behavior:"smooth"})}catch{}}},g=(e,t)=>{const n=d(e);if(!n)return;const a=f(e.dataset.tab)||f(e.getAttribute("href")||"");if(!a)return;const l=u(n,a),o=p(n,a),c=f(e.dataset.scroll);l&&l.click(),m(2).then(()=>{if(c){const s=document.querySelector(c)||n,i=s?.getBoundingClientRect();h(s,i)}setTimeout(()=>{try{o?.querySelectorAll?.(".appear-in-line").forEach(s=>{s.__ailReplay&&s.__ailReplay()})}catch{}},60)})};[...r.querySelectorAll('[data-tab]:not([data-w-tab])')].forEach(e=>{if(e.__tjBound)return;e.__tjBound=!0,e.addEventListener("click",t=>{t.preventDefault(),t.stopPropagation(),g(e,t)},{passive:!1})});}
+			})
+		);
 	
 		// Page: Case Study
 		registries.pages.caseStudy.push(
