@@ -92,7 +92,7 @@
 				archive: [],
 				resources: [],
 				capabilities: [],
-				info[],
+				info: [],
 				caseStudy: [],
 			}
 		};
