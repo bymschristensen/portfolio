@@ -258,11 +258,11 @@
 		// Page: Info
 		registries.pages.info.push(
 			feature({
-				id: "infoTabJumpers",
+				id: 'infoTestimonialsJump',
 				stage: "main",
-				namespaces: ["info"],
-				selectors: ["[data-tab]:not([data-w-tab])"],
-				init: async r=>{const g=e=>e&&"string"==typeof e?e.trim():"",W=e=>e?.closest(".w-tabs")||r.querySelector(".w-tabs"),L=(e,t)=>e?.querySelector('.w-tab-link[data-w-tab="'+t+'"]')||[...(e?.querySelectorAll(".w-tab-link")||[])].find(n=>(n.textContent||"").trim().toLowerCase()===t.toLowerCase())||null,P=(e,t)=>e?.querySelector('.w-tab-pane[data-w-tab="'+t+'"]')||[...(e?.querySelectorAll(".w-tab-pane")||[])].find(n=>((n.getAttribute("data-w-tab")||"").trim().toLowerCase())===t.toLowerCase())||null,tw=a=>new Promise(s=>{let n=0;!function o(){if(n++>=a)return s();requestAnimationFrame(o)}()}),scrollToEl=e=>{try{const t=e.getBoundingClientRect().top+window.pageYOffset-24;window.scrollTo({top:t,behavior:"smooth"})}catch{try{e.scrollIntoView({block:"start",behavior:"smooth"})}catch{}}},kickAnim=e=>{try{e?.querySelectorAll?.(".appear-in-line").forEach(t=>t.__ailReplay&&t.__ailReplay())}catch{}},handle=(t,e)=>{const a=W(t);if(!a)return;const d=g(t.dataset.tab)||g(t.getAttribute("data-tab"))||g((t.getAttribute("href")||"").replace(/^#/,""))||null,h=(t.getAttribute("href")||"").trim(),S=g(t.dataset.scroll)||(h.startsWith("#")?h:null),ln=d?L(a,d):null,pn=d?P(a,d):null,tr=S?document.querySelector(S):null;if(!ln&&!tr)return;const vis=!!(tr&&tr.offsetParent!==null),delay=40;e?.preventDefault?.(),e?.stopPropagation?.(),tr&&vis?(scrollToEl(tr),ln&&setTimeout(()=>{ln.click(),setTimeout(()=>kickAnim(pn),60)},delay)):(ln&&ln.click(),tr&&tw(2).then(()=>{scrollToEl(tr),setTimeout(()=>kickAnim(pn),60)}))},onClick=e=>{const t=e.target.closest('[data-tab]:not([data-w-tab])');t&&handle(t,e)};r.__tjDelegated||(r.__tjDelegated=!0,r.addEventListener("click",onClick,{capture:!0,passive:!1}))}
+				namespaces: ['info'],
+    			selectors: ['[id^="recommendationsOpen"]', '#details'],
+				init: async e=>{if(e.__recoJumpBound)return;e.__recoJumpBound=!0;const t=()=>{const t=e.querySelector(".w-tabs")||document.querySelector(".w-tabs");if(!t)return;const o=t.querySelector('.w-tab-link[data-w-tab="Recommendations"]')||[...t.querySelectorAll(".w-tab-link")].find(e=>(e.textContent||"").trim().toLowerCase()==="recommendations");o&&o.click()},o=()=>{const e=document.getElementById("details")||document.querySelector(".section-details");if(!e)return;const t=e.getBoundingClientRect().top+window.pageYOffset-24;window.scrollTo({top:t,behavior:"smooth"})};e.addEventListener("click",n=>{const r=n.target.closest('a[id^="recommendationsOpen"]');if(!r||r.classList.contains("w-tab-link"))return;n.preventDefault(),n.stopPropagation(),n.stopImmediatePropagation?.(),t(),requestAnimationFrame(()=>requestAnimationFrame(o))},{capture:!0})}
 			})
 		);
 	
