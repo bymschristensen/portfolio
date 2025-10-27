@@ -3,7 +3,7 @@
 	const DEBUG = true;
 	window.DEBUG = DEBUG;
 
-// Navigation Manager
+// Navigation Manager Test
 	window.NavigationManager = (function () {
 		const state = {
 			debug: false,
