@@ -1,12 +1,30 @@
 name: Purge jsDelivr cache
+
 on:
   push:
     branches: [ main ]
+
 jobs:
   purge:
     runs-on: ubuntu-latest
     steps:
-      - uses: gacts/purge-jsdelivr-cache@v1
-        with:
-          url: |
-            https://cdn.jsdelivr.net/gh/bymschristensen/portfolio@main/main.js
+      - name: Purge and warm jsDelivr for @main
+        run: |
+          set -euo pipefail
+          NOW=$(date +%s)
+
+          FILES=(
+            "gh/bymschristensen/portfolio@main/main.js"
+            # add more if needed:
+            # "gh/bymschristensen/portfolio@main/main.css"
+            # "gh/bymschristensen/portfolio@main/other.js"
+          )
+
+          for F in "${FILES[@]}"; do
+            echo "Purging https://purge.jsdelivr.net/${F}"
+            curl -fsSL "https://purge.jsdelivr.net/${F}" >/dev/null
+            echo "Warming  https://cdn.jsdelivr.net/${F}?build=${NOW}"
+            curl -fsI  "https://cdn.jsdelivr.net/${F}?build=${NOW}" >/dev/null
+          done
+
+          echo "Done."
