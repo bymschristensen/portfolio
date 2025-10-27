@@ -1,5 +1,5 @@
 // GSAP
-	try{gsap.registerPlugin(...[ScrollTrigger,Flip,SplitText,TextPlugin,Observer].filter(Boolean))}catch{}
+	try{if(window.gsap&&gsap.registerPlugin){var _p=[];typeof window.ScrollTrigger!=="undefined"&&_p.push(window.ScrollTrigger);typeof window.Flip!=="undefined"&&_p.push(window.Flip);typeof window.SplitText!=="undefined"&&_p.push(window.SplitText);typeof window.TextPlugin!=="undefined"&&_p.push(window.TextPlugin);typeof window.Observer!=="undefined"&&_p.push(window.Observer);gsap.registerPlugin.apply(gsap,_p)}}catch(e){}
 	const DEBUG = true;
 	window.DEBUG = DEBUG;
 
