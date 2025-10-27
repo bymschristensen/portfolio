@@ -163,7 +163,82 @@
 				stage: "early",
 				namespaces: "*",
 				selectors: [".appear-in-line"],
-				init: async r=>{const e=".appear-in-line",t=.15,o=.8;const n=[...r.querySelectorAll(e)];if(!n.length)return;const s=e=>{if(e._ail)return;const s=((e=>{const t=[],n=[],s=Array.from(e.querySelectorAll(":scope > *"));s.forEach(e=>{const s=getComputedStyle(e),a=parseInt(s.columnCount,10)||1;const i=e=>gsap.set(e,{y:100,opacity:0,filter:"blur(10px)",willChange:"transform,opacity"});if(a>1&&void 0!==window.SplitText){try{gsap.set(e,{opacity:0});const s=new SplitText(e,{type:"lines",linesClass:"split-line"});t.push(s);const l=e.getBoundingClientRect(),r=l.width/a,c=Array.from({length:a},()=>[]);s.lines.forEach(e=>{const s=e.getBoundingClientRect().left-l.left,d=Math.min(Math.floor(s/r),a-1);c[d].push(e),i(e)}),c.forEach(e=>n.push(e))}catch(_){n.push([e])}else i(e),n.push([e])});return{groups:n,splits:t}}))(e),a=()=>{s.groups.forEach((e,n=>{gsap.to(e,{y:0,opacity:1,filter:"blur(0px)",duration:o,ease:"power2.out",delay:n*t,overwrite:"auto"})}));const r=(s.groups.length-1)*t+o+.05;gsap.delayedCall(r,(()=>{s.splits.forEach(e=>{try{e.revert()}catch{}})}))},i=new IntersectionObserver((t=>{t.forEach(t=>{t.isIntersecting&&(i.unobserve(t.target),a())})}),{root:null,rootMargin:"0px 0px -10% 0px",threshold:0});i.observe(e);const l=e.getBoundingClientRect();l.top<innerHeight&&l.bottom>0&&(i.unobserve(e),a());const p=e.closest(".w-tab-pane");if(p){const t=new MutationObserver((()=>{if(!p.classList.contains("w--tab-active"))return;const t=e.getBoundingClientRect();t.top<innerHeight&&t.bottom>0&&a()}));t.observe(p,{attributes:!0,attributeFilter:["class"]}),e._ailMO=t}e._ail={io:i,splits:s.splits,groups:s.groups}};n.forEach(s)
+				init: async r => {
+    const SEL = ".appear-in-line", STEP = .15, DUR = .8;
+    const els = [...r.querySelectorAll(SEL)];
+    if (!els.length) return;
+
+    const prep = el => {
+      if (el._ail) return;
+
+      const splits = [], groups = [];
+      const kids = Array.from(el.querySelectorAll(":scope > *"));
+      const prime = n => gsap.set(n, { y:100, opacity:0, filter:"blur(10px)", willChange:"transform,opacity" });
+
+      kids.forEach(k => {
+        const cols = parseInt(getComputedStyle(k).columnCount, 10) || 1;
+        if (cols > 1 && window.SplitText !== undefined) {
+          try {
+            gsap.set(k, { opacity:0 });
+            const s = new SplitText(k, { type:"lines", linesClass:"split-line" });
+            splits.push(s);
+            const box = k.getBoundingClientRect();
+            const colW = box.width / cols;
+            const buckets = Array.from({ length: cols }, () => []);
+            s.lines.forEach(L => {
+              const left = L.getBoundingClientRect().left - box.left;
+              const idx = Math.max(0, Math.min(cols - 1, Math.floor(left / colW)));
+              buckets[idx].push(L);
+              prime(L);
+            });
+            buckets.forEach(b => groups.push(b));
+          } catch (_) {
+            groups.push([k]); prime(k);
+          }
+        } else {
+          groups.push([k]); prime(k);
+        }
+      });
+
+      const play = () => {
+        groups.forEach((g, i) => {
+          gsap.to(g, { y:0, opacity:1, filter:"blur(0px)", duration:DUR, ease:"power2.out", delay:i*STEP, overwrite:"auto" });
+        });
+        const total = (groups.length - 1) * STEP + DUR + .05;
+        gsap.delayedCall(total, () => {
+          splits.forEach(s => { try { s.revert && s.revert(); } catch {} });
+        });
+      };
+
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(ent => {
+          if (!ent.isIntersecting) return;
+          io.unobserve(el);
+          play();
+        });
+      }, { root:null, rootMargin:"0px 0px -10% 0px", threshold:0 });
+
+      io.observe(el);
+
+      const rect = el.getBoundingClientRect();
+      if (rect.top < innerHeight && rect.bottom > 0) { io.unobserve(el); play(); }
+
+      const pane = el.closest(".w-tab-pane");
+      if (pane) {
+        const mo = new MutationObserver(() => {
+          if (!pane.classList.contains("w--tab-active")) return;
+          const r = el.getBoundingClientRect();
+          if (r.top < innerHeight && r.bottom > 0) play();
+        });
+        mo.observe(pane, { attributes:true, attributeFilter:["class"] });
+        el._ailMO = mo;
+      }
+
+      el._ail = { io, splits, groups };
+    };
+
+    els.forEach(prep);
+  }
 			}),
 			
 			feature({
