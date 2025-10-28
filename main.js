@@ -257,11 +257,12 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		// Page: Capabilities
 		registries.pages.capabilities.push(
 			feature({
-				id: 'productPinnedSections',
-				stage: 'main',
-				namespaces: ['capabilities'],
-				selectors: ['.section-single-service'],
-				init: async r=>{const e=[...r.querySelectorAll('.section-single-service')];if(!e.length||!window.ScrollTrigger)return;e.forEach(t=>{const i=t.offsetHeight<innerHeight;gsap.timeline({scrollTrigger:{trigger:t,start:i?'top top':'bottom bottom',pin:!0,pinSpacing:!1,scrub:1}}).to(t,{ease:'none',startAt:{filter:'contrast(100%) blur(0px)'},filter:'contrast(10%) blur(10px)'},0)})}
+				id: "productPinnedSections",
+				stage: "main",
+				namespaces: ["capabilities"],
+				selectors: [".section-single-service"],
+				init: async r=>{if(!window.gsap||!window.ScrollTrigger)return;const s=[...r.querySelectorAll(".section-single-service")];if(!s.length)return;s.forEach((e,i)=>{const t=!(e.offsetHeight<innerHeight),a=0===i?"top top":t?"bottom bottom":"top top";gsap.timeline({scrollTrigger:{trigger:e,start:a,end:"bottom top",pin:!0,pinSpacing:!1,scrub:1,anticipatePin:1,invalidateOnRefresh:!0}}).to(e,{ease:"none",startAt:{filter:"contrast(100%) blur(0px)"},filter:"contrast(10%) blur(10px)"},0)});try{ScrollTrigger.refresh()}catch{}}
+			
 			}),
 			feature({
 				id: 'productGallery',
