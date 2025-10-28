@@ -5,7 +5,7 @@ console.info('[BOOT] portfolio main.js loaded. src:', (document.currentScript &&
 	const DEBUG = true;
 	window.DEBUG = DEBUG;
 
-// Navigation Manager Test
+// Navigation Manager
 	window.NavigationManager = (function () {
 		const state = {
 			debug: false,
