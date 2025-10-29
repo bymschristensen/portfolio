@@ -1,4 +1,4 @@
-name: Purge jsDelivr cache and inject commit hash
+name: Purge & warm jsDelivr (main + sha)
 on:
   push:
     branches: [ main ]
@@ -8,43 +8,46 @@ jobs:
   purge:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Inject short commit hash into main.js
-        shell: bash
+      - name: Compute refs
+        id: ref
         run: |
-          set -euo pipefail
-          COMMIT=$(git rev-parse --short HEAD)
-          echo "Injecting commit hash: $COMMIT"
-          # Replace placeholder in main.js
-          sed -i "s|__COMMIT_HASH__|$COMMIT|" main.js
-
-      - name: Commit and push updated main.js
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add main.js
-          git commit -m "Inject commit hash [skip ci]" || echo "No changes to commit"
-          git push origin main || echo "Nothing to push"
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "now=$(date +%s)"       >> "$GITHUB_OUTPUT"
 
       - name: Purge & warm jsDelivr cache
-        shell: bash
+        env:
+          REPO: bymschristensen/portfolio
+          FILE: main.js
+          SHORT_SHA: ${{ steps.ref.outputs.short_sha }}
+          NOW: ${{ steps.ref.outputs.now }}
         run: |
           set -euo pipefail
-          NOW=$(date +%s)
-          FILES=(
-            "gh/bymschristensen/portfolio@main/main.js"
-            # Add more if needed:
-            # "gh/bymschristensen/portfolio@main/main.css"
+
+          urls=(
+            "gh/${REPO}@main/${FILE}"
+            "gh/${REPO}@${SHORT_SHA}/${FILE}"
+            # Optional: add CSS or other assets here
+            # "gh/${REPO}@main/main.css"
+            # "gh/${REPO}@${SHORT_SHA}/main.css"
           )
-          for F in "${FILES[@]}"; do
-            echo "Purging  https://purge.jsdelivr.net/${F}"
-            for i in {1..3}; do
-              curl -fsSL "https://purge.jsdelivr.net/${F}" && break || sleep 1
+
+          for U in "${urls[@]}"; do
+            echo "Purging  https://purge.jsdelivr.net/${U}"
+            # retry purge up to 3x
+            for i in 1 2 3; do
+              curl -fsSL "https://purge.jsdelivr.net/${U}" && break || sleep 1
             done
-            echo "Warming  https://cdn.jsdelivr.net/${F}?build=${NOW}"
-            curl -fsI "https://cdn.jsdelivr.net/${F}?build=${NOW}" >/dev/null || true
+
+            echo "Warming  https://cdn.jsdelivr.net/${U}?build=${NOW}"
+            curl -fsI "https://cdn.jsdelivr.net/${U}?build=${NOW}" >/dev/null || true
+
+            # Warm potential sourcemap too (ignore failures)
+            if [[ "${U}" == *".js" ]]; then
+              MAP="${U}.map"
+              echo "Warming  https://cdn.jsdelivr.net/${MAP}?build=${NOW}"
+              curl -fsI "https://cdn.jsdelivr.net/${MAP}?build=${NOW}" >/dev/null || true
+            fi
           done
+
           echo "Done."
