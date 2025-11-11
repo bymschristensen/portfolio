@@ -273,6 +273,13 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		// Page: Info
 		registries.pages.info.push(
 			feature({
+				id: "infoBioGather",
+				stage: "main",
+				namespaces: ["info"],
+				selectors: ['[data-imgscroll="photos"] .bio-photo-wrapper','[data-imgscroll="bio"]'],
+				init: async r=>{if(!window.gsap||!window.ScrollTrigger)return;if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;const e=gsap.matchMedia();e.add("(min-width: 1024px)",(()=>{const e=r.querySelector('[data-imgscroll="photos"]'),t=r.querySelector('[data-imgscroll="bio"]'),o=r.querySelector('[data-imgscroll="copy"]'),a=r.querySelector('[data-imgscroll="stats"]'),n=r.querySelector(".bio-text .headline-md");if(!e||!t||!o||!a||!n)return;const i=[...e.querySelectorAll('.bio-photo-wrapper[data-photo]')].sort(((e,t)=>(parseInt(e.getAttribute("data-photo"),10)||0)-(parseInt(t.getAttribute("data-photo"),10)||0)));if(i.length<3)return;const l=i.find((e=>"1"===e.getAttribute("data-photo"))),s=i.find((e=>"2"===e.getAttribute("data-photo"))),c=i.find((e=>"3"===e.getAttribute("data-photo")));if(!l||!s||!c)return;const d=e=>e.getBoundingClientRect();function u(){gsap.set([l,s,c],{x:0,y:0,scale:1,zIndex:e=>100-(parseInt(i[e].getAttribute("data-photo"),10)||0)})}function p(){const e=d(a),r=d(n);return{left:e.left,top:r.top}}function f(e,r,o={dx:0,dy:0,scale:1}){const a=d(e),n=r.left-a.left+(o.dx||0),i=r.top-a.top+(o.dy||0);return{x:n,y:i,scale:void 0===o.scale?1:o.scale}}let y;function g(){u();const e=p(),r=f(l,e,{scale:.42}),o=f(s,e,{dx:18,dy:22,scale:.38}),a=f(c,e,{dx:44,dy:56,scale:.36});y&&y.kill(),y=gsap.timeline({defaults:{ease:"power3.out"},scrollTrigger:{trigger:t,start:"top top+=12%",end:"+=140%",scrub:!0,pin:!0,anticipatePin:1,invalidateOnRefresh:!0,onRefresh:()=>requestAnimationFrame(g)}}),y.addLabel("gather"),y.to(c,{...a,onStart:()=>c.classList.add("is-gathering")},"gather"),y.to(s,{...o,onStart:()=>s.classList.add("is-gathering")},"gather+=0.08"),y.to(l,{...r,zIndex:200,onStart:()=>l.classList.add("is-gathering")},"gather+=0.16")}return g(),()=>{try{y&&y.kill()}catch{}}}))}
+			}),
+			feature({
 				id: 'infoTestimonialsJump',
 				stage: "main",
 				namespaces: ['info'],
