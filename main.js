@@ -269,7 +269,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				stage: "main",
 				namespaces: ["capabilities"],
 				selectors: [".section-single-service"],
-				init: async r=>{if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;const root=r||document,secs=[...root.querySelectorAll(".section-single-service")];if(!secs.length)return;secs.forEach((s,i)=>{if(s._capPin)return;s._capPin=1;ScrollTrigger.create({id:"servicePin:"+i,trigger:s,start:"top top",end:"bottom bottom",pin:!0,pinSpacing:!1,scrub:1,anticipatePin:1,invalidateOnRefresh:!0,onUpdate:self=>{const p=self.progress||0,ct=100-90*p,bl=10*p;gsap.set(s,{filter:`contrast(${ct}%) blur(${bl}px)`})},onLeave:()=>gsap.set(s,{filter:"contrast(100%) blur(0px)"}),onLeaveBack:()=>gsap.set(s,{filter:"contrast(100%) blur(0px)"}),onKill:()=>gsap.set(s,{clearProps:"filter"})});});}
+				init: async r=>{if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;const root=r||document,secs=[...root.querySelectorAll(".section-single-service")];if(!secs.length)return;secs.forEach((s,i)=>{if(s._capPin)return;s._capPin=1;ScrollTrigger.create({id:"servicePin:"+i,trigger:s,start:"top top",end:"bottom top",pin:!0,pinSpacing:!1,scrub:1,anticipatePin:1,invalidateOnRefresh:!0,onUpdate:self=>{const p=self.progress||0,ct=100-90*p,bl=10*p;gsap.set(s,{filter:`contrast(${ct}%) blur(${bl}px)`})},onLeave:()=>gsap.set(s,{filter:"contrast(100%) blur(0px)"}),onLeaveBack:()=>gsap.set(s,{filter:"contrast(100%) blur(0px)"}),onKill:()=>gsap.set(s,{clearProps:"filter"})});});}
 			}),
 			feature({
 				id: "productGallery",
