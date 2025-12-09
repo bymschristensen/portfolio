@@ -269,8 +269,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				stage: "main",
 				namespaces: ["capabilities"],
 				selectors: [".section-single-service"],
-				//init:function(r){if(!gsap||!ScrollTrigger)return;r=r||document;var S=[].slice.call(r.querySelectorAll(".section-single-service"));if(!S.length)return;S.forEach(function(sec){var small=sec.offsetHeight<window.innerHeight;gsap.timeline({scrollTrigger:{trigger:sec,start:small?"top top":"bottom bottom",pin:!0,pinSpacing:!1,scrub:1}}).to(sec,{ease:"none",startAt:{filter:"contrast(100%) blur(0px)"},filter:"contrast(10%) blur(10px)"},0)})}
-				init:async function(r){if(matchMedia("(prefers-reduced-motion: reduce)").matches||!window.ScrollTrigger)return;r=r||document;var S=[...r.querySelectorAll(".section-single-service")];if(!S.length)return;S.forEach(s=>{s.style.filter="contrast(100%) blur(0px)";s.style.willChange="filter"});S.forEach((s,i)=>{ScrollTrigger.create({trigger:s,start:i===0?"top top":"top bottom",end:()=>s.offsetHeight+window.innerHeight*0.2,pin:!0,pinSpacing:!1,scrub:1,invalidateOnRefresh:!0,onUpdate:self=>{var p=self.progress||0,c=100-90*p,b=10*p;s.style.filter=`contrast(${c}%) blur(${b}px)`}})})}
+				init:async function(r){if(r=r||document,window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches||!window.gsap||!window.ScrollTrigger)return;var e=gsap,t=ScrollTrigger,n=e.utils.toArray(".section-single-service",r);n.length&&(n.forEach(function(r){r.style.removeProperty("transform"),r.style.removeProperty("filter"),r._ppsST&&(r._ppsST.kill(),r._ppsST=null);var e=t.create({trigger:r,start:"top top",end:"bottom top",scrub:!0,pin:!0,pinSpacing:!0,anticipatePin:1,onUpdate:function(e){var t=e.progress;r.style.setProperty("--pps-overlay",t.toFixed(3))}});r._ppsST=e}),t.refresh())}
 			}),
 			feature({
 				id: "productGallery",
