@@ -270,7 +270,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				stage: "main",
 				namespaces: ["capabilities"],
 				selectors: [".section-single-service"],
-				init: async r=>{if(!window.ScrollTrigger)return;r=r||document;[...r.querySelectorAll(".section-single-service")].forEach((s,i)=>{if(s._capFx)return;s._capFx=1;const o=s.querySelector(".single-service-overlay");if(!o)return;gsap.set(o,{opacity:0});ScrollTrigger.create({id:"svcFx:"+i,trigger:s,start:"top top",end:"bottom top",scrub:1,onUpdate:t=>{const p=t.progress;gsap.set(o,{opacity:gsap.utils.clamp(0,.85,p)})}}))}
+				init: async r=>{if(matchMedia("(prefers-reduced-motion: reduce)").matches||!window.ScrollTrigger)return;r=r||document;const S=[...r.querySelectorAll(".section-single-service")];if(!S.length)return;S.forEach((sec,i)=>{if(sec._svcST)return;sec._svcST=1;const ov=sec.querySelector(".single-service-overlay");if(!ov)return;const nxt=S[i+1]||null;sec.style.setProperty("--svc-p","0");ScrollTrigger.create({id:"svcStack:"+i,trigger:sec,start:"top top",endTrigger:nxt||sec,end:nxt?"top top":"bottom top",scrub:!0,invalidateOnRefresh:!0,onUpdate:s=>{const p=s.progress;sec.style.setProperty("--svc-p",p.toFixed(4))}})});try{ScrollTrigger.refresh(!0)}catch{}}
 			}),
 			feature({
 				id: "productGallery",
