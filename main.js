@@ -427,7 +427,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		async function finalizeAfterEntry(e){await new Promise((e=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(e,30)))))));try{window.ScrollTrigger&&requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}catch{}}
 		async function runEntryFlow(n,a){a=a||{};var t=!!a.withCoverOut;n.style&&(n.style.visibility=""),t&&await TransitionEffects.coverOut(),await InitManager.run(n,{preserveServicePins:!1});const{tl:e,entryOffset:i}=runPageEntryAnimations(n);await new Promise((t=>{e.call((()=>finalizeAfterEntry(n)),null,i+e.duration()),e.eventCallback("onComplete",t)}))}
 		async function wfEnter(n){try{WebflowAdapter.reset({next:n});WebflowAdapter.reparent(n.container||document);await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e));WebflowAdapter.reinit("enter");await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e))}catch(e){console.warn("[wfEnter] failed",e)}}
-		window.__SCROLL_TOP__||(window.__SCROLL_TOP__=async function(){var e=document.scrollingElement||document.documentElement||document.body,t=document.documentElement.style.scrollBehavior;try{document.documentElement.style.scrollBehavior="auto"}catch{}try{document.body.style.overflow=""}catch{}try{e&&(e.scrollTop=0,e.scrollLeft=0)}catch{}try{scrollTo(0,0)}catch{}await new Promise(r=>requestAnimationFrame(r));await new Promise(r=>requestAnimationFrame(r));try{e&&(e.scrollTop=0,e.scrollLeft=0)}catch{}try{scrollTo(0,0)}catch{}try{document.documentElement.style.scrollBehavior=t||""}catch{}});
+		window.__SCROLL_TOP__||(window.__SCROLL_TOP__=async function(){var o=document.scrollingElement||document.documentElement||document.body,c=document.documentElement.style.scrollBehavior;try{document.documentElement.style.scrollBehavior="auto"}catch{}try{document.body.style.overflow=""}catch{}try{o.scrollTop=0,o.scrollLeft=0}catch{}try{document.documentElement.scrollTop=0,document.body.scrollTop=0}catch{}try{scrollTo(0,0)}catch{}try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory()}catch{}await new Promise((o=>requestAnimationFrame(o)));try{o.scrollTop=0,scrollTo(0,0)}catch{}await new Promise((o=>requestAnimationFrame(o)));try{o.scrollTop=0,scrollTo(0,0)}catch{}setTimeout((function(){try{o.scrollTop=0,scrollTo(0,0)}catch{}}),0);try{document.documentElement.style.scrollBehavior=c||""}catch{}});
 		
 		// Entry Animations
 		var EntryAnimations = {};
@@ -470,8 +470,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							// PreloaderService.enable(true) // enable when needed
 							if(PreloaderService.shouldRun())await PreloaderService.maybeRun();
 							await wfEnter(next);
-							if(!location.hash)await window.__SCROLL_TOP__();
 							await runEntryFlow(next.container);
+							await window.__SCROLL_TOP__();
 							document.documentElement.removeAttribute("data-preloading");
 						}
 					},{
@@ -481,7 +481,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						async leave({ current }) {
 							NavigationManager?.setLock('overlay', true);
 							window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
-							await ScrollState.saveAsync();
 							await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
 							await InitManager.cleanup({ preserveServicePins: false });
 							current.container.remove();
@@ -489,8 +488,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						async enter({ next }) {
 							await wfEnter(next);
 							NavigationManager?.setLock('overlay', false);
-							if(!location.hash)await window.__SCROLL_TOP__();
 							await runEntryFlow(next.container, { withCoverOut: false });
+							await window.__SCROLL_TOP__();
 							document.documentElement.removeAttribute('data-preloading');
 						},
 						afterEnter({ next }) {
@@ -510,7 +509,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							NavigationManager?.setLock('overlay', true);
 							window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
 							document.body.style.overflow = '';
-							await ScrollState.saveAsync();
 							const ok = await TransitionEffects.coverIn();
 							if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
 							await InitManager.cleanup({ preserveServicePins: false });
@@ -519,9 +517,9 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						async enter({ next }) {
 							await wfEnter(next);
 							NavigationManager?.setLock('overlay', false);
-							if(!location.hash)await window.__SCROLL_TOP__();
 							await TransitionEffects.coverOut();
 							await runEntryFlow(next.container, { withCoverOut: false });
+							await window.__SCROLL_TOP__();
 							document.documentElement.removeAttribute('data-preloading');
 						},
 						afterEnter({ next }) {
@@ -574,8 +572,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 !function(){
 	function boot() {
 		ScrollState.init({ maxAgeMs: 30 * 60 * 1000 });
-		addEventListener('pagehide', () => { try { ScrollState.save(); } catch {} }, { capture: true });
-		addEventListener('visibilitychange', () => {if (document.hidden) {try { ScrollState.save(); } catch {}}}, { capture: true });
 		NavigationManager.init({ debug: DEBUG });
 		NavigationManager.ensureBarbaClickRouting();
 		DebugCore.install();
