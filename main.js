@@ -570,18 +570,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			sanity
 		};
 	})();
-
 	
-!function(){
-	function boot() {
-		NavigationManager.init({ debug: DEBUG });
-		NavigationManager.ensureBarbaClickRouting();
-		DebugCore.install();
-		EntryOrchestrator.init();
-	}
-	if (document.readyState !== "loading") boot();
-	else document.addEventListener("DOMContentLoaded", boot, { once: true });
-}();
-
+!function(){function r(t,e,n){var o=0;(function i(){try{if(t())return void e()}catch(t){}o++<(n||160)?setTimeout(i,25):console.warn("[BOOT] deps not ready")})()}function boot(){if(window.__ENTRY_BOOTED)return;window.__ENTRY_BOOTED=1;NavigationManager.init({debug:DEBUG});NavigationManager.ensureBarbaClickRouting();DebugCore.install();function fallback(){if(window.__ENTRY_FALLBACK_RAN)return;window.__ENTRY_FALLBACK_RAN=1;try{var t=document.querySelector('[data-barba="container"]')||document.body;EntryGate.arm(t);InitManager.run(t,{preserveServicePins:!1}).then(function(){var e=EntryOrchestrator.runPageEntryAnimations(t),n=e&&e.tl?e.tl:gsap.timeline(),o=e&&"number"==typeof e.entryOffset?e.entryOffset:0;EntryGate.release(t);n&&n.play&&n.play(o)})}catch(t){console.warn("[BOOT] fallback entry failed",t)}}r(function(){return window.gsap&&window.InitManager&&window.EntryGate&&window.EntryOrchestrator},function(){r(function(){return window.barba&&"function"==typeof barba.init},function(){try{EntryOrchestrator.init()}catch(t){console.warn("[BOOT] EntryOrchestrator.init failed",t),fallback()}},80);setTimeout(function(){window.__barbaInited||fallback()},250)},120)}"loading"!==document.readyState?boot():document.addEventListener("DOMContentLoaded",boot,{once:!0})}();
 })();
 }
