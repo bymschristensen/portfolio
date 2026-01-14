@@ -390,28 +390,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		};
 	})();
 
-// Scroll State
-	window.ScrollState = (function () {
-		const PREFIX="scroll:";
-		let config={maxAgeMs:null};
-		const KEY=E=>`${PREFIX}${E}`;
-		const nextFrame=()=>new Promise((e=>requestAnimationFrame(e)));
-		async function afterTwoFrames(){await nextFrame(),await nextFrame()}
-		function readXY(){document.body;const o=document.scrollingElement||document.documentElement||document.body||{};let e=("number"==typeof window.scrollX?window.scrollX:window.pageXOffset)??0,n=("number"==typeof window.scrollY?window.scrollY:window.pageYOffset)??0;return 0===e&&o.scrollLeft&&(e=o.scrollLeft),0===n&&o.scrollTop&&(n=o.scrollTop),{x:Math.round(e),y:Math.round(n)}}
-		function init(n={}){config={...config,...n};try{prune({maxAgeMs:config.maxAgeMs})}catch{}}
-		function save(a=location.pathname+location.search){try{save._raf&&cancelAnimationFrame(save._raf),save._raf=requestAnimationFrame((async()=>{save._raf=0,await afterTwoFrames();const{x:e,y:t}=readXY();sessionStorage.setItem(KEY(a),`${e},${t},${Date.now()}`)}))}catch{}}
-		async function saveAsync(a=location.pathname+location.search){try{await afterTwoFrames();const{x:e,y:t}=readXY();sessionStorage.setItem(KEY(a),`${e},${t},${Date.now()}`)}catch{}}
-		function read(n=location.pathname+location.search,t={}){try{const e=sessionStorage.getItem(KEY(n));if(!e)return null;const[l,a,r]=e.split(","),s=parseInt(l,10)||0,o=parseInt(a,10)||0,u=r?parseInt(r,10):null,c=t.maxAgeMs??config.maxAgeMs;return null!=c&&null!=u&&Date.now()-u>c?null:{x:s,y:o}}catch{return null}}
-		function prune({maxAgeMs:t=null}={}){if(null!=t)try{const e=Date.now();for(let s=sessionStorage.length-1;s>=0;s--){const n=sessionStorage.key(s);if(!n||!n.startsWith(PREFIX))continue;const o=sessionStorage.getItem(n)?.split(",")[2];o&&e-parseInt(o,10)>t&&sessionStorage.removeItem(n)}}catch{}}
-		try{history.scrollRestoration="manual"}catch{}
-		return {
-			init, KEY, save, saveAsync, read, prune,
-			get config() { return config; }
-		};
-	})();
-	
-	// Scroll Browsing
-	!function(){var POP=0,LPOP=0,PREFER_RESTORE_ON_BACK=1;addEventListener("popstate",function(){POP=1},{capture:!0});function key(u){try{return u&&u.path!=null?u.path+(u.query||""):(new URL(u||location.href,location.href)).pathname+(new URL(u||location.href,location.href)).search}catch{return location.pathname+location.search}}function readY(k){try{var p=window.ScrollState&&ScrollState.read?ScrollState.read(k):null;return p&&typeof p.y=="number"?p.y:0}catch{return 0}}async function setTop(){var se=document.scrollingElement||document.documentElement||document.body,html=document.documentElement,prev=html.style.scrollBehavior;try{html.style.scrollBehavior="auto"}catch{}try{document.body.style.overflow=""}catch{}try{se.scrollTop=0,se.scrollLeft=0}catch{}try{scrollTo(0,0)}catch{}try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory()}catch{}await new Promise(function(r){requestAnimationFrame(r)});try{se.scrollTop=0,scrollTo(0,0)}catch{}setTimeout(function(){try{se.scrollTop=0,scrollTo(0,0)}catch{}},0);try{html.style.scrollBehavior=prev||""}catch{}}async function setY(y){var se=document.scrollingElement||document.documentElement||document.body,html=document.documentElement,prev=html.style.scrollBehavior;try{html.style.scrollBehavior="auto"}catch{}try{se.scrollTop=y,se.scrollLeft=0}catch{}try{scrollTo(0,y)}catch{}try{document.documentElement.scrollTop=y,document.body&&(document.body.scrollTop=y)}catch{}try{html.style.scrollBehavior=prev||""}catch{}}async function restoreAfterStabilize(k){var y=readY(k);await new Promise(function(r){requestAnimationFrame(r)});await new Promise(function(r){requestAnimationFrame(r)});try{window.ScrollTrigger&&ScrollTrigger.refresh&&ScrollTrigger.refresh(!0)}catch{}await new Promise(function(r){requestAnimationFrame(r)});try{await setY(y)}catch{}setTimeout(function(){try{setY(y)}catch{}},60)}function install(){if(install._on||!window.barba||!barba.hooks)return;install._on=1;barba.hooks.beforeLeave(function(d){try{window.ScrollState&&ScrollState.save&&ScrollState.save(key(d.current.url))}catch{}});barba.hooks.beforeEnter(async function(d){var k=key(d.next.url);LPOP=POP;POP=0;if(!(LPOP&&PREFER_RESTORE_ON_BACK))await setTop()});barba.hooks.afterEnter(function(d){var k=key(d.next.url);if(!(LPOP&&PREFER_RESTORE_ON_BACK))return;restoreAfterStabilize(k)})}window.ScrollPolicy={install:install,setPreferRestoreOnBack:function(v){PREFER_RESTORE_ON_BACK=!!v}}}();
+// Scroll Manager
+	window.ScrollManager=function(){var LOCKED=0,Y0=0,POP=0,prevOv="",K="__SCROLLY__:";function key(u){try{return(u&&u.url&&u.url.href)||(u&&u.href)||location.href}catch{return location.href}}function se(){return document.scrollingElement||document.documentElement}function y(){return window.pageYOffset||se().scrollTop||0}function save(u){try{sessionStorage.setItem(K+key(u),""+y())}catch(e){}}function load(u){try{var v=sessionStorage.getItem(K+key(u));return v?parseInt(v,10)||0:0}catch(e){return 0}}function setY(n){var s=se();try{document.documentElement.style.scrollBehavior="auto"}catch(e){}try{s.scrollTop=n;document.body.scrollTop=n;window.scrollTo(0,n)}catch(e){}}function topHard(){setY(0);try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory("manual")}catch(e){}}function lock(){if(LOCKED)return;LOCKED=1;Y0=y();prevOv=document.documentElement.style.overflow||"";try{document.documentElement.style.scrollBehavior="auto"}catch(e){}document.documentElement.style.overflow="hidden";document.body.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=(-Y0)+"px";document.body.style.width="100%"}function unlock(){if(!LOCKED)return;LOCKED=0;var n=Y0;Y0=0;document.documentElement.style.overflow=prevOv;document.body.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";setY(n)}window.addEventListener("popstate",function(){POP=1},{capture:!0});try{history.scrollRestoration="manual"}catch(e){}return{save:save,load:load,lock:lock,unlock:unlock,topHard:topHard,setY:setY,isPop:function(){return POP},clearPop:function(){POP=0}}}();
 	
 // Transition Effects
 	window.TransitionEffects = (function () {
@@ -469,6 +449,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					{
 						name: 'initial-preloader',
 						once: async ({ next }) => {
+							ScrollManager.topHard();
 							// PreloaderService.enable(true) // enable when needed
 							if(PreloaderService.shouldRun())await PreloaderService.maybeRun();
 							await wfEnter(next);
@@ -480,6 +461,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						from: { namespace: ['selected','archive','resources'] },
 						to: { namespace: ['selected','archive','resources'] },
 						async leave({ current }) {
+							ScrollManager.save(current.url);
+  							ScrollManager.lock();
 							NavigationManager?.setLock('overlay', true);
 							window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
 							await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
@@ -487,10 +470,18 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							current.container.remove();
 						},
 						async enter({ next }) {
+							if (ScrollManager.isPop()) {
+								ScrollManager.setY(ScrollManager.load(next.url));
+								ScrollManager.clearPop();
+							} else {
+								ScrollManager.topHard();
+							}
+							
 							await wfEnter(next);
 							NavigationManager?.setLock('overlay', false);
 							await runEntryFlow(next.container, { withCoverOut: false });
 							document.documentElement.removeAttribute('data-preloading');
+							ScrollManager.unlock();
 						},
 						afterEnter({ next }) {
 							requestAnimationFrame(() => {
@@ -506,20 +497,29 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							return !(work.includes(current?.namespace) && work.includes(next?.namespace));
 						},
 						async leave({ current }) {
+							ScrollManager.save(current.url);
+  							ScrollManager.lock();
 							NavigationManager?.setLock('overlay', true);
 							window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
-							document.body.style.overflow = '';
 							const ok = await TransitionEffects.coverIn();
 							if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
 							await InitManager.cleanup({ preserveServicePins: false });
 							current.container.remove();
 						},
 						async enter({ next }) {
+							if (ScrollManager.isPop()) {
+								ScrollManager.setY(ScrollManager.load(next.url));
+								ScrollManager.clearPop();
+							} else {
+								ScrollManager.topHard();
+							}
+							
 							await wfEnter(next);
 							NavigationManager?.setLock('overlay', false);
 							await TransitionEffects.coverOut();
 							await runEntryFlow(next.container, { withCoverOut: false });
 							document.documentElement.removeAttribute('data-preloading');
+							ScrollManager.unlock();
 						},
 						afterEnter({ next }) {
 							EntryOrchestrator?.forceCloseMenus?.();
