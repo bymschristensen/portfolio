@@ -409,7 +409,10 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			get config() { return config; }
 		};
 	})();
-
+	
+	// Scroll Browsing
+	!function(){var POP=0,LPOP=0,PREFER_RESTORE_ON_BACK=1;addEventListener("popstate",function(){POP=1},{capture:!0});function key(u){try{return u&&u.path!=null?u.path+(u.query||""):(new URL(u||location.href,location.href)).pathname+(new URL(u||location.href,location.href)).search}catch{return location.pathname+location.search}}function readY(k){try{var p=window.ScrollState&&ScrollState.read?ScrollState.read(k):null;return p&&typeof p.y=="number"?p.y:0}catch{return 0}}async function setTop(){var se=document.scrollingElement||document.documentElement||document.body,html=document.documentElement,prev=html.style.scrollBehavior;try{html.style.scrollBehavior="auto"}catch{}try{document.body.style.overflow=""}catch{}try{se.scrollTop=0,se.scrollLeft=0}catch{}try{scrollTo(0,0)}catch{}try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory()}catch{}await new Promise(function(r){requestAnimationFrame(r)});try{se.scrollTop=0,scrollTo(0,0)}catch{}setTimeout(function(){try{se.scrollTop=0,scrollTo(0,0)}catch{}},0);try{html.style.scrollBehavior=prev||""}catch{}}async function setY(y){var se=document.scrollingElement||document.documentElement||document.body,html=document.documentElement,prev=html.style.scrollBehavior;try{html.style.scrollBehavior="auto"}catch{}try{se.scrollTop=y,se.scrollLeft=0}catch{}try{scrollTo(0,y)}catch{}try{document.documentElement.scrollTop=y,document.body&&(document.body.scrollTop=y)}catch{}try{html.style.scrollBehavior=prev||""}catch{}}async function restoreAfterStabilize(k){var y=readY(k);await new Promise(function(r){requestAnimationFrame(r)});await new Promise(function(r){requestAnimationFrame(r)});try{window.ScrollTrigger&&ScrollTrigger.refresh&&ScrollTrigger.refresh(!0)}catch{}await new Promise(function(r){requestAnimationFrame(r)});try{await setY(y)}catch{}setTimeout(function(){try{setY(y)}catch{}},60)}function install(){if(install._on||!window.barba||!barba.hooks)return;install._on=1;barba.hooks.beforeLeave(function(d){try{window.ScrollState&&ScrollState.save&&ScrollState.save(key(d.current.url))}catch{}});barba.hooks.beforeEnter(async function(d){var k=key(d.next.url);LPOP=POP;POP=0;if(!(LPOP&&PREFER_RESTORE_ON_BACK))await setTop()});barba.hooks.afterEnter(function(d){var k=key(d.next.url);if(!(LPOP&&PREFER_RESTORE_ON_BACK))return;restoreAfterStabilize(k)})}window.ScrollPolicy={install:install,setPreferRestoreOnBack:function(v){PREFER_RESTORE_ON_BACK=!!v}}}();
+	
 // Transition Effects
 	window.TransitionEffects = (function () {
 		let runningCoverOut = null;
@@ -427,7 +430,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		async function finalizeAfterEntry(e){await new Promise((e=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(e,30)))))));try{window.ScrollTrigger&&requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}catch{}}
 		async function runEntryFlow(n,a){a=a||{};var t=!!a.withCoverOut;n.style&&(n.style.visibility=""),t&&await TransitionEffects.coverOut(),await InitManager.run(n,{preserveServicePins:!1});const{tl:e,entryOffset:i}=runPageEntryAnimations(n);await new Promise((t=>{e.call((()=>finalizeAfterEntry(n)),null,i+e.duration()),e.eventCallback("onComplete",t)}))}
 		async function wfEnter(n){try{WebflowAdapter.reset({next:n});WebflowAdapter.reparent(n.container||document);await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e));WebflowAdapter.reinit("enter");await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e))}catch(e){console.warn("[wfEnter] failed",e)}}
-		window.__SCROLL_TOP__||(window.__SCROLL_TOP__=async function(){var o=document.scrollingElement||document.documentElement||document.body,c=document.documentElement.style.scrollBehavior;try{document.documentElement.style.scrollBehavior="auto"}catch{}try{document.body.style.overflow=""}catch{}try{o.scrollTop=0,o.scrollLeft=0}catch{}try{document.documentElement.scrollTop=0,document.body.scrollTop=0}catch{}try{scrollTo(0,0)}catch{}try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory()}catch{}await new Promise((o=>requestAnimationFrame(o)));try{o.scrollTop=0,scrollTo(0,0)}catch{}await new Promise((o=>requestAnimationFrame(o)));try{o.scrollTop=0,scrollTo(0,0)}catch{}setTimeout((function(){try{o.scrollTop=0,scrollTo(0,0)}catch{}}),0);try{document.documentElement.style.scrollBehavior=c||""}catch{}});
 		
 		// Entry Animations
 		var EntryAnimations = {};
@@ -471,7 +473,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							if(PreloaderService.shouldRun())await PreloaderService.maybeRun();
 							await wfEnter(next);
 							await runEntryFlow(next.container);
-							await window.__SCROLL_TOP__();
 							document.documentElement.removeAttribute("data-preloading");
 						}
 					},{
@@ -489,7 +490,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							await wfEnter(next);
 							NavigationManager?.setLock('overlay', false);
 							await runEntryFlow(next.container, { withCoverOut: false });
-							await window.__SCROLL_TOP__();
 							document.documentElement.removeAttribute('data-preloading');
 						},
 						afterEnter({ next }) {
@@ -519,7 +519,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							NavigationManager?.setLock('overlay', false);
 							await TransitionEffects.coverOut();
 							await runEntryFlow(next.container, { withCoverOut: false });
-							await window.__SCROLL_TOP__();
 							document.documentElement.removeAttribute('data-preloading');
 						},
 						afterEnter({ next }) {
@@ -537,6 +536,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			// keep your probes/sanity after barba init
 			if (typeof installDebugProbes === 'function') installDebugProbes();
 			if (typeof logBarbaSanity    === 'function') logBarbaSanity();
+			
+			ScrollPolicy&&ScrollPolicy.install&&ScrollPolicy.install();
 		}
 		
 		return {
