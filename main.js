@@ -43,7 +43,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	window.WebflowAdapter = (function () {
 		function syncHead(t){try{if(!t||!t.html)return;const e=(new DOMParser).parseFromString(t.html,"text/html"),a=e.querySelector("html")?.getAttribute("data-wf-page")||null;a?document.documentElement.setAttribute("data-wf-page",a):document.documentElement.removeAttribute("data-wf-page");const n=e.querySelector("script[data-wf-site-data]")?.textContent||null;if(document.querySelectorAll("script[data-wf-site-data]").forEach((t=>{try{t.remove()}catch{}})),n){const t=document.createElement("script");t.type="application/json",t.setAttribute("data-wf-site-data",""),t.textContent=n,document.head.appendChild(t)}}catch(t){console.warn("[WebflowAdapter.syncHead] failed:",t)}}
 		function reset({next:e}){syncHead(e)}
-		function reinit(r){try{if(!window.Webflow)return;try{Webflow.destroy&&Webflow.destroy()}catch(e){}try{Webflow.ready&&Webflow.ready()}catch(e){}try{Webflow.require&&Webflow.require("ix2")&&Webflow.require("ix2").init&&Webflow.require("ix2").init()}catch(e){}try{if(Webflow.require){["commerce","lightbox","slider","tabs","dropdown","navbar"].forEach(function(e){try{var t=Webflow.require(e);t&&(t.ready&&t.ready(),t.init&&t.init(),t.redraw&&t.redraw())}catch(e){}})}}catch(e){} }catch(e){console.warn("[WebflowAdapter.reinit] failed:",e,r||"")}}
+		function reinit(r){try{if(!window.Webflow)return;try{Webflow.destroy&&Webflow.destroy()}catch(e){}try{Webflow.ready&&Webflow.ready()}catch(e){}try{if(Webflow.require){var ix=Webflow.require("ix2");ix&&(ix.destroy&&ix.destroy(),ix.init&&ix.init())}}catch(e){}try{if(Webflow.require){["commerce","lightbox","slider","tabs","dropdown","navbar"].forEach(function(k){try{var m=Webflow.require(k);m&&(m.destroy&&m.destroy(),m.ready&&m.ready(),m.init&&m.init(),m.redraw&&m.redraw())}catch(e){}})}}catch(e){} }catch(e){console.warn("[WebflowAdapter.reinit] failed:",e,r||"")}}
 		function reparent(e){(e=e||document).querySelectorAll("[data-child]").forEach((t=>{if(t.matches(".w-tab-link, .w-tab-pane"))return;const a=t.getAttribute("data-child");let r=e.querySelector(`[data-parent="${a}"]`)||document.querySelector(`[data-parent="${a}"]`);r&&t.parentNode!==r&&r.appendChild(t)}))}
 		return {
 			reset,
@@ -419,6 +419,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
 		async function finalizeAfterEntry(e){await new Promise((e=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(e,30)))))));try{window.ScrollTrigger&&requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}catch{}}
 		async function runEntryFlow(n,a){a=a||{};var t=!!a.withCoverOut;n.style&&(n.style.visibility=""),t&&await TransitionEffects.coverOut(),await InitManager.run(n,{preserveServicePins:!0});const{tl:e,entryOffset:i}=runPageEntryAnimations(n);await new Promise((t=>{e.call((()=>finalizeAfterEntry(n)),null,i+e.duration()),e.eventCallback("onComplete",t)}))}
+		async function wfEnter(n){try{WebflowAdapter.reset({next:n});WebflowAdapter.reparent(n.container||document);await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e));WebflowAdapter.reinit("enter");await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e))}catch(e){console.warn("[wfEnter] failed",e)}}
 		
 		// Entry Animations
 		var EntryAnimations = {};
@@ -459,12 +460,11 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						name: 'initial-preloader',
 						once: async ({ next }) => {
 							// PreloaderService.enable(true) // enable when needed
-							if (PreloaderService.shouldRun()) { await PreloaderService.maybeRun(); }
-							WebflowAdapter.reset({ next });
+							if(PreloaderService.shouldRun())await PreloaderService.maybeRun();
+							await wfEnter(next);
 							await runEntryFlow(next.container);
-							document.documentElement.removeAttribute('data-preloading');
-							WebflowAdapter.reinit("once");
-							if (!location.hash) window.scrollTo(0, 0);
+							document.documentElement.removeAttribute("data-preloading");
+							if(!location.hash)window.scrollTo(0,0);
 						}
 					},{
 						name: 'fade',
@@ -479,7 +479,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							current.container.remove();
 						},
 						async enter({ next }) {
-							WebflowAdapter.reset({ next });
+							await wfEnter(next);
 							NavigationManager?.setLock('overlay', false);
 							const entries = performance.getEntriesByType('navigation');
 							const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
@@ -516,7 +516,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							current.container.remove();
 						},
 						async enter({ next }) {
-							WebflowAdapter.reset({ next });
+							await wfEnter(next);
 							NavigationManager?.setLock('overlay', false);
 							const entries = performance.getEntriesByType('navigation');
 							const isHistory = entries.length ? entries[0].type === 'back_forward' : false;
@@ -556,19 +556,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			runPageEntryAnimations,
 		};
 	})();
-
-	barba.hooks.beforeEnter((data)=>{
-  console.log("[BARBA] beforeEnter", data?.next?.url?.path || "");
-  window.WebflowAdapter?.reset?.(data);
-  window.WebflowAdapter?.reparent?.(data?.next?.container || document);
-});
-
-barba.hooks.afterEnter((data)=>{
-  console.log("[BARBA] afterEnter", data?.next?.url?.path || "");
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    window.WebflowAdapter?.reinit?.("afterEnter");
-  }));
-});
+	
 
 // Debug Core
 	window.DebugCore = window.DebugCore || (function () {
