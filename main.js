@@ -426,7 +426,31 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			window.__barbaInited = true;
 		
 			if (typeof logBarbaSanity === 'function') logBarbaSanity();
-		
+
+			// register ONCE hook first
+			barba.hooks.once(async ({ next }) => {
+				if (window.__ENTRY_ONCE_RAN) return;
+				window.__ENTRY_ONCE_RAN = 1;
+				
+				try {
+					EntryGate.arm(next.container);
+					ScrollManager.lock();
+					ScrollManager.topHard();
+				
+					await wfEnter(next);
+				
+					// if you ever enable it again:
+					// if (PreloaderService.shouldRun()) await PreloaderService.maybeRun();
+				
+					await runEntryFlow(next.container, { withCoverOut: false });
+					document.documentElement.removeAttribute("data-preloading");
+				} catch (e) {
+					console.warn("[once] entry failed", e);
+				} finally {
+					ScrollManager.unlock();
+				}
+			});
+			
 			barba.init({
 				debug: window.DEBUG,
 				timeout: 8000,
@@ -448,21 +472,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				},
 				transitions: [
 					{
-						name: 'initial-preloader',
-						once: async ({ next }) => {
-							EntryGate.arm(next.container);
-							ScrollManager.lock();
-  							ScrollManager.topHard();
-							
-							// PreloaderService.enable(true) // enable when needed
-							if(PreloaderService.shouldRun())await PreloaderService.maybeRun();
-							
-							await wfEnter(next);
-							await runEntryFlow(next.container);
-							document.documentElement.removeAttribute("data-preloading");
-							ScrollManager.unlock();
-						}
-					},{
 						name: 'fade',
 						from: { namespace: ['selected','archive','resources'] },
 						to: { namespace: ['selected','archive','resources'] },
@@ -536,7 +545,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					}
 				]
 			});
-		
+			
 			// keep your probes/sanity after barba init
 			if (typeof installDebugProbes === 'function') installDebugProbes();
 			if (typeof logBarbaSanity    === 'function') logBarbaSanity();
