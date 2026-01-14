@@ -288,6 +288,13 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				namespaces: ['info'],
     			selectors: [],
 				init: async r=>{const t=["recommendationsOpen1","recommendationsOpen2","recommendationsOpen3","recommendationsOpen4"],n=()=>document.getElementById("recommendations")||document.querySelector('.w-tabs .w-tab-link[data-w-tab="Recommendations"]'),o=()=>{const e=document.getElementById("details")||document.querySelector(".section-details");if(!e)return;const t=e.getBoundingClientRect().top+window.pageYOffset-24;window.scrollTo({top:t,behavior:"smooth"})};t.forEach(t=>{const e=r.querySelector("#"+t)||document.getElementById(t);e&&!e.classList.contains("w-tab-link")&&e.addEventListener("click",e=>{e.preventDefault();(n()||{}).click?.();requestAnimationFrame(()=>requestAnimationFrame(o))},{passive:!1})})}
+			}),
+			feature({
+				id: "wfSliderKick",
+				stage: "late",
+				namespaces: ["info"],
+				selectors: [".w-slider"],
+				init: async function(r){try{if(!window.Webflow||!Webflow.require)return;var k=function(t){try{var e=Webflow.require("slider");if(!e)return;try{e.redraw&&e.redraw()}catch{}try{window.dispatchEvent(new Event("resize"))}catch{}requestAnimationFrame(function(){requestAnimationFrame(function(){try{e.redraw&&e.redraw()}catch{}try{window.dispatchEvent(new Event("resize"))}catch{}})})}catch{}};setTimeout(function(){k(r)},60);setTimeout(function(){k(r)},240);var p=r.querySelector(".w-tab-pane")?null:r.querySelector('.w-tab-pane[data-w-tab="Recommendations"]')||r.querySelector('.w-tab-pane');if(!p){var a=r.querySelector('.w-tab-pane[data-w-tab="Recommendations"]');p=a||null}if(p){var o=new MutationObserver(function(){if(p.classList.contains("w--tab-active")){k(r);setTimeout(function(){k(r)},120)}});o.observe(p,{attributes:!0,attributeFilter:["class"]});CoreUtilities&&CoreUtilities.Observers&&CoreUtilities.Observers.addDom&&CoreUtilities.Observers.addDom(o)}}catch(e){console.warn("[wfSliderKick] failed",e)}}
 			})
 		);
 	
