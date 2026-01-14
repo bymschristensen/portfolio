@@ -20,7 +20,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function dlog(...args) { if (state.debug) console.debug('[Nav]', ...args); }
 		function isInternalAnchor(t){if(t.defaultPrevented||0!==t.button||t.metaKey||t.ctrlKey||t.shiftKey||t.altKey)return null;const e=t.target&&("A"===t.target.tagName?t.target:t.target.closest?.("a"));if(!e)return null;if(e.hasAttribute("download")||"_blank"===e.target||"external"===e.getAttribute("rel"))return null;if(e.closest('[data-router-ignore="true"], .w-lightbox'))return null;const r=e.getAttribute("href")||e.href||"";if(!r)return null;let n;try{n=new URL(r,location.href)}catch{return null}const l=n.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"");return n.origin!==location.origin||l&&n.hash?null:{a:e,url:n}}
 		function installLinkInterceptor(){if(state.installed)return;state.clickHandler=e=>{if(e.defaultPrevented)return;const n=document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace||"";if(n==="info"&&e.target?.closest('a[id^="recommendationsOpen"]'))return;if(e.target?.closest('.nav-button-menu,.nav-button-filter,.nav-button-close-case,[data-router-ignore="true"]'))return;const t=isInternalAnchor(e);if(!t)return;if(n!=="archive"&&n!=="resources"){const r=t.a.closest("[data-barba-prevent]");if(r&&r.getAttribute("data-barba-prevent")==="true")return}if(state.locks.size){dlog("blocked by lock(s):",[...state.locks]);e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return}e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();console.info("[intercept→barba]",t.url.href,"locks:",[...state.locks]);window.barba?.go?barba.go(t.url.href):location.href=t.url.href};addEventListener("click",state.clickHandler,{capture:!0});state.installed=!0;dlog("link interceptor installed")}
-		function installNavLock(){dlog("nav lock ready (use NavigationManager.setLock(label, true/false))")}
 		function setLock(t,c){t&&(c?state.locks.add(t):state.locks.delete(t),dlog(c?"lock +":"lock -",t,"| active:",[...state.locks]))}
 		function isLocked() { return state.locks.size > 0; }
 		function reason() { return [...state.locks]; }
@@ -30,7 +29,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		return {
 			init,
 			installLinkInterceptor,
-			installNavLock,
 			setLock,
 			isLocked,
 			reason,
@@ -391,7 +389,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	})();
 
 // Scroll Manager
-	window.ScrollManager=function(){var LOCKED=0,Y0=0,POP=0,prevOv="",K="__SCROLLY__:";function key(u){try{return(u&&u.url&&u.url.href)||(u&&u.href)||location.href}catch{return location.href}}function se(){return document.scrollingElement||document.documentElement}function y(){return window.pageYOffset||se().scrollTop||0}function save(u){try{sessionStorage.setItem(K+key(u),""+y())}catch(e){}}function load(u){try{var v=sessionStorage.getItem(K+key(u));return v?parseInt(v,10)||0:0}catch(e){return 0}}function setY(n){var s=se();try{document.documentElement.style.scrollBehavior="auto"}catch(e){}try{s.scrollTop=n;document.body.scrollTop=n;window.scrollTo(0,n)}catch(e){}}function topHard(){setY(0);try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory("manual")}catch(e){}}function lock(){if(LOCKED)return;LOCKED=1;Y0=y();prevOv=document.documentElement.style.overflow||"";try{document.documentElement.style.scrollBehavior="auto"}catch(e){}document.documentElement.style.overflow="hidden";document.body.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=(-Y0)+"px";document.body.style.width="100%"}function unlock(){if(!LOCKED)return;LOCKED=0;var n=Y0;Y0=0;document.documentElement.style.overflow=prevOv;document.body.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";setY(n)}window.addEventListener("popstate",function(){POP=1},{capture:!0});try{history.scrollRestoration="manual"}catch(e){}return{save:save,load:load,lock:lock,unlock:unlock,topHard:topHard,setY:setY,isPop:function(){return POP},clearPop:function(){POP=0}}}();
+	window.ScrollManager=function(){var l=document.scrollingElement||document.documentElement,b=0,y=0,ov="",sb="";function topHard(){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{e.scrollTop=0,document.body.scrollTop=0,window.scrollTo(0,0)}catch(t){}try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory("manual")}catch(t){}}function setY(t){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(o){}try{e.scrollTop=t,document.body.scrollTop=t,window.scrollTo(0,t)}catch(o){}}try{history.scrollRestoration="manual"}catch(t){}try{sb=getComputedStyle(document.documentElement).scrollBehavior||""}catch(t){}return{lock:function(){if(b)return;b=1;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{l=document.scrollingElement||document.documentElement}catch(t){}y=window.pageYOffset||l.scrollTop||0;ov=document.documentElement.style.overflow||"";document.documentElement.style.overflow="hidden";document.body.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=-y+"px";document.body.style.width="100%";},unlock:function(){if(!b)return;b=0;document.documentElement.style.overflow=ov;document.body.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";try{sb?document.documentElement.style.scrollBehavior=sb:document.documentElement.style.removeProperty("scroll-behavior")}catch(t){}},topHard:topHard,setY:setY}}();
 	
 // Transition Effects
 	window.TransitionEffects = (function () {
@@ -449,37 +447,39 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					{
 						name: 'initial-preloader',
 						once: async ({ next }) => {
-							ScrollManager.topHard();
+							ScrollManager.lock();
+  							ScrollManager.topHard();
+							
 							// PreloaderService.enable(true) // enable when needed
 							if(PreloaderService.shouldRun())await PreloaderService.maybeRun();
+							
 							await wfEnter(next);
 							await runEntryFlow(next.container);
 							document.documentElement.removeAttribute("data-preloading");
+							ScrollManager.unlock();
 						}
 					},{
 						name: 'fade',
 						from: { namespace: ['selected','archive','resources'] },
 						to: { namespace: ['selected','archive','resources'] },
 						async leave({ current }) {
-							ScrollManager.save(current.url);
-  							ScrollManager.lock();
+							ScrollManager.lock();
+  							ScrollManager.topHard();
+							
 							NavigationManager?.setLock('overlay', true);
 							window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
 							await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+							
 							await InitManager.cleanup({ preserveServicePins: false });
 							current.container.remove();
 						},
 						async enter({ next }) {
-							if (ScrollManager.isPop()) {
-								ScrollManager.setY(ScrollManager.load(next.url));
-								ScrollManager.clearPop();
-							} else {
-								ScrollManager.topHard();
-							}
-							
+							ScrollManager.topHard();
 							await wfEnter(next);
+							
 							NavigationManager?.setLock('overlay', false);
 							await runEntryFlow(next.container, { withCoverOut: false });
+							
 							document.documentElement.removeAttribute('data-preloading');
 							ScrollManager.unlock();
 						},
@@ -497,27 +497,25 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							return !(work.includes(current?.namespace) && work.includes(next?.namespace));
 						},
 						async leave({ current }) {
-							ScrollManager.save(current.url);
-  							ScrollManager.lock();
+							ScrollManager.lock();
+  							ScrollManager.topHard();
+							
 							NavigationManager?.setLock('overlay', true);
 							window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
 							const ok = await TransitionEffects.coverIn();
 							if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
+							
 							await InitManager.cleanup({ preserveServicePins: false });
 							current.container.remove();
 						},
 						async enter({ next }) {
-							if (ScrollManager.isPop()) {
-								ScrollManager.setY(ScrollManager.load(next.url));
-								ScrollManager.clearPop();
-							} else {
-								ScrollManager.topHard();
-							}
-							
+							ScrollManager.topHard();
 							await wfEnter(next);
+							
 							NavigationManager?.setLock('overlay', false);
 							await TransitionEffects.coverOut();
 							await runEntryFlow(next.container, { withCoverOut: false });
+							
 							document.documentElement.removeAttribute('data-preloading');
 							ScrollManager.unlock();
 						},
@@ -536,8 +534,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			// keep your probes/sanity after barba init
 			if (typeof installDebugProbes === 'function') installDebugProbes();
 			if (typeof logBarbaSanity    === 'function') logBarbaSanity();
-			
-			try{window.ScrollPolicy&&ScrollPolicy.install&&ScrollPolicy.install()}catch(e){}
 		}
 		
 		return {
