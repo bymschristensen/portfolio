@@ -43,7 +43,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	window.WebflowAdapter = (function () {
 		function syncHead(t){try{if(!t||!t.html)return;const e=(new DOMParser).parseFromString(t.html,"text/html"),a=e.querySelector("html")?.getAttribute("data-wf-page")||null;a?document.documentElement.setAttribute("data-wf-page",a):document.documentElement.removeAttribute("data-wf-page");const n=e.querySelector("script[data-wf-site-data]")?.textContent||null;if(document.querySelectorAll("script[data-wf-site-data]").forEach((t=>{try{t.remove()}catch{}})),n){const t=document.createElement("script");t.type="application/json",t.setAttribute("data-wf-site-data",""),t.textContent=n,document.head.appendChild(t)}}catch(t){console.warn("[WebflowAdapter.syncHead] failed:",t)}}
 		function reset({next:e}){syncHead(e)}
-		function reinit(e){try{if(!window.Webflow||!Webflow.require)return;try{Webflow.destroy?.()}catch(e){}try{Webflow.ready?.()}catch(e){}try{Webflow.require?.("ix2")?.init?.()}catch(e){}try{Webflow.require?.("tabs")?.ready?.()}catch(e){}try{Webflow.require?.("slider")?.ready?.()}catch(e){}}catch(r){console.warn("[WebflowAdapter.reinit] failed:",r,e||"")}}
+		function reinit(r){try{if(!window.Webflow)return;try{Webflow.destroy&&Webflow.destroy()}catch(e){}try{Webflow.ready&&Webflow.ready()}catch(e){}try{Webflow.require&&Webflow.require("ix2")&&Webflow.require("ix2").init&&Webflow.require("ix2").init()}catch(e){}try{if(Webflow.require){["commerce","lightbox","slider","tabs","dropdown","navbar"].forEach(function(e){try{var t=Webflow.require(e);t&&(t.ready&&t.ready(),t.init&&t.init(),t.redraw&&t.redraw())}catch(e){}})}}catch(e){} }catch(e){console.warn("[WebflowAdapter.reinit] failed:",e,r||"")}}
 		function reparent(e){(e=e||document).querySelectorAll("[data-child]").forEach((t=>{if(t.matches(".w-tab-link, .w-tab-pane"))return;const a=t.getAttribute("data-child");let r=e.querySelector(`[data-parent="${a}"]`)||document.querySelector(`[data-parent="${a}"]`);r&&t.parentNode!==r&&r.appendChild(t)}))}
 		return {
 			reset,
@@ -108,14 +108,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				namespaces: '*',
 				selectors: ['[data-child]'],
 				init: async r => { try { WebflowAdapter.reparent(r); } catch(e) { console.warn('[InitManager] webflowReparent failed:', e); } }
-			}),
-			
-			feature({
-				id: 'webflowReinitAfterAll',
-				stage: 'late',
-				namespaces: '*',
-				selectors: [],
-				init: async()=>{requestAnimationFrame(()=>requestAnimationFrame(()=>WebflowAdapter?.reinit?.()))},
 			}),
 
 			feature({
@@ -468,9 +460,10 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						once: async ({ next }) => {
 							// PreloaderService.enable(true) // enable when needed
 							if (PreloaderService.shouldRun()) { await PreloaderService.maybeRun(); }
+							WebflowAdapter.reset({ next });
 							await runEntryFlow(next.container);
 							document.documentElement.removeAttribute('data-preloading');
-							WebflowAdapter.reinit();
+							WebflowAdapter.reinit("once");
 							if (!location.hash) window.scrollTo(0, 0);
 						}
 					},{
@@ -482,7 +475,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
 							await ScrollState.saveAsync();
 							await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-							CoreUtilities.InitManager.cleanup();
+							await InitManager.cleanup({ preserveServicePins: true });
 							current.container.remove();
 						},
 						async enter({ next }) {
@@ -500,7 +493,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							document.documentElement.removeAttribute('data-preloading');
 						},
 						afterEnter({ next }) {
-							requestAnimationFrame(() => WebflowAdapter.reinit());
 							requestAnimationFrame(() => {
 								const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
 								if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
@@ -520,7 +512,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							await ScrollState.saveAsync();
 							const ok = await TransitionEffects.coverIn();
 							if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
-							CoreUtilities.InitManager.cleanup();
+							await InitManager.cleanup({ preserveServicePins: true });
 							current.container.remove();
 						},
 						async enter({ next }) {
@@ -539,7 +531,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						},
 						afterEnter({ next }) {
 							EntryOrchestrator?.forceCloseMenus?.();
-							requestAnimationFrame(() => WebflowAdapter.reinit());
 							requestAnimationFrame(() => {
 								const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
 								if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
