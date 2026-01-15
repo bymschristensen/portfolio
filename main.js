@@ -598,9 +598,9 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		    try{NavigationManager.init({debug:DEBUG}),NavigationManager.ensureBarbaClickRouting()}catch(a){console.warn("[BOOT] NavigationManager init failed",a)}
 		    try{DebugCore.install()}catch(e){console.warn("[BOOT] DebugCore.install failed",e)}
 		
-		    		function fallback(){if(window.__ENTRY_FALLBACK_RAN)return;window.__ENTRY_FALLBACK_RAN=1;try{var r=document.querySelector('[data-barba="container"]')||document.body;if(EntryOrchestrator&&EntryOrchestrator.runEntryFlow&&r)EntryOrchestrator.runEntryFlow(r,{withCoverOut:!1});else console.warn("[BOOT] runEntryFlow missing")}catch(e){console.warn("[BOOT] fallback entry failed",e)}}
-			waitFor((function(){return!!(window.gsap&&window.InitManager&&window.EntryGate&&window.EntryOrchestrator)}),(function(){waitFor((function(){return!!window.barba&&"function"==typeof barba.init}),(function(){try{EntryOrchestrator.init()}catch(n){console.warn("[BOOT] EntryOrchestrator.init failed",n),fallback()}}),80),setTimeout((function(){window.__barbaInited||fallback()}),250)}),120);
-	  	}
+			function fallback(){if(window.__ENTRY_FALLBACK_RAN)return;window.__ENTRY_FALLBACK_RAN=1;try{var r=document.querySelector('[data-barba="container"]')||document.body;if(EntryOrchestrator&&EntryOrchestrator.runEntryFlow&&r)EntryOrchestrator.runEntryFlow(r,{withCoverOut:!1}).finally(function(){try{document.documentElement.removeAttribute("data-preloading")}catch(e){}});else{console.warn("[BOOT] runEntryFlow missing");try{document.documentElement.removeAttribute("data-preloading")}catch(e){}}}catch(e){console.warn("[BOOT] fallback entry failed",e);try{document.documentElement.removeAttribute("data-preloading")}catch(r){}}}
+			waitFor((function(){return!!(window.gsap&&window.InitManager&&window.EntryOrchestrator)}),(function(){waitFor((function(){return!!window.barba&&"function"==typeof barba.init}),(function(){try{EntryOrchestrator.init()}catch(n){console.warn("[BOOT] EntryOrchestrator.init failed",n),fallback()}}),80),setTimeout((function(){window.__barbaInited||fallback()}),250)}),120);
+		}
 	
 	  	// Boot either immediately (if DOM is ready) or on DOMContentLoaded
 		if (document.readyState !== "loading") { boot(); } else { document.addEventListener("DOMContentLoaded", boot, { once: true }); }
