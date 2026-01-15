@@ -43,10 +43,24 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function reset({next:e}){syncHead(e)}
 		function reinit(r){try{if(!window.Webflow)return;try{Webflow.destroy&&Webflow.destroy()}catch(e){}try{Webflow.ready&&Webflow.ready()}catch(e){}try{if(Webflow.require){var ix=Webflow.require("ix2");ix&&(ix.destroy&&ix.destroy(),ix.init&&ix.init())}}catch(e){}try{if(Webflow.require){["commerce","lightbox","slider","tabs","dropdown","navbar"].forEach(function(k){try{var m=Webflow.require(k);m&&(m.destroy&&m.destroy(),m.ready&&m.ready(),m.init&&m.init(),m.redraw&&m.redraw())}catch(e){}})}}catch(e){} }catch(e){console.warn("[WebflowAdapter.reinit] failed:",e,r||"")}}
 		function reparent(e){(e=e||document).querySelectorAll("[data-child]").forEach((t=>{if(t.matches(".w-tab-link, .w-tab-pane"))return;const a=t.getAttribute("data-child");let r=e.querySelector(`[data-parent="${a}"]`)||document.querySelector(`[data-parent="${a}"]`);r&&t.parentNode!==r&&r.appendChild(t)}))}
+		async function enter(n){
+			try{
+				reset({next:n});
+				reparent(n.container||document);
+				await new Promise(e=>requestAnimationFrame(e));
+				await new Promise(e=>requestAnimationFrame(e));
+				reinit("enter");
+				await new Promise(e=>requestAnimationFrame(e));
+				await new Promise(e=>requestAnimationFrame(e));
+			}catch(e){
+				console.warn("[WebflowAdapter.enter] failed:",e);
+			}
+		}
 		return {
 			reset,
 			reinit,
 			reparent,
+			enter,
 		};
 	})();
 
@@ -390,9 +404,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
 // Scroll Manager
 	window.ScrollManager=function(){var l=document.scrollingElement||document.documentElement,b=0,y=0,ov="",sb="";function topHard(){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{e.scrollTop=0,document.body.scrollTop=0,window.scrollTo(0,0)}catch(t){}try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory("manual")}catch(t){}}function setY(t){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(o){}try{e.scrollTop=t,document.body.scrollTop=t,window.scrollTo(0,t)}catch(o){}}try{history.scrollRestoration="manual"}catch(t){}try{sb=getComputedStyle(document.documentElement).scrollBehavior||""}catch(t){}return{lock:function(){if(b)return;b=1;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{l=document.scrollingElement||document.documentElement}catch(t){}y=window.pageYOffset||l.scrollTop||0;ov=document.documentElement.style.overflow||"";document.documentElement.style.overflow="hidden";document.body.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=-y+"px";document.body.style.width="100%";},unlock:function(){if(!b)return;b=0;document.documentElement.style.overflow=ov;document.body.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";try{sb?document.documentElement.style.scrollBehavior=sb:document.documentElement.style.removeProperty("scroll-behavior")}catch(t){}},topHard:topHard,setY:setY}}();
-
-// Entry Animation Controller
-	window.EntryGate=function(){const t="data-entry-gated";function e(e){const a=e&&(e.closest?e.closest(".page-wrapper"):e)||e||document.body;if(!a)return;try{a.removeAttribute(t)}catch{}try{a.style.visibility="",a.style.opacity=""}catch{}}return{arm:function(a){},release:e,clear:function(){document.querySelectorAll("["+t+"]").forEach(e)}}}();
 	
 // Transition Effects
 	window.TransitionEffects = (function () {
@@ -409,8 +420,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
 		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
 		async function finalizeAfterEntry(e){await new Promise((e=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(e,30)))))));try{window.ScrollTrigger&&requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}catch{}}
-		async function runEntryFlow(e,t){t=t||{};var n=null,o=0;try{EntryGate&&EntryGate.arm&&EntryGate.arm(e);t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(await TransitionEffects.coverOut());InitManager&&InitManager.run&&await InitManager.run(e,{preserveServicePins:!1});var r=runPageEntryAnimations?runPageEntryAnimations(e):null;n=r&&r.tl?r.tl:gsap.timeline();o=r&&"number"==typeof r.entryOffset?r.entryOffset:0}catch(a){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",a),n=n||null,o=0}finally{try{EntryGate&&EntryGate.release&&EntryGate.release(e)}catch(a){}}var i=t.withCoverOut?o:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise(function(e){n.eventCallback("onComplete",e)})}catch(a){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",a)}try{await finalizeAfterEntry(e)}catch(a){console.warn("[EntryOrchestrator.finalizeAfterEntry] failed",a)}}
-		async function wfEnter(n){try{WebflowAdapter.reset({next:n});WebflowAdapter.reparent(n.container||document);await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e));WebflowAdapter.reinit("enter");await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e))}catch(e){console.warn("[wfEnter] failed",e)}}
+		async function runEntryFlow(e,t){t=t||{};var n=null,o=0;try{t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(await TransitionEffects.coverOut());InitManager&&InitManager.run&&await InitManager.run(e,{preserveServicePins:!1});var r=runPageEntryAnimations?runPageEntryAnimations(e):null;n=r&&r.tl?r.tl:gsap.timeline();o=r&&"number"==typeof r.entryOffset?r.entryOffset:0}catch(a){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",a),n=n||null,o=0}var i=t.withCoverOut?o:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise(function(e){n.eventCallback("onComplete",e)})}catch(a){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",a)}try{await finalizeAfterEntry(e)}catch(a){console.warn("[EntryOrchestrator.finalizeAfterEntry] failed",a)}}
 		
 		// Entry Animations
 		var EntryAnimations = {};
@@ -436,7 +446,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					ScrollManager.lock();
 					ScrollManager.topHard();
 				
-					await wfEnter(next);
+					await WebflowAdapter.enter(next);
 				
 					// if you ever enable it again:
 					// if (PreloaderService.shouldRun()) await PreloaderService.maybeRun();
@@ -487,7 +497,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						},
 						async enter({ next }) {
 							ScrollManager.topHard();
-							await wfEnter(next);
+							await WebflowAdapter.enter(next);
 							try{document.documentElement.removeAttribute("data-preloading")}catch{}
 							
 							NavigationManager?.setLock('overlay', false);
@@ -523,7 +533,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						},
 						async enter({ next }) {
 							ScrollManager.topHard();
-							await wfEnter(next);
+							await WebflowAdapter.enter(next);
 							try{document.documentElement.removeAttribute("data-preloading")}catch{}
 							
 							NavigationManager?.setLock('overlay', false);
@@ -588,7 +598,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		    try{NavigationManager.init({debug:DEBUG}),NavigationManager.ensureBarbaClickRouting()}catch(a){console.warn("[BOOT] NavigationManager init failed",a)}
 		    try{DebugCore.install()}catch(e){console.warn("[BOOT] DebugCore.install failed",e)}
 		
-		    function fallback(){if(window.__ENTRY_FALLBACK_RAN)return;window.__ENTRY_FALLBACK_RAN=1;try{var r=document.querySelector('[data-barba="container"]')||document.body;if(EntryOrchestrator&&EntryOrchestrator.runEntryFlow&&r)EntryOrchestrator.runEntryFlow(r,{withCoverOut:!1}).finally(function(){try{EntryGate&&EntryGate.clear&&EntryGate.clear()}catch(e){}});else{console.warn("[BOOT] runEntryFlow missing");try{EntryGate&&EntryGate.clear&&EntryGate.clear()}catch(e){}}}catch(e){console.warn("[BOOT] fallback entry failed",e);try{EntryGate&&EntryGate.clear&&EntryGate.clear()}catch(r){}}}
+		    		function fallback(){if(window.__ENTRY_FALLBACK_RAN)return;window.__ENTRY_FALLBACK_RAN=1;try{var r=document.querySelector('[data-barba="container"]')||document.body;if(EntryOrchestrator&&EntryOrchestrator.runEntryFlow&&r)EntryOrchestrator.runEntryFlow(r,{withCoverOut:!1});else console.warn("[BOOT] runEntryFlow missing")}catch(e){console.warn("[BOOT] fallback entry failed",e)}}
 			waitFor((function(){return!!(window.gsap&&window.InitManager&&window.EntryGate&&window.EntryOrchestrator)}),(function(){waitFor((function(){return!!window.barba&&"function"==typeof barba.init}),(function(){try{EntryOrchestrator.init()}catch(n){console.warn("[BOOT] EntryOrchestrator.init failed",n),fallback()}}),80),setTimeout((function(){window.__barbaInited||fallback()}),250)}),120);
 	  	}
 	
