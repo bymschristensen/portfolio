@@ -420,7 +420,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
 		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
 		async function finalizeAfterEntry(e){await new Promise((e=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(e,30)))))));try{window.ScrollTrigger&&requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}catch{}}
-		async function runEntryFlow(e,t){t=t||{};var n=null,o=0;try{t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(await TransitionEffects.coverOut());InitManager&&InitManager.run&&await InitManager.run(e,{preserveServicePins:!1});var r=runPageEntryAnimations?runPageEntryAnimations(e):null;n=r&&r.tl?r.tl:gsap.timeline();o=r&&"number"==typeof r.entryOffset?r.entryOffset:0}catch(a){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",a),n=n||null,o=0}var i=t.withCoverOut?o:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise(function(e){n.eventCallback("onComplete",e)})}catch(a){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",a)}try{await finalizeAfterEntry(e)}catch(a){console.warn("[EntryOrchestrator.finalizeAfterEntry] failed",a)}}
+		function releasePreloadingGuard(){try{var e=document&&document.documentElement;e&&e.hasAttribute("data-preloading")&&e.removeAttribute("data-preloading")}catch(e){}}
+		async function runEntryFlow(n,t){n=n||document,t=t||{};let r=null,e=0;try{t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&await TransitionEffects.coverOut(),InitManager&&InitManager.run&&await InitManager.run(n,{preserveServicePins:!1});const a=runPageEntryAnimations?runPageEntryAnimations(n):null;r=a&&a.tl?a.tl:gsap.timeline(),e=a&&"number"==typeof a.entryOffset?a.entryOffset:0,releasePreloadingGuard()}catch(n){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",n),r=r||null,e=0,releasePreloadingGuard()}const a=t.withCoverOut?e:0;if(r&&r.duration&&r.duration())try{r.play(a),await new Promise((n=>r.eventCallback("onComplete",n)))}catch(n){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",n)}try{await finalizeAfterEntry(n)}catch(n){console.warn("[EntryOrchestrator.finalizeAfterEntry] failed",n)}}
 		
 		// Entry Animations
 		var EntryAnimations = {};
@@ -445,17 +446,23 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				try {
 					ScrollManager.lock();
 					ScrollManager.topHard();
-				
 					await WebflowAdapter.enter(next);
 				
 					// if you ever enable it again:
 					// if (PreloaderService.shouldRun()) await PreloaderService.maybeRun();
 				
 					await runEntryFlow(next.container, { withCoverOut: false });
-					document.documentElement.removeAttribute("data-preloading");
 				} catch (e) {
 					console.warn("[once] entry failed", e);
 				} finally {
+					try {
+						if (EntryOrchestrator && EntryOrchestrator.releasePreloadingGuard) {
+							EntryOrchestrator.releasePreloadingGuard();
+						} else {
+							document.documentElement.removeAttribute("data-preloading");
+						}
+					} catch (_) {}
+					
 					ScrollManager.unlock();
 				}
 			});
@@ -568,6 +575,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			runEntryFlow,
 			EntryAnimations,
 			runPageEntryAnimations,
+			releasePreloadingGuard,
 		};
 	})();
 	
@@ -598,7 +606,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		    try{NavigationManager.init({debug:DEBUG}),NavigationManager.ensureBarbaClickRouting()}catch(a){console.warn("[BOOT] NavigationManager init failed",a)}
 		    try{DebugCore.install()}catch(e){console.warn("[BOOT] DebugCore.install failed",e)}
 		
-			function fallback(){if(window.__ENTRY_FALLBACK_RAN)return;window.__ENTRY_FALLBACK_RAN=1;try{var r=document.querySelector('[data-barba="container"]')||document.body;if(EntryOrchestrator&&EntryOrchestrator.runEntryFlow&&r)EntryOrchestrator.runEntryFlow(r,{withCoverOut:!1}).finally(function(){try{document.documentElement.removeAttribute("data-preloading")}catch(e){}});else{console.warn("[BOOT] runEntryFlow missing");try{document.documentElement.removeAttribute("data-preloading")}catch(e){}}}catch(e){console.warn("[BOOT] fallback entry failed",e);try{document.documentElement.removeAttribute("data-preloading")}catch(r){}}}
+			function fallback(){if(!window.__ENTRY_FALLBACK_RAN){window.__ENTRY_FALLBACK_RAN=1;try{var r=document.querySelector('[data-barba="container"]')||document.body;if(EntryOrchestrator&&EntryOrchestrator.runEntryFlow&&r)EntryOrchestrator.runEntryFlow(r,{withCoverOut:!1}).finally((function(){try{EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard&&EntryOrchestrator.releasePreloadingGuard()}catch(r){}}));else{console.warn("[BOOT] runEntryFlow missing");try{EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard&&EntryOrchestrator.releasePreloadingGuard()}catch(r){}}}catch(r){console.warn("[BOOT] fallback entry failed",r);try{EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard&&EntryOrchestrator.releasePreloadingGuard()}catch(r){}}}}
 			waitFor((function(){return!!(window.gsap&&window.InitManager&&window.EntryOrchestrator)}),(function(){waitFor((function(){return!!window.barba&&"function"==typeof barba.init}),(function(){try{EntryOrchestrator.init()}catch(n){console.warn("[BOOT] EntryOrchestrator.init failed",n),fallback()}}),80),setTimeout((function(){window.__barbaInited||fallback()}),250)}),120);
 		}
 	
