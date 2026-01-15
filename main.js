@@ -433,7 +433,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				window.__ENTRY_ONCE_RAN = 1;
 				
 				try {
-					EntryGate.arm(next.container);
 					ScrollManager.lock();
 					ScrollManager.topHard();
 				
@@ -487,9 +486,9 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							current.container.remove();
 						},
 						async enter({ next }) {
-							EntryGate.arm(next.container);
 							ScrollManager.topHard();
 							await wfEnter(next);
+							try{document.documentElement.removeAttribute("data-preloading")}catch{}
 							
 							NavigationManager?.setLock('overlay', false);
 							await runEntryFlow(next.container, { withCoverOut: false });
@@ -523,9 +522,9 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							current.container.remove();
 						},
 						async enter({ next }) {
-							EntryGate.arm(next.container);
 							ScrollManager.topHard();
 							await wfEnter(next);
+							try{document.documentElement.removeAttribute("data-preloading")}catch{}
 							
 							NavigationManager?.setLock('overlay', false);
 							await TransitionEffects.coverOut();
