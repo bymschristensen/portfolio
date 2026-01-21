@@ -598,20 +598,22 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	})();
 	
 	(function () {
-		function waitFor(t,n,o){var r=0,e=o||160;!function o(){try{if(t())return void n()}catch(t){}r++<e?setTimeout(o,25):console.warn("[BOOT] deps not ready")}()}
-	  	function boot() {
-		    if (window.__ENTRY_BOOTED) return;
-		    window.__ENTRY_BOOTED = 1;
-		
-		    try{NavigationManager.init({debug:DEBUG}),NavigationManager.ensureBarbaClickRouting()}catch(a){console.warn("[BOOT] NavigationManager init failed",a)}
-		    try{DebugCore.install()}catch(e){console.warn("[BOOT] DebugCore.install failed",e)}
-		
+		function boot() {
+			if (window.__ENTRY_BOOTED) return;
+			window.__ENTRY_BOOTED = 1;
+
+			// 1) Set up navigation & debug
+			try { NavigationManager.init({ debug: DEBUG }); NavigationManager.ensureBarbaClickRouting(); } catch (a) { console.warn("[BOOT] NavigationManager init failed", a); }
+			try { DebugCore.install(); } catch (e) { console.warn("[BOOT] DebugCore.install failed", e); }
+
+			// 2) Fallback if Barba never comes up
 			function fallback(){if(!window.__ENTRY_FALLBACK_RAN){window.__ENTRY_FALLBACK_RAN=1;try{var r=document.querySelector('[data-barba="container"]')||document.body;if(EntryOrchestrator&&EntryOrchestrator.runEntryFlow&&r)EntryOrchestrator.runEntryFlow(r,{withCoverOut:!1}).finally((function(){try{EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard&&EntryOrchestrator.releasePreloadingGuard()}catch(r){}}));else{console.warn("[BOOT] runEntryFlow missing");try{EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard&&EntryOrchestrator.releasePreloadingGuard()}catch(r){}}}catch(r){console.warn("[BOOT] fallback entry failed",r);try{EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard&&EntryOrchestrator.releasePreloadingGuard()}catch(r){}}}}
-			waitFor((function(){return!!(window.gsap&&window.InitManager&&window.EntryOrchestrator)}),(function(){waitFor((function(){return!!window.barba&&"function"==typeof barba.init}),(function(){try{EntryOrchestrator.init()}catch(n){console.warn("[BOOT] EntryOrchestrator.init failed",n),fallback()}}),80),setTimeout((function(){window.__barbaInited||fallback()}),250)}),120);
+
+			// 3) Wait for GSAP + InitManager + EntryOrchestrator
+			waitFor((function(){return!!(window.gsap&&window.InitManager&&window.EntryOrchestrator)}),(function(){try{var n=document.querySelector('[data-barba="container"]')||document.body;n&&!window.__HARD_ENTRY_DONE&&(window.__HARD_ENTRY_DONE=!0,EntryOrchestrator.runEntryFlow(n,{withCoverOut:!1}).catch((function(n){console.warn("[BOOT] hard entry runEntryFlow failed",n)})))}catch(n){console.warn("[BOOT] hard entry setup failed",n)}waitFor((function(){return!!window.barba&&"function"==typeof barba.init}),(function(){try{EntryOrchestrator.init()}catch(n){console.warn("[BOOT] EntryOrchestrator.init failed",n),fallback()}}),80),setTimeout((function(){window.__barbaInited||fallback()}),250)}),120);
 		}
-	
-	  	// Boot either immediately (if DOM is ready) or on DOMContentLoaded
 		if (document.readyState !== "loading") { boot(); } else { document.addEventListener("DOMContentLoaded", boot, { once: true }); }
 	})();
+	
 })();
 }
