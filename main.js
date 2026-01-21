@@ -421,7 +421,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
 		async function finalizeAfterEntry(e){await new Promise((e=>requestAnimationFrame((()=>requestAnimationFrame((()=>setTimeout(e,30)))))));try{window.ScrollTrigger&&requestAnimationFrame((()=>ScrollTrigger.refresh(!0)))}catch{}}
 		function releasePreloadingGuard(){try{var e=document&&document.documentElement;e&&e.hasAttribute("data-preloading")&&e.removeAttribute("data-preloading")}catch(e){}}
-		async function runEntryFlow(n,t){n=n||document,t=t||{};let r=null,e=0;try{t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&await TransitionEffects.coverOut(),InitManager&&InitManager.run&&await InitManager.run(n,{preserveServicePins:!1});const a=runPageEntryAnimations?runPageEntryAnimations(n):null;r=a&&a.tl?a.tl:gsap.timeline(),e=a&&"number"==typeof a.entryOffset?a.entryOffset:0,releasePreloadingGuard()}catch(n){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",n),r=r||null,e=0,releasePreloadingGuard()}const a=t.withCoverOut?e:0;if(r&&r.duration&&r.duration())try{r.play(a),await new Promise((n=>r.eventCallback("onComplete",n)))}catch(n){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",n)}try{await finalizeAfterEntry(n)}catch(n){console.warn("[EntryOrchestrator.finalizeAfterEntry] failed",n)}}
+		async function runEntryFlow(r,t){r=r||document,t=t||{};let n=null,e=0,a=null;try{t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(a=TransitionEffects.coverOut()),InitManager&&InitManager.run&&await InitManager.run(r,{preserveServicePins:!1});const i=runPageEntryAnimations?runPageEntryAnimations(r):null;n=i&&i.tl?i.tl:gsap.timeline(),e=i&&"number"==typeof i.entryOffset?i.entryOffset:0,releasePreloadingGuard()}catch(r){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",r),n=n||null,e=0,releasePreloadingGuard()}const i=t.withCoverOut?e:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise((r=>n.eventCallback("onComplete",r)))}catch(r){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",r)}if(a)try{await a}catch(r){console.warn("[EntryOrchestrator.runEntryFlow] coverOut failed",r)}try{await finalizeAfterEntry(r)}catch(r){console.warn("[EntryOrchestrator.finalizeAfterEntry] failed",r)}}
 		
 		// Entry Animations
 		var EntryAnimations = {};
@@ -542,11 +542,10 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						async enter({ next }) {
 							ScrollManager.topHard();
 							await WebflowAdapter.enter(next);
-							try{document.documentElement.removeAttribute("data-preloading")}catch{}
+							try { document.documentElement.removeAttribute("data-preloading"); } catch {}
 							
 							NavigationManager?.setLock('overlay', false);
-							await TransitionEffects.coverOut();
-							await runEntryFlow(next.container, { withCoverOut: false });
+							await EntryOrchestrator.runEntryFlow(next.container, { withCoverOut: true });
 							
 							document.documentElement.removeAttribute('data-preloading');
 							ScrollManager.unlock();
