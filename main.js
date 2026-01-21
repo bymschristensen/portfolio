@@ -596,6 +596,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			sanity
 		};
 	})();
+
+	function waitFor(e,a,n){if(n=n||80,e())a();else var r=0,t=setInterval((function(){e()?(clearInterval(t),a()):++r>300&&clearInterval(t)}),n)}
 	
 	(function () {
 		function boot() {
