@@ -6,6 +6,23 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 // GSAP
 	try{if(window.gsap&&gsap.registerPlugin){var _p=[];typeof window.ScrollTrigger!=="undefined"&&_p.push(window.ScrollTrigger);typeof window.Flip!=="undefined"&&_p.push(window.Flip);typeof window.SplitText!=="undefined"&&_p.push(window.SplitText);typeof window.TextPlugin!=="undefined"&&_p.push(window.TextPlugin);typeof window.Observer!=="undefined"&&_p.push(window.Observer);gsap.registerPlugin.apply(gsap,_p)}}catch(e){}
 	window.DEBUG = typeof window.DEBUG!="undefined" ? window.DEBUG : true;
+	// ---- Trace GSAP null-target warnings (DEV only) ----
+	(function () {
+	if (!window.DEBUG) return;
+	const _warn = console.warn.bind(console);
+	
+	console.warn = function (...args) {
+	const msg = String(args[0] ?? "");
+	if (msg.includes("GSAP target") || msg.includes("target not found")) {
+	let stack = "";
+	try { throw new Error("GSAP null target trace"); } catch (e) { stack = e.stack || ""; }
+	_warn(...args);
+	_warn(stack);
+	return;
+	}
+	return _warn(...args);
+	};
+	})();
 
 // Navigation Manager Test
 	window.NavigationManager = (function () {
