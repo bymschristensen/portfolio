@@ -326,7 +326,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						host.__archiveSystemBound=0;
 					};
 				}
-			}),
+			})
 			//feature({
 			//	id: "archiveFilterCounts",
 			//	stage: "early",
