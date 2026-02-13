@@ -52,6 +52,12 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				reinit("enter");
 				await new Promise(e=>requestAnimationFrame(e));
 				await new Promise(e=>requestAnimationFrame(e));
+				try{
+					if(window.ScrollTrigger){
+						ScrollTrigger.refresh(!0);
+						try{ScrollTrigger.update&&ScrollTrigger.update()}catch(e){}
+					}
+				}catch(e){}
 			}catch(e){
 				console.warn("[WebflowAdapter.enter] failed:",e);
 			}
