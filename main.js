@@ -43,25 +43,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function reset({next:e}){syncHead(e)}
 		function reinit(r){try{if(!window.Webflow)return;try{Webflow.destroy&&Webflow.destroy()}catch(e){}try{Webflow.ready&&Webflow.ready()}catch(e){}try{if(Webflow.require){var ix=Webflow.require("ix2");ix&&(ix.destroy&&ix.destroy(),ix.init&&ix.init())}}catch(e){}try{if(Webflow.require){["commerce","lightbox","slider","tabs","dropdown","navbar"].forEach(function(k){try{var m=Webflow.require(k);m&&(m.destroy&&m.destroy(),m.ready&&m.ready(),m.init&&m.init(),m.redraw&&m.redraw())}catch(e){}})}}catch(e){} }catch(e){console.warn("[WebflowAdapter.reinit] failed:",e,r||"")}}
 		function reparent(e){(e=e||document).querySelectorAll("[data-child]").forEach((t=>{if(t.matches(".w-tab-link, .w-tab-pane"))return;const a=t.getAttribute("data-child");let r=e.querySelector(`[data-parent="${a}"]`)||document.querySelector(`[data-parent="${a}"]`);r&&t.parentNode!==r&&r.appendChild(t)}))}
-		async function enter(n){
-			try{
-				reset({next:n});
-				reparent(n.container||document);
-				await new Promise(e=>requestAnimationFrame(e));
-				await new Promise(e=>requestAnimationFrame(e));
-				reinit("enter");
-				await new Promise(e=>requestAnimationFrame(e));
-				await new Promise(e=>requestAnimationFrame(e));
-				try{
-					if(window.ScrollTrigger){
-						ScrollTrigger.refresh(!0);
-						try{ScrollTrigger.update&&ScrollTrigger.update()}catch(e){}
-					}
-				}catch(e){}
-			}catch(e){
-				console.warn("[WebflowAdapter.enter] failed:",e);
-			}
-		}
+		async function enter(n){try{reset({next:n}),reparent(n.container||document),await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e)),reinit("enter"),await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e));try{window.ScrollTrigger&&(ScrollTrigger.refresh(!0),function(){try{ScrollTrigger.update&&ScrollTrigger.update()}catch(e){}}())}catch(e){}}catch(e){console.warn("[WebflowAdapter.enter] failed:",e)}}
+		
 		return {
 			reset,
 			reinit,
