@@ -644,7 +644,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	})();
 
 	!function(){if(window.__ST_SAFE_REFRESH)return;var u=0,s=0,t=0;function mark(){u=1,s=Date.now();clearTimeout(t);t=setTimeout(function(){s=0},180)}try{addEventListener("scroll",mark,{passive:!0,capture:!0})}catch(e){}try{addEventListener("wheel",mark,{passive:!0,capture:!0})}catch(e){}try{addEventListener("touchmove",mark,{passive:!0,capture:!0})}catch(e){}window.__USER_SCROLLED=function(){return!!u};window.__SCROLLING_NOW=function(){return!!s&&Date.now()-s<220};window.__ST_SAFE_REFRESH=function(r){try{var ST=window.ScrollTrigger;if(!ST)return;if(window.__SCROLLING_NOW&&window.__SCROLLING_NOW())return;if(window.__USER_SCROLLED&&window.__USER_SCROLLED()&&r&&("load"===r||"fonts"===r||"late"===r))return;var y=pageYOffset||document.documentElement.scrollTop||0;requestAnimationFrame(function(){requestAnimationFrame(function(){try{ST.refresh(!0)}catch(e){}try{scrollTo(0,y)}catch(e){}try{ST.update&&ST.update()}catch(e){}})})}catch(e){}}}();
-	function waitFor(e,a,n){if(n=n||80,e())a();else var r=0,t=setInterval((function(){e()?(clearInterval(t),a()):++r>300&&clearInterval(t)}),n)}	
+	//function waitFor(e,a,n){if(n=n||80,e())a();else var r=0,t=setInterval((function(){e()?(clearInterval(t),a()):++r>300&&clearInterval(t)}),n)}
+	function waitFor(t,n,i){i=i||80;var e=performance.now();!function r(){t()?n():performance.now()-e>24e3||requestAnimationFrame(r)}()}
 	(function () {
 		function boot() {
 			if (window.__ENTRY_BOOTED) return;
