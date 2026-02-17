@@ -5,6 +5,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
 // GSAP
 	try{if(window.gsap&&gsap.registerPlugin){var _p=[];typeof window.ScrollTrigger!=="undefined"&&_p.push(window.ScrollTrigger);typeof window.Flip!=="undefined"&&_p.push(window.Flip);typeof window.SplitText!=="undefined"&&_p.push(window.SplitText);typeof window.TextPlugin!=="undefined"&&_p.push(window.TextPlugin);typeof window.Observer!=="undefined"&&_p.push(window.Observer);gsap.registerPlugin.apply(gsap,_p)}}catch(e){}
+	!function(){try{if(!window.ScrollTrigger)return;var qs=location.search||"",on=/(?:\?|&)pinDiag=1(?:&|$)/.test(qs);if(!on||window.__PIN_DIAG)return;window.__PIN_DIAG=1;var t=performance.now.bind(performance),log=function(m,o){try{console.log("%c[PIN-DIAG]","color:#8a2be2;font-weight:700",m,o||"")}catch(_){}};window.__pinDiag=log;var ST=window.ScrollTrigger,_r=ST.refresh.bind(ST);ST.refresh=function(arg){var i={when:Math.round(t()),arg:arg,scrollY:Math.round(window.pageYOffset||document.documentElement.scrollTop||0)};try{i.stack=(new Error).stack}catch(_){ }log("ScrollTrigger.refresh()",i);return _r(arg)};var _c=ST.create.bind(ST);ST.create=function(cfg){try{var id=cfg&&cfg.id||"";id&&(""+id).indexOf("expPin:")===0&&log("ScrollTrigger.create(expPin)",{id:id,start:cfg.start,end:cfg.end,scrollY:Math.round(window.pageYOffset||document.documentElement.scrollTop||0)})}catch(_){ }return _c(cfg)}}catch(_){}}();
 	window.DEBUG = typeof window.DEBUG!="undefined" ? window.DEBUG : true;
 
 // Navigation Manager Test
