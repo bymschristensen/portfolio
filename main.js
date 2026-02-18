@@ -681,4 +681,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		}
 		if (document.readyState !== "loading") { boot(); } else { document.addEventListener("DOMContentLoaded", boot, { once: true }); }
 	})();
+
+	window.__ST_SAFE_REFRESH=function(r){try{var e=window.__productEngine;if(e&&e.requestRefresh)return e.requestRefresh("safe:"+(r||""));var t=window.ScrollTrigger;if(!t)return;var n=window.pageYOffset||document.documentElement.scrollTop||0;requestAnimationFrame(function(){requestAnimationFrame(function(){try{t.refresh(!0)}catch(e){}try{scrollTo(0,n)}catch(e){}try{t.update&&t.update()}catch(e){}})})}catch(e){}};
 })();}
