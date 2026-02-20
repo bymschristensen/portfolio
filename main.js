@@ -500,8 +500,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
 		function sortByStage(t){const e={early:0,main:1,late:2};return t.slice().sort(((t,a)=>(e[t.stage]??1)-(e[a.stage]??1)))}
 		function buildIndex(){if(state.installed)return;const e=[...registries.common,...registries.pages.selected,...registries.pages.archive,...registries.pages.resources,...registries.pages.capabilities,...registries.pages.info,...registries.pages.caseStudy];state.features=sortByStage(e),state.installed=!0}
-		//async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(e){console.warn("[InitManager]",r.id,"init failed:",e)}try{await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e));if(window.ScrollTrigger){let r=0,o=0;const n=()=>{o=1,clearTimeout(r),r=setTimeout(()=>{o=0},140)};try{addEventListener("scroll",n,{passive:!0}),addEventListener("wheel",n,{passive:!0}),addEventListener("touchmove",n,{passive:!0})}catch{}try{await new Promise(e=>setTimeout(e,0))}catch{}const i=()=>new Promise(e=>{o?setTimeout(()=>e(),180):e()});await i();try{removeEventListener("scroll",n),removeEventListener("wheel",n),removeEventListener("touchmove",n)}catch{}const s=window.pageYOffset||document.documentElement.scrollTop||0;try{window.__ST_SAFE_REFRESH?window.__ST_SAFE_REFRESH("init-run"):ScrollTrigger.refresh()}catch{}try{window.scrollTo(0,s)}catch{}try{ScrollTrigger.update&&ScrollTrigger.update()}catch{}}}catch{}}
-		async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(e){console.warn("[InitManager]",r.id,"init failed:",e)}try{await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e));var o=window.__productEngine,n=window.ScrollTrigger;if(o&&o.requestRefresh)return void o.requestRefresh("init-run");if(window.__ST_SAFE_REFRESH)return void window.__ST_SAFE_REFRESH("init-run");if(n){const r=window.pageYOffset||document.documentElement.scrollTop||0;try{n.refresh(!0)}catch{}try{window.scrollTo(0,r)}catch{}try{n.update&&n.update()}catch{}}}catch{}}
+		async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(e){console.warn("[InitManager]",r.id,"init failed:",e)}try{await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e));var o=window.__productEngine,n=window.ScrollTrigger;if(o&&o.requestRefresh)return void o.requestRefresh("init-run");if(window.__ST_SAFE_REFRESH)return void window.__ST_SAFE_REFRESH("init-run",!0);if(n){try{n.refresh(!0)}catch{}try{n.update&&n.update()}catch{}}}catch{}}
 		async function cleanup(r=document,{preserveServicePins:e=!1}={}){var o=r||document;for(const r of state.features)if("function"==typeof r.destroy)try{await r.destroy(o,{})}catch(e){console.warn("[InitManager]",r.id,"destroy failed:",e)}try{CoreUtilities.Observers.clearAll({preserveServicePins:e})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((r=>{try{r.remove()}catch{}}))}catch{}}
 		function enable(id, on = true) { const f = state.featuresById.get(id); if (f) f.enabled = !!on; }
 		function disable(id) { enable(id, false); }
@@ -589,7 +588,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		const entryConfigByNamespace={selected:{delayHero:!1,entryOffset:-.2},archive:{delayHero:!1,entryOffset:-.2},resources:{delayHero:!1,entryOffset:-.2},capabilities:{delayHero:!0,entryOffset:.1},info:{delayHero:!1,entryOffset:-.2}};
 		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
 		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
-		async function finalizeAfterEntry(r){await new Promise(e=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(e,30))));try{var ST=window.ScrollTrigger;if(!ST)return;var eng=window.__productEngine;if(window.__USER_SCROLLED&&window.__USER_SCROLLED()){if(eng&&eng.requestRefresh)return eng.requestRefresh("late");if(window.__ST_SAFE_REFRESH)return window.__ST_SAFE_REFRESH("late");return}var y0=window.pageYOffset||document.documentElement.scrollTop||0,tries=0;function run(){try{if(eng&&eng.requestRefresh)return eng.requestRefresh("entry-final");if(window.__ST_SAFE_REFRESH)return window.__ST_SAFE_REFRESH("entry-final");try{ST.refresh()}catch(e){}try{ST.update&&ST.update()}catch(e){}}catch(e){}}(function tick(){var y1=window.pageYOffset||document.documentElement.scrollTop||0;if(Math.abs(y1-y0)>2){y0=y1;return tries++<20?setTimeout(tick,120):void 0}run()})()}catch(e){}}
+		async function finalizeAfterEntry(r){try{await new Promise(e=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(e,30))));var ST=window.ScrollTrigger;if(!ST)return;var eng=window.__productEngine;if(window.__USER_SCROLLED&&window.__USER_SCROLLED())return;var ns="";try{ns=(r&&r.dataset&&r.dataset.barbaNamespace)||r?.getAttribute?.("data-barba-namespace")||document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace||""}catch(e){}if(window.__USER_SCROLLED&&window.__USER_SCROLLED())return;var go=()=>{try{if(window.__USER_SCROLLED&&window.__USER_SCROLLED())return;if(eng&&eng.requestRefresh)return eng.requestRefresh("entry-final");if(window.__ST_SAFE_REFRESH)return window.__ST_SAFE_REFRESH("entry-final",!0);try{ST.refresh(!0)}catch(e){}try{ST.update&&ST.update()}catch(e){}}catch(e){}};go()}catch(e){}}
 		function releasePreloadingGuard(){try{var e=document&&document.documentElement;e&&e.hasAttribute("data-preloading")&&e.removeAttribute("data-preloading")}catch(e){}}
 		async function runEntryFlow(r,t){r=r||document,t=t||{};let n=null,e=0,a=null;try{t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(a=TransitionEffects.coverOut()),InitManager&&InitManager.run&&await InitManager.run(r,{preserveServicePins:!1});const i=runPageEntryAnimations?runPageEntryAnimations(r):null;n=i&&i.tl?i.tl:gsap.timeline(),e=i&&"number"==typeof i.entryOffset?i.entryOffset:0,releasePreloadingGuard()}catch(r){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",r),n=n||null,e=0,releasePreloadingGuard()}const i=t.withCoverOut?e:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise((r=>n.eventCallback("onComplete",r)))}catch(r){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",r)}if(a)try{await a}catch(r){console.warn("[EntryOrchestrator.runEntryFlow] coverOut failed",r)}try{await finalizeAfterEntry(r)}catch(r){console.warn("[EntryOrchestrator.finalizeAfterEntry] failed",r)}}
 		
@@ -614,6 +613,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			barba.hooks.once(async ({ next }) => {
 				if (window.__ENTRY_ONCE_RAN) return;
 				window.__ENTRY_ONCE_RAN = 1;
+
+				try{window.__RESET_USER_SCROLLED&&window.__RESET_USER_SCROLLED()}catch(e){}
 				
 				try {
 					ScrollManager.lock();
@@ -676,6 +677,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						},
 						async enter({ next }) {
 							ScrollManager.topHard();
+							try{window.__RESET_USER_SCROLLED&&window.__RESET_USER_SCROLLED()}catch(e){}
 							await WebflowAdapter.enter(next);
 							try{document.documentElement.removeAttribute("data-preloading")}catch{}
 							
@@ -686,6 +688,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							ScrollManager.unlock();
 						},
 						afterEnter({ next }) {
+							try{window.__RESET_USER_SCROLLED&&window.__RESET_USER_SCROLLED()}catch(e){}
 							requestAnimationFrame(() => {
 								const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
 								if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
@@ -712,6 +715,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						},
 						async enter({ next }) {
 							ScrollManager.topHard();
+							try{window.__RESET_USER_SCROLLED&&window.__RESET_USER_SCROLLED()}catch(e){}
 							await WebflowAdapter.enter(next);
 							try { document.documentElement.removeAttribute("data-preloading"); } catch {}
 							
@@ -722,6 +726,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 							ScrollManager.unlock();
 						},
 						afterEnter({ next }) {
+							try{window.__RESET_USER_SCROLLED&&window.__RESET_USER_SCROLLED()}catch(e){}
 							EntryOrchestrator?.forceCloseMenus?.();
 							requestAnimationFrame(() => {
 								const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
@@ -790,4 +795,5 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	})();
 	
 	window.__ST_SAFE_REFRESH||(window.__ST_SAFE_REFRESH=function(r,hard){try{var ST=window.ScrollTrigger;if(!ST||window.__ST_RF_LOCK)return;window.__ST_RF_LOCK=1;var go=function(){try{ST.refresh(!!hard)}catch(e){}try{ST.update&&ST.update()}catch(e){}window.__ST_RF_LOCK=0};requestAnimationFrame(function(){requestAnimationFrame(go)})}catch(e){try{window.__ST_RF_LOCK=0}catch(_){}}});
+	(()=>{if(window.__USER_SCROLLED)return;var f=0,set=()=>{f=1};try{addEventListener("wheel",set,{passive:!0,capture:!0})}catch(e){}try{addEventListener("touchstart",set,{passive:!0,capture:!0})}catch(e){}try{addEventListener("touchmove",set,{passive:!0,capture:!0})}catch(e){}try{addEventListener("pointerdown",set,{passive:!0,capture:!0})}catch(e){}try{addEventListener("keydown",set,{passive:!0,capture:!0})}catch(e){}try{addEventListener("scroll",set,{passive:!0,capture:!0})}catch(e){}window.__USER_SCROLLED=()=>!!f;window.__RESET_USER_SCROLLED=()=>{f=0}})();
 })();}
