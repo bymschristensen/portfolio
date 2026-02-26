@@ -346,6 +346,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					};
 					
 					var STATE = {activeItem: null, currentSrc: baseImg.currentSrc || baseImg.src || "", defaultSrc: baseImg.currentSrc || baseImg.src || ""};
+					var BOUNCE = null;
 					
 					// 1. Stack Engine
 					function stackTo(img){if(!ENABLE.stack||!img)return;var src=(img.currentSrc||img.src||"");if(!src)return;if(src===STATE.currentSrc&&!STATE.stackBusy)return;if(STATE.stackBusy){STATE.pendingImg=img;return}STATE.stackBusy=1;STATE.pendingImg=null;var clone=baseImg.cloneNode(!1);try{clone.removeAttribute("id")}catch(e){}try{clone.setAttribute("aria-hidden","true")}catch(e){}clone.alt=img.alt||baseImg.alt||"";var ss=img.getAttribute("srcset"),sz=img.getAttribute("sizes");ss?clone.setAttribute("srcset",ss):clone.removeAttribute("srcset");sz?clone.setAttribute("sizes",sz):clone.removeAttribute("sizes");clone.src=src;clone.style.position="absolute";clone.style.inset="0";clone.style.width="100%";clone.style.height="100%";clone.style.zIndex="20";stage.appendChild(clone);gs.set(clone,{yPercent:-120,scale:1.2,transformOrigin:"50% 0%",force3D:!0,willChange:"transform"});gs.to(clone,{yPercent:0,scale:1,duration:.9,ease:"power3.out",force3D:!0,onComplete:function(){try{baseImg.alt=clone.alt||baseImg.alt||"";ss?baseImg.setAttribute("srcset",ss):baseImg.removeAttribute("srcset");sz?baseImg.setAttribute("sizes",sz):baseImg.removeAttribute("sizes");baseImg.src=src;STATE.currentSrc=src}catch(e){}try{clone.remove()}catch(e){}STATE.stackBusy=0;var p=STATE.pendingImg;STATE.pendingImg=null;if(p){var ps=(p.currentSrc||p.src||"");if(ps&&ps!==STATE.currentSrc)setTimeout(function(){stackTo(p)},0)}}})}
@@ -357,14 +358,21 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					
 					// 3. Sticky Morph Engine
 					function initMorph(){if(!ENABLE.morph)return;var startY=0,endY=0,sx=1,tx=0,lastP=-1,fh=0,h16=0;function measure(){var old=sticky.style.transform;sticky.style.transform="none";var wr=wrap.getBoundingClientRect(),sr=sticky.getBoundingClientRect();sticky.style.transform=old;if(!wr.width||!sr.width||!sr.height)return;sx=wr.width/sr.width;tx=wr.left-sr.left;fh=sr.height;h16=wr.width*9/16;var top=window.scrollY+sr.top;startY=top;endY=startY+window.innerHeight*.75}function apply(p){var sc=sx+(1-sx)*p,x=tx*(1-p);gs.set(sticky,{transformOrigin:"0% 0%",scale:sc,x:x});var h0=h16/Math.max(1e-3,sc),h=h0+(fh-h0)*p;gs.set(stage,{height:h,willChange:"height"})}function onScroll(){var y=window.scrollY,p=(y-startY)/(endY-startY);p=p<0?0:p>1?1:p;if(p!==lastP){apply(p);lastP=p}}measure();apply(0);window.addEventListener("scroll",onScroll,{passive:true});window.addEventListener("resize",function(){measure();apply(lastP<0?0:lastP)},{passive:true});STATE._morphOnScroll=onScroll}
+
+					// 4. Bounce Effect
+					function initBounce(){if(!window.ScrollTrigger||!gs||matchMedia("(prefers-reduced-motion: reduce)").matches)return;var ST=window.ScrollTrigger,bST1=0,bST2=0,bLock=0;function killBounce(){try{bST1&&bST1.kill&&bST1.kill()}catch(e){}try{bST2&&bST2.kill&&bST2.kill()}catch(e){}bST1=0;bST2=0}function bEl(){return sticky||stage||null}function bounce(which){var now=performance&&performance.now?performance.now():Date.now();if(now-bLock<900)return;bLock=now;var el=bEl();if(!el)return;try{gs.killTweensOf(el)}catch(e){}var B=which==="top"?-56:56;try{gs.fromTo(el,{y:B},{y:0,duration:2,ease:"elastic.out(1,0.35)",overwrite:!0,force3D:!0})}catch(e){}}function setupBounce(){killBounce();var el=bEl();if(!el||!section)return;try{gs.registerPlugin&&gs.registerPlugin(ST)}catch(e){}var cs;try{cs=getComputedStyle(el)}catch(e){}var topPx=0;try{topPx=parseFloat(cs&&cs.top)||0}catch(e){}var h=0;try{h=el.getBoundingClientRect().height||0}catch(e){}var stopLine=topPx+h;try{bST1=ST.create({trigger:section,start:function(){return"top top+="+topPx},onLeaveBack:function(){bounce("top")}})}catch(e){}try{bST2=ST.create({trigger:section,start:function(){return"bottom top+="+stopLine},onEnter:function(){bounce("bottom")}})}catch(e){}}setupBounce();return{kill:killBounce,setup:setupBounce}}
+
+					// 5. Poll Engine
 					
-					// 4. Initialize
+					// 6. Initialize
 					initSectionObserver();
 					initMorph();
+					BOUNCE=initBounce();
 					
-					// 5. Cleanup
+					// 7. Cleanup
 					return function destroy(){
 						host.__pxBound=false;
+						try{BOUNCE&&BOUNCE.kill&&BOUNCE.kill()}catch(e){}BOUNCE=null;
 					};
 				}
 				
