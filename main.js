@@ -357,8 +357,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					function initSectionObserver(){if(!ENABLE.section)return;var io=new IntersectionObserver(function(entries){var best=null,ratio=0;for(var i=0;i<entries.length;i++){var e=entries[i];if(e.isIntersecting&&e.intersectionRatio>ratio){ratio=e.intersectionRatio;best=e.target}}if(best){if(best!==STATE.activeItem){STATE.activeItem=best;var img=best.querySelector(".product-section-img");if(img)stackTo(img)}return}var first=items[0];if(first){var fr=first.getBoundingClientRect();if(fr.top>(innerHeight||0)*.6)setDefaultImage()}},{threshold:[0,.35,.6],rootMargin:"-20% 0px -30% 0px"});for(var j=0;j<items.length;j++)io.observe(items[j]);STATE._io=io}
 					
 					// 3. Sticky Morph Engine
-					function initMorph(){if(!ENABLE.morph)return;var startY=0,endY=0,sx=1,tx=0,lastP=-1,fh=0,h16=0;function measure(){var old=sticky.style.transform;sticky.style.transform="none";var wr=wrap.getBoundingClientRect(),sr=sticky.getBoundingClientRect();sticky.style.transform=old;if(!wr.width||!sr.width||!sr.height)return;sx=wr.width/sr.width;tx=wr.left-sr.left;fh=sr.height;h16=wr.width*9/16;var top=window.scrollY+sr.top;startY=top;endY=startY+window.innerHeight*.75}function apply(p){var sc=sx+(1-sx)*p,x=tx*(1-p);gs.set(sticky,{transformOrigin:"0% 0%",scale:sc,x:x});var h0=h16/Math.max(1e-3,sc),h=h0+(fh-h0)*p;gs.set(stage,{height:h,willChange:"height"})}function onScroll(){var y=window.scrollY,p=(y-startY)/(endY-startY);p=p<0?0:p>1?1:p;if(p!==lastP){apply(p);lastP=p}}measure();apply(0);window.addEventListener("scroll",onScroll,{passive:true});window.addEventListener("resize",function(){measure();apply(lastP<0?0:lastP)},{passive:true});STATE._morphOnScroll=onScroll}
-
+					function initMorph(){if(!ENABLE.morph)return;var sY=0,eY=0,sx=1,tx=0,lp=-1,fh=0,h16=0;function m(){var o=sticky.style.transform;sticky.style.transform="none";var wr=wrap.getBoundingClientRect(),sr=sticky.getBoundingClientRect();sticky.style.transform=o;if(!wr.width||!sr.width||!sr.height)return;sx=wr.width/sr.width;tx=wr.left-sr.left;fh=sr.height;h16=wr.width*9/16;var top=window.scrollY+sr.top;sY=top;eY=sY+window.innerHeight*.75}function a(p){var sc=sx+(1-sx)*p,x=tx*(1-p);gs.set(sticky,{transformOrigin:"0% 0%",scale:sc,x:x});var h0=h16/Math.max(1e-3,sc),h=h0+(fh-h0)*p;gs.set(stage,{height:h,willChange:"height"})}function os(){var y=window.scrollY,p=(y-sY)/(eY-sY);p=p<0?0:p>1?1:p;if(p!==lp){a(p);lp=p}}STATE._morphOnScroll=os;STATE._morphOnResize=function(){m();a(lp<0?0:lp)};m();a(0);window.addEventListener("scroll",STATE._morphOnScroll,{passive:!0});window.addEventListener("resize",STATE._morphOnResize,{passive:!0})}
+					
 					// 4. Bounce Effect
 					function initBounce(){if(!window.ScrollTrigger||!gs||matchMedia("(prefers-reduced-motion: reduce)").matches)return;var ST=window.ScrollTrigger,bST1=0,bST2=0,bLock=0;function killBounce(){try{bST1&&bST1.kill&&bST1.kill()}catch(e){}try{bST2&&bST2.kill&&bST2.kill()}catch(e){}bST1=0;bST2=0}function bEl(){return sticky||stage||null}function bounce(which){var now=performance&&performance.now?performance.now():Date.now();if(now-bLock<900)return;bLock=now;var el=bEl();if(!el)return;try{gs.killTweensOf(el)}catch(e){}var B=which==="top"?-56:56;try{gs.fromTo(el,{y:B},{y:0,duration:2,ease:"elastic.out(1,0.35)",overwrite:!0,force3D:!0})}catch(e){}}function setupBounce(){killBounce();var el=bEl();if(!el||!section)return;try{gs.registerPlugin&&gs.registerPlugin(ST)}catch(e){}var cs;try{cs=getComputedStyle(el)}catch(e){}var topPx=0;try{topPx=parseFloat(cs&&cs.top)||0}catch(e){}var h=0;try{h=el.getBoundingClientRect().height||0}catch(e){}var stopLine=topPx+h;try{bST1=ST.create({trigger:section,start:function(){return"top top+="+topPx},onLeaveBack:function(){bounce("top")}})}catch(e){}try{bST2=ST.create({trigger:section,start:function(){return"bottom top+="+stopLine},onEnter:function(){bounce("bottom")}})}catch(e){}}setupBounce();return{kill:killBounce,setup:setupBounce}}
 
@@ -370,10 +370,14 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					BOUNCE=initBounce();
 					
 					// 7. Cleanup
+					/* 2) FULL REPLACEMENT (minified) — destroy() */
 					return function destroy(){
-						host.__pxBound=false;
+						host.__pxBound=!1;
 						try{BOUNCE&&BOUNCE.kill&&BOUNCE.kill()}catch(e){}BOUNCE=null;
-					};
+						try{STATE._io&&STATE._io.disconnect&&STATE._io.disconnect()}catch(e){}STATE._io=null;
+						try{STATE._morphOnScroll&&window.removeEventListener("scroll",STATE._morphOnScroll)}catch(e){}STATE._morphOnScroll=null;
+						try{STATE._morphOnResize&&window.removeEventListener("resize",STATE._morphOnResize)}catch(e){}STATE._morphOnResize=null
+					}
 				}
 				
 				
