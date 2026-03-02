@@ -366,7 +366,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					
 					// 5. Poll Engine
 					function initPoll() {
-  // Guards
   if (
     isMobile ||
     matchMedia("(prefers-reduced-motion: reduce)").matches ||
@@ -382,18 +381,16 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
   if (!imgs.length) return null;
 
-  // --- Debug (throttled) ---
-  var DEBUG = !!window.__PX_POLL_DEBUG; // toggle in console: window.__PX_POLL_DEBUG = true
+  var DEBUG = !!window.__PX_POLL_DEBUG;
   var lastLogT = 0;
   function log() {
     if (!DEBUG) return;
     var t = now();
-    if (t - lastLogT < 120) return; // throttle log spam
+    if (t - lastLogT < 120) return;
     lastLogT = t;
     try { console.log.apply(console, arguments); } catch (e) {}
   }
 
-  // --- Shared helpers ---
   var bag = null;
   var live = [];
   var raf = 0;
@@ -404,6 +401,9 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
   var MAX_LIVE = 10;
   var cool = 0;
+
+  // NEW: “wake” window to make first poll activation snappier
+  var wakeUntil = 0;
 
   function now() { return (performance && performance.now) ? performance.now() : Date.now(); }
   function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
@@ -460,7 +460,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
     live = last ? [last] : [];
   }
 
-  // --- Poll Effect (pointermove -> emit stack clones) ---
   function emit(vn) {
     var im = pick();
     if (!im) return;
@@ -481,7 +480,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
     stage.appendChild(clone);
     live.push(clone);
 
-    // Mark that a "restore" is needed next scroll
     restoreArmed = true;
 
     while (live.length > MAX_LIVE) {
@@ -498,14 +496,16 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
   function pump() {
     raf = 0;
-
-    // Don’t emit while restoring
     if (restoreInProgress) return;
-
     if (!inSection() || now() < cool) return;
 
     var vn = clamp(vs / 1.05, 0, 1);
-    var thr = clamp(170 - vn * 115, 55, 170);
+
+    // NEW: slightly lower base threshold so it “kicks in” sooner
+    var base = 155;          // was effectively ~170
+    var swing = 110;         // was 115
+    var thr = clamp(base - vn * swing, 48, 160);
+
     var fired = 0;
     var maxPer = vn < 0.25 ? 1 : vn < 0.65 ? 2 : 3;
 
@@ -514,7 +514,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
       emit(vn);
       fired++;
       vn = clamp(vs / 1.05, 0, 1);
-      thr = clamp(170 - vn * 115, 55, 170);
+      thr = clamp(base - vn * swing, 48, 160);
     }
 
     if (distAcc > 2 || vs > 0.02) raf = requestAnimationFrame(pump);
@@ -531,14 +531,21 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
     var x = e.clientX || 0;
     var y = e.clientY || 0;
 
-    if (!lx && !ly) { lx = x; ly = y; lt = t; return; }
+    if (!lx && !ly) {
+      lx = x; ly = y; lt = t;
+      // NEW: give a short “wake” window after first movement
+      wakeUntil = t + 900;
+      return;
+    }
 
     var dx = x - lx;
     var dy = y - ly;
     lx = x; ly = y;
 
     var dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 0.55) return;
+
+    // NEW: lower deadzone so first movement counts earlier
+    if (dist < 0.35) return; // was 0.55
 
     var dt = t - lt;
     if (dt < 10) dt = 10;
@@ -547,14 +554,16 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
     var v = dist / dt;
     vs = vs + (v - vs) * 0.12;
-    distAcc += dist * 0.85;
+
+    // NEW: slightly boost accumulation during “wake” window
+    var boost = (t < wakeUntil) ? 1.05 : 0.85;
+    distAcc += dist * boost;
 
     kick();
   }
 
-  // --- Restore on Scroll (poll -> product visual with stack effect) ---
-  var restoreArmed = false;       // becomes true after at least one poll emit
-  var restoreInProgress = false;  // blocks poll emission while restoring
+  var restoreArmed = false;
+  var restoreInProgress = false;
   var restoreToken = 0;
   var removeTO = 0;
   var lastScrollT = 0;
@@ -584,27 +593,18 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
     if (!target) { log("[poll] restore: empty target"); return; }
 
     restoreInProgress = true;
-    restoreArmed = false; // IMPORTANT: only do the "force restore" once per poll session
+    restoreArmed = false;
     restoreToken++;
     var tok = restoreToken;
 
-    // keep only last poll clone under the returning stack
     keepOnlyLastPollClone(last);
     try { last.style.zIndex = "18"; } catch (e) {}
 
-    // Force stackTo ONLY if it's the same src (otherwise stackTo will animate normally)
-    // This is the entire bug from your logs: src === STATE.currentSrc => stackTo returns early.
     var wasSame = (target === STATE.currentSrc);
-    if (wasSame) {
-      log("[poll] restore: forcing stack (same src) ", { current: STATE.currentSrc, target: target });
-      STATE.currentSrc = ""; // one-time bypass; stackTo will set it back onComplete
-    } else {
-      log("[poll] restore: normal stack ", { current: STATE.currentSrc, target: target });
-    }
+    if (wasSame) STATE.currentSrc = "";
 
     stackTo(im, true);
 
-    // remove poll clone AFTER the stack has had time to visually land
     try { removeTO && clearTimeout(removeTO); } catch (e) {}
     removeTO = setTimeout(function () {
       if (tok !== restoreToken) return;
@@ -620,25 +620,23 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
         try { last.remove(); } catch (_) {}
       }
 
-      // clear "live" if it still points at this last clone
       if (live[0] === last) live = [];
-
       restoreInProgress = false;
-      log("[poll] restore: done");
     }, 900);
   }
 
   function onScroll() {
-    // throttle scroll handler (prevents log spam + redundant work)
     var t = now();
     if (t - lastScrollT < 120) return;
     lastScrollT = t;
 
-    // pause poll emission while scrolling
     cool = t + 700;
     killRaf();
     distAcc = 0;
     vs = 0;
+
+    // NEW: reset wake window so next pointer move wakes fast again
+    wakeUntil = t + 650;
 
     var last = live.length ? live[live.length - 1] : null;
 
@@ -650,14 +648,12 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
     });
 
     if (last) restoreFromPoll(last);
-    else restoreArmed = false; // nothing to restore
+    else restoreArmed = false;
   }
 
-  // Bind
   section.addEventListener("pointermove", onMove, { passive: true });
   window.addEventListener("scroll", onScroll, { passive: true });
 
-  // Cleanup
   return {
     kill: function () {
       restoreToken++;
