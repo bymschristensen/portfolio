@@ -339,12 +339,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					if (!wrap || !sticky || !stage || !baseImg || !items.length) {host.__pxBound = false;return;}
 					
 					var isMobile = matchMedia("(max-width: 1023px)").matches || !matchMedia("(pointer:fine)").matches;
-					var ENABLE = {
-						morph: !isMobile,
-						section: true,
-						stack: true
-					};
-					
+					var ENABLE = {morph: !isMobile,section: true,stack: true};
 					var STATE = {activeItem: null, currentSrc: baseImg.currentSrc || baseImg.src || "", defaultSrc: baseImg.currentSrc || baseImg.src || ""};
 					var BOUNCE = null;
 					var POOL=(section&&section.querySelector(".product-poll"))||(host&&host.querySelector(".product-poll"))||null,PMAP={},PALL=[],POLL_IMGS=[];if(POOL){PALL=[].slice.call(POOL.querySelectorAll("img,picture img")).filter(Boolean);for(var i=0;i<PALL.length;i++){var im=PALL[i],k=(im.getAttribute("data-product")||"").trim();k&&(PMAP[k]=im)}POLL_IMGS=[].slice.call(POOL.querySelectorAll(".product-poll-img")).filter(Boolean);POLL_IMGS.length||(POLL_IMGS=PALL.filter(function(im){return!im.classList||!im.classList.contains("product-section-img")}))}
@@ -367,7 +362,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					// 5. Poll Engine
 					function initPoll(){if(isMobile||matchMedia("(prefers-reduced-motion: reduce)").matches||!matchMedia("(pointer:fine)").matches)return null;var pool=POOL;if(!pool)return null;var imgs=POLL_IMGS&&POLL_IMGS.length?POLL_IMGS:[].slice.call(pool.querySelectorAll(".product-poll-img")).filter(Boolean);if(!imgs.length)return null;var bag=null,live=[],raf=0,lx=0,ly=0,lt=0,distAcc=0,vs=0,MAX_LIVE=10,cool=0,wakeUntil=0,restoreArmed=!1,restoreInProgress=!1,restoreToken=0,removeTO=0,lastScrollT=0,DEBUG=!!window.__PX_POLL_DEBUG,lastLogT=0;function now(){return performance&&performance.now?performance.now():Date.now()}function log(){if(!DEBUG)return;var t=now();if(t-lastLogT<120)return;lastLogT=t;try{console.log.apply(console,arguments)}catch(e){}}function clamp(x,a,b){return x<a?a:x>b?b:x}function pick(){if(!bag||!bag.length){bag=imgs.slice(0);for(var i=bag.length-1;i>0;i--){var j=(Math.random()*(i+1))|0,t=bag[i];bag[i]=bag[j];bag[j]=t}}return bag.pop()}function inSection(){var r=section.getBoundingClientRect(),vh=innerHeight||window.innerHeight||0;return r.bottom>0&&r.top<vh}function apply(dst,src){var s=src&&(src.currentSrc||src.src)||"";if(!s)return!1;dst.alt=src.alt||"";var ss=src.getAttribute&&src.getAttribute("srcset"),sz=src.getAttribute&&src.getAttribute("sizes");ss?dst.setAttribute("srcset",ss):dst.removeAttribute("srcset");sz?dst.setAttribute("sizes",sz):dst.removeAttribute("sizes");dst.src=s;return!0}function killRaf(){try{raf&&cancelAnimationFrame(raf)}catch(e){}raf=0}function clearAll(){for(var i=0;i<live.length;i++){try{gs.killTweensOf(live[i])}catch(e){}try{live[i]&&live[i].remove&&live[i].remove()}catch(e){}}live=[]}function keepOnlyLast(last){for(var i=live.length-1;i>=0;i--){var el=live[i];if(!el||el===last)continue;try{gs.killTweensOf(el)}catch(e){}try{el.remove&&el.remove()}catch(e){}}live=last?[last]:[]}function emit(vn){var im=pick();if(!im)return;var clone=baseImg.cloneNode(!1);try{clone.removeAttribute("id")}catch(e){}try{clone.setAttribute("aria-hidden","true")}catch(e){}if(!apply(clone,im))return;clone.style.position="absolute";clone.style.inset="0";clone.style.width="100%";clone.style.height="100%";clone.style.pointerEvents="none";clone.style.zIndex="20";stage.appendChild(clone);live.push(clone);restoreArmed=!0;while(live.length>MAX_LIVE){var old=live.shift();try{old&&old!==clone&&old.remove&&old.remove()}catch(e){}}var d=clamp(1.1-vn*.55,.55,1.1),sc=clamp(1.16-vn*.1,1.04,1.16);gs.set(clone,{yPercent:-120,scale:sc,transformOrigin:"50% 0%",force3D:!0});gs.to(clone,{yPercent:0,scale:1,duration:d,ease:"power3.out",force3D:!0})}function pump(){raf=0;if(restoreInProgress||!inSection()||now()<cool)return;var vn=clamp(vs/1.05,0,1),base=155,swing=110,thr=clamp(base-vn*swing,48,160),fired=0,maxPer=vn<.25?1:vn<.65?2:3;for(;distAcc>=thr&&fired<maxPer;){distAcc-=thr,emit(vn),fired++,vn=clamp(vs/1.05,0,1),thr=clamp(base-vn*swing,48,160)}(distAcc>2||vs>.02)&&(raf=requestAnimationFrame(pump))}function kick(){raf|| (raf=requestAnimationFrame(pump))}function findActive(){var h=innerHeight||window.innerHeight||0,top=h*.6,bot=h*.4;for(var i=0;i<items.length;i++){var r=items[i].getBoundingClientRect();if(r.top<top&&r.bottom>bot)return items[i]}return null}function restoreFromPoll(last){if(!restoreArmed||!last)return;var it=findActive();if(!it){log("[poll] restore: no active section");return}var im=desiredImgForItem(it);if(!im){log("[poll] restore: no active image");return}var target=(im.currentSrc||im.src||"");if(!target){log("[poll] restore: empty target");return}restoreInProgress=!0;restoreArmed=!1;restoreToken++;var tok=restoreToken;keepOnlyLast(last);try{last.style.zIndex="18"}catch(e){}var wasSame=target===STATE.currentSrc;wasSame&&(STATE.currentSrc="");stackTo(im,!0);try{removeTO&&clearTimeout(removeTO)}catch(e){}removeTO=setTimeout(function(){if(tok!==restoreToken)return;try{gs.to(last,{autoAlpha:0,duration:.25,overwrite:"auto",onComplete:function(){try{last.remove()}catch(e){}}})}catch(e){try{last.remove()}catch(_){}}live[0]===last&&(live=[]),restoreInProgress=!1},900)}function onMove(e){if(restoreInProgress||!inSection()||now()<cool)return;var t=now(),x=e.clientX||0,y=e.clientY||0;if(!lx&&!ly){lx=x;ly=y;lt=t;wakeUntil=t+900;vs=0;distAcc=220;kick();return}var dx=x-lx,dy=y-ly;lx=x;ly=y;var dist=Math.sqrt(dx*dx+dy*dy);if(dist<.35)return;var dt=t-lt;dt<10&&(dt=10),dt>140&&(dt=140),lt=t;var v=dist/dt;vs=vs+(v-vs)*.12;var boost=t<wakeUntil?1.05:.85;distAcc+=dist*boost;kick()}function onScroll(){var t=now();if(t-lastScrollT<120)return;lastScrollT=t;cool=t+700;killRaf();distAcc=0;vs=0;wakeUntil=t+900;lx=0;ly=0;lt=0;var last=live.length?live[live.length-1]:null;log("[poll] scroll",{live:live.length,restoreArmed:restoreArmed,restoreInProgress:restoreInProgress,hasLast:!!last});last?restoreFromPoll(last):restoreArmed=!1}section.addEventListener("pointermove",onMove,{passive:!0});window.addEventListener("scroll",onScroll,{passive:!0});return{kill:function(){restoreToken++;killRaf();try{removeTO&&clearTimeout(removeTO)}catch(e){}removeTO=0;try{section.removeEventListener("pointermove",onMove)}catch(e){}try{window.removeEventListener("scroll",onScroll)}catch(e){}clearAll()}}}
 					
-					
 					// 6. Initialize
 					initSectionObserver();
 					initMorph();
@@ -384,13 +378,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						try{STATE._morphOnResize&&window.removeEventListener("resize",STATE._morphOnResize)}catch(e){}STATE._morphOnResize=null;
 					}
 				}
-				
-				
-				
-				
-				
-				
-				
 			})
 		);
 
