@@ -365,80 +365,311 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					function initBounce(){if(!gs||matchMedia("(prefers-reduced-motion: reduce)").matches)return null;var lk=0,lastY=window.scrollY||0,lt=-1e18,lb=-1e18;function topPx(){try{var v=parseFloat(getComputedStyle(sticky).top||"0");return isFinite(v)?v:0}catch(e){return 0}}function el(){return stage||sticky||null}function bounce(w){var n=performance&&performance.now?performance.now():Date.now();if(n-lk<700)return;lk=n;var x=el();if(!x)return;try{gs.killTweensOf(x)}catch(e){}var B=w==="top"?-56:56;try{gs.fromTo(x,{y:B},{y:0,duration:2,ease:"elastic.out(1,0.35)",overwrite:"auto",force3D:!0})}catch(e){}}function stopLine(){var tp=topPx(),h=0;try{h=(stage&&stage.getBoundingClientRect&&stage.getBoundingClientRect().height)||0}catch(e){}if(!h)try{h=(sticky&&sticky.getBoundingClientRect&&sticky.getBoundingClientRect().height)||0}catch(e){}return tp+h}function threshTop(){var r=wrap.getBoundingClientRect();return(window.scrollY||0)+r.top-topPx()}function threshBottom(){var r=wrap.getBoundingClientRect();return(window.scrollY||0)+r.bottom-stopLine()}function tick(){var y=window.scrollY||0,dir=y>=lastY?1:-1;lastY=y;var t=threshTop(),b=threshBottom();if(dir>0){if(y>=t&&lt<t){lt=y;bounce("top")}if(y>=b&&lb<b){lb=y;bounce("bottom")}}else{if(y<=t&&lt>t){lt=y;bounce("top")}if(y<=b&&lb>b){lb=y;bounce("bottom")}}}function onScroll(){tick()}function onResize(){lt=-1e18;lb=-1e18;tick()}tick();window.addEventListener("scroll",onScroll,{passive:!0});window.addEventListener("resize",onResize,{passive:!0});return{kill:function(){try{window.removeEventListener("scroll",onScroll)}catch(e){}try{window.removeEventListener("resize",onResize)}catch(e){}}}}
 					
 					// 5. Poll Engine
-					function initPoll(){if(isMobile||matchMedia("(prefers-reduced-motion: reduce)").matches||!matchMedia("(pointer:fine)").matches)return null;var pool=POOL;if(!pool)return null;var imgs=(POLL_IMGS&&POLL_IMGS.length?POLL_IMGS:[].slice.call(pool.querySelectorAll(".product-poll-img")).filter(Boolean));if(!imgs.length)return null;var bag=null,live=[],raf=0,scrolling=0,scrollTO=0,lx=0,ly=0,lt=0,distAcc=0,vs=0,MAX_LIVE=10,cool=0;function now(){return performance&&performance.now?performance.now():Date.now()}function clamp(x,a,b){return x<a?a:x>b?b:x}function pick(){if(!bag||!bag.length){bag=imgs.slice(0);for(var i=bag.length-1;i>0;i--){var j=(Math.random()*(i+1))|0,t=bag[i];bag[i]=bag[j];bag[j]=t}}return bag.pop()}function inSection(){var r=section.getBoundingClientRect();return r.bottom>0&&r.top<innerHeight}function apply(dst,src){var s=src&&(src.currentSrc||src.src)||"";if(!s)return!1;dst.alt=src.alt||"";var ss=src.getAttribute&&src.getAttribute("srcset"),sz=src.getAttribute&&src.getAttribute("sizes");ss?dst.setAttribute("srcset",ss):dst.removeAttribute("srcset");sz?dst.setAttribute("sizes",sz):dst.removeAttribute("sizes");dst.src=s;return!0}function killRaf(){try{raf&&cancelAnimationFrame(raf)}catch(e){}raf=0}function emit(vn){var im=pick();if(!im)return;var clone=baseImg.cloneNode(!1);try{clone.removeAttribute("id")}catch(e){}try{clone.setAttribute("aria-hidden","true")}catch(e){}if(!apply(clone,im))return;clone.style.position="absolute";clone.style.inset="0";clone.style.width="100%";clone.style.height="100%";clone.style.pointerEvents="none";clone.style.zIndex="20";stage.appendChild(clone);live.push(clone);while(live.length>MAX_LIVE){var old=live.shift();old&&old!==clone&&old.remove&&old.remove()}var d=clamp(1.1-vn*.55,.55,1.1),sc=clamp(1.16-vn*.1,1.04,1.16);gs.set(clone,{yPercent:-120,scale:sc,transformOrigin:"50% 0%",force3D:!0});gs.to(clone,{yPercent:0,scale:1,duration:d,ease:"power3.out",force3D:!0})}function pump(){raf=0;if(scrolling||!inSection()||now()<cool)return;var vn=clamp(vs/1.05,0,1),thr=clamp(170-vn*115,55,170),fired=0,maxPer=vn<.25?1:vn<.65?2:3;while(distAcc>=thr&&fired<maxPer){distAcc-=thr;emit(vn);fired++;vn=clamp(vs/1.05,0,1);thr=clamp(170-vn*115,55,170)}if(!scrolling&&(distAcc>2||vs>.02))raf=requestAnimationFrame(pump)}function kick(){raf||(raf=requestAnimationFrame(pump))}function onMove(e){if(scrolling||!inSection()||now()<cool)return;var t=now(),x=e.clientX||0,y=e.clientY||0;if(!lx&&!ly){lx=x;ly=y;lt=t;return}var dx=x-lx,dy=y-ly;lx=x;ly=y;var dist=Math.sqrt(dx*dx+dy*dy);if(dist<.55)return;var dt=t-lt;if(dt<10)dt=10;if(dt>140)dt=140;lt=t;var v=dist/dt;vs=vs+(v-vs)*.12;distAcc+=dist*.85;kick()}
-						function onScroll(){
-							console.log("---- SCROLL START ----");
-						
-							if(scrolling){
-								console.log("Already scrolling flag true → abort");
-								return;
-							}
-						
-							scrolling = 1;
-							cool = now()+700;
-							killRaf();
-							distAcc = 0;
-							vs = 0;
-						
-							console.log("Live poll clones:", live.length);
-						
-							var last = live.length ? live[live.length-1] : null;
-						
-							if(!last){
-								console.log("No poll clone found → nothing to restore");
-							}else{
-						
-								console.log("Last poll clone detected");
-						
-								// keep only last
-								live = [last];
-								last.style.zIndex = "18";
-						
-								var it = items.find(function(el){
-									var r = el.getBoundingClientRect();
-									return r.top < innerHeight*.6 && r.bottom > innerHeight*.4;
-								});
-						
-								console.log("Active section found:", !!it);
-						
-								if(it){
-									var im = desiredImgForItem(it);
-									console.log("Active image found:", !!im);
-						
-									if(im){
-										console.log("Calling stackTo with force=true");
-										console.log("Current STATE.currentSrc:", STATE.currentSrc);
-										console.log("Target src:", im.currentSrc || im.src);
-										stackTo(im,true);
-									}
-								}
-						
-								setTimeout(function(){
-									console.log("Removing poll clone");
-									try{
-										gs.to(last,{
-											autoAlpha:0,
-											duration:.25,
-											onComplete:function(){
-												console.log("Poll clone removed");
-												try{ last.remove(); }catch(e){}
-											}
-										});
-									}catch(e){
-										try{ last.remove(); }catch(_){}
-									}
-								},800);
-							}
-						
-							scrollTO=setTimeout(function(){
-								scrollTO=0;
-								scrolling=0;
-								console.log("---- SCROLL END ----");
-							},260);
-						}
-						
-						section.addEventListener("pointermove",onMove,{passive:!0});window.addEventListener("scroll",onScroll,{passive:!0});return{kill:function(){killRaf();try{section.removeEventListener("pointermove",onMove)}catch(e){}try{window.removeEventListener("scroll",onScroll)}catch(e){}for(var i=0;i<live.length;i++)try{live[i]&&live[i].remove&&live[i].remove()}catch(e){}live=[]}}
-				   	}
+					function initPoll() {
+  // Guards
+  if (
+    isMobile ||
+    matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    !matchMedia("(pointer:fine)").matches
+  ) return null;
+
+  var pool = POOL;
+  if (!pool) return null;
+
+  var imgs = (POLL_IMGS && POLL_IMGS.length)
+    ? POLL_IMGS
+    : [].slice.call(pool.querySelectorAll(".product-poll-img")).filter(Boolean);
+
+  if (!imgs.length) return null;
+
+  // --- Debug (throttled) ---
+  var DEBUG = !!window.__PX_POLL_DEBUG; // toggle in console: window.__PX_POLL_DEBUG = true
+  var lastLogT = 0;
+  function log() {
+    if (!DEBUG) return;
+    var t = now();
+    if (t - lastLogT < 120) return; // throttle log spam
+    lastLogT = t;
+    try { console.log.apply(console, arguments); } catch (e) {}
+  }
+
+  // --- Shared helpers ---
+  var bag = null;
+  var live = [];
+  var raf = 0;
+
+  var lx = 0, ly = 0, lt = 0;
+  var distAcc = 0;
+  var vs = 0;
+
+  var MAX_LIVE = 10;
+  var cool = 0;
+
+  function now() { return (performance && performance.now) ? performance.now() : Date.now(); }
+  function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
+
+  function pick() {
+    if (!bag || !bag.length) {
+      bag = imgs.slice(0);
+      for (var i = bag.length - 1; i > 0; i--) {
+        var j = (Math.random() * (i + 1)) | 0;
+        var t = bag[i]; bag[i] = bag[j]; bag[j] = t;
+      }
+    }
+    return bag.pop();
+  }
+
+  function inSection() {
+    var r = section.getBoundingClientRect();
+    var vh = innerHeight || window.innerHeight || 0;
+    return r.bottom > 0 && r.top < vh;
+  }
+
+  function apply(dst, src) {
+    var s = src && (src.currentSrc || src.src) || "";
+    if (!s) return false;
+    dst.alt = src.alt || "";
+    var ss = src.getAttribute && src.getAttribute("srcset");
+    var sz = src.getAttribute && src.getAttribute("sizes");
+    ss ? dst.setAttribute("srcset", ss) : dst.removeAttribute("srcset");
+    sz ? dst.setAttribute("sizes", sz) : dst.removeAttribute("sizes");
+    dst.src = s;
+    return true;
+  }
+
+  function killRaf() {
+    try { raf && cancelAnimationFrame(raf); } catch (e) {}
+    raf = 0;
+  }
+
+  function clearAllPollClones() {
+    for (var i = 0; i < live.length; i++) {
+      try { gs.killTweensOf(live[i]); } catch (e) {}
+      try { live[i] && live[i].remove && live[i].remove(); } catch (e) {}
+    }
+    live = [];
+  }
+
+  function keepOnlyLastPollClone(last) {
+    for (var i = live.length - 1; i >= 0; i--) {
+      var el = live[i];
+      if (!el || el === last) continue;
+      try { gs.killTweensOf(el); } catch (e) {}
+      try { el.remove && el.remove(); } catch (e) {}
+    }
+    live = last ? [last] : [];
+  }
+
+  // --- Poll Effect (pointermove -> emit stack clones) ---
+  function emit(vn) {
+    var im = pick();
+    if (!im) return;
+
+    var clone = baseImg.cloneNode(false);
+    try { clone.removeAttribute("id"); } catch (e) {}
+    try { clone.setAttribute("aria-hidden", "true"); } catch (e) {}
+
+    if (!apply(clone, im)) return;
+
+    clone.style.position = "absolute";
+    clone.style.inset = "0";
+    clone.style.width = "100%";
+    clone.style.height = "100%";
+    clone.style.pointerEvents = "none";
+    clone.style.zIndex = "20";
+
+    stage.appendChild(clone);
+    live.push(clone);
+
+    // Mark that a "restore" is needed next scroll
+    restoreArmed = true;
+
+    while (live.length > MAX_LIVE) {
+      var old = live.shift();
+      try { old && old !== clone && old.remove && old.remove(); } catch (e) {}
+    }
+
+    var d = clamp(1.1 - vn * 0.55, 0.55, 1.1);
+    var sc = clamp(1.16 - vn * 0.10, 1.04, 1.16);
+
+    gs.set(clone, { yPercent: -120, scale: sc, transformOrigin: "50% 0%", force3D: true });
+    gs.to(clone, { yPercent: 0, scale: 1, duration: d, ease: "power3.out", force3D: true });
+  }
+
+  function pump() {
+    raf = 0;
+
+    // Don’t emit while restoring
+    if (restoreInProgress) return;
+
+    if (!inSection() || now() < cool) return;
+
+    var vn = clamp(vs / 1.05, 0, 1);
+    var thr = clamp(170 - vn * 115, 55, 170);
+    var fired = 0;
+    var maxPer = vn < 0.25 ? 1 : vn < 0.65 ? 2 : 3;
+
+    while (distAcc >= thr && fired < maxPer) {
+      distAcc -= thr;
+      emit(vn);
+      fired++;
+      vn = clamp(vs / 1.05, 0, 1);
+      thr = clamp(170 - vn * 115, 55, 170);
+    }
+
+    if (distAcc > 2 || vs > 0.02) raf = requestAnimationFrame(pump);
+  }
+
+  function kick() {
+    raf || (raf = requestAnimationFrame(pump));
+  }
+
+  function onMove(e) {
+    if (restoreInProgress || !inSection() || now() < cool) return;
+
+    var t = now();
+    var x = e.clientX || 0;
+    var y = e.clientY || 0;
+
+    if (!lx && !ly) { lx = x; ly = y; lt = t; return; }
+
+    var dx = x - lx;
+    var dy = y - ly;
+    lx = x; ly = y;
+
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 0.55) return;
+
+    var dt = t - lt;
+    if (dt < 10) dt = 10;
+    if (dt > 140) dt = 140;
+    lt = t;
+
+    var v = dist / dt;
+    vs = vs + (v - vs) * 0.12;
+    distAcc += dist * 0.85;
+
+    kick();
+  }
+
+  // --- Restore on Scroll (poll -> product visual with stack effect) ---
+  var restoreArmed = false;       // becomes true after at least one poll emit
+  var restoreInProgress = false;  // blocks poll emission while restoring
+  var restoreToken = 0;
+  var removeTO = 0;
+  var lastScrollT = 0;
+
+  function findActiveSection() {
+    var h = innerHeight || window.innerHeight || 0;
+    var topBand = h * 0.6;
+    var botBand = h * 0.4;
+
+    for (var i = 0; i < items.length; i++) {
+      var r = items[i].getBoundingClientRect();
+      if (r.top < topBand && r.bottom > botBand) return items[i];
+    }
+    return null;
+  }
+
+  function restoreFromPoll(last) {
+    if (!restoreArmed || !last) return;
+
+    var it = findActiveSection();
+    if (!it) { log("[poll] restore: no active section"); return; }
+
+    var im = desiredImgForItem(it);
+    if (!im) { log("[poll] restore: no active image"); return; }
+
+    var target = (im.currentSrc || im.src || "");
+    if (!target) { log("[poll] restore: empty target"); return; }
+
+    restoreInProgress = true;
+    restoreArmed = false; // IMPORTANT: only do the "force restore" once per poll session
+    restoreToken++;
+    var tok = restoreToken;
+
+    // keep only last poll clone under the returning stack
+    keepOnlyLastPollClone(last);
+    try { last.style.zIndex = "18"; } catch (e) {}
+
+    // Force stackTo ONLY if it's the same src (otherwise stackTo will animate normally)
+    // This is the entire bug from your logs: src === STATE.currentSrc => stackTo returns early.
+    var wasSame = (target === STATE.currentSrc);
+    if (wasSame) {
+      log("[poll] restore: forcing stack (same src) ", { current: STATE.currentSrc, target: target });
+      STATE.currentSrc = ""; // one-time bypass; stackTo will set it back onComplete
+    } else {
+      log("[poll] restore: normal stack ", { current: STATE.currentSrc, target: target });
+    }
+
+    stackTo(im, true);
+
+    // remove poll clone AFTER the stack has had time to visually land
+    try { removeTO && clearTimeout(removeTO); } catch (e) {}
+    removeTO = setTimeout(function () {
+      if (tok !== restoreToken) return;
+
+      try {
+        gs.to(last, {
+          autoAlpha: 0,
+          duration: 0.25,
+          overwrite: "auto",
+          onComplete: function () { try { last.remove(); } catch (e) {} }
+        });
+      } catch (e) {
+        try { last.remove(); } catch (_) {}
+      }
+
+      // clear "live" if it still points at this last clone
+      if (live[0] === last) live = [];
+
+      restoreInProgress = false;
+      log("[poll] restore: done");
+    }, 900);
+  }
+
+  function onScroll() {
+    // throttle scroll handler (prevents log spam + redundant work)
+    var t = now();
+    if (t - lastScrollT < 120) return;
+    lastScrollT = t;
+
+    // pause poll emission while scrolling
+    cool = t + 700;
+    killRaf();
+    distAcc = 0;
+    vs = 0;
+
+    var last = live.length ? live[live.length - 1] : null;
+
+    log("[poll] scroll", {
+      live: live.length,
+      restoreArmed: restoreArmed,
+      restoreInProgress: restoreInProgress,
+      hasLast: !!last
+    });
+
+    if (last) restoreFromPoll(last);
+    else restoreArmed = false; // nothing to restore
+  }
+
+  // Bind
+  section.addEventListener("pointermove", onMove, { passive: true });
+  window.addEventListener("scroll", onScroll, { passive: true });
+
+  // Cleanup
+  return {
+    kill: function () {
+      restoreToken++;
+      killRaf();
+      try { removeTO && clearTimeout(removeTO); } catch (e) {}
+      removeTO = 0;
+      try { section.removeEventListener("pointermove", onMove); } catch (e) {}
+      try { window.removeEventListener("scroll", onScroll); } catch (e) {}
+      clearAllPollClones();
+    }
+  };
+}
 					
 					
 					// 6. Initialize
