@@ -367,39 +367,60 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					// 5. Poll Engine
 					function initPoll(){if(isMobile||matchMedia("(prefers-reduced-motion: reduce)").matches||!matchMedia("(pointer:fine)").matches)return null;var pool=POOL;if(!pool)return null;var imgs=(POLL_IMGS&&POLL_IMGS.length?POLL_IMGS:[].slice.call(pool.querySelectorAll(".product-poll-img")).filter(Boolean));if(!imgs.length)return null;var bag=null,live=[],raf=0,scrolling=0,scrollTO=0,lx=0,ly=0,lt=0,distAcc=0,vs=0,MAX_LIVE=10,cool=0;function now(){return performance&&performance.now?performance.now():Date.now()}function clamp(x,a,b){return x<a?a:x>b?b:x}function pick(){if(!bag||!bag.length){bag=imgs.slice(0);for(var i=bag.length-1;i>0;i--){var j=(Math.random()*(i+1))|0,t=bag[i];bag[i]=bag[j];bag[j]=t}}return bag.pop()}function inSection(){var r=section.getBoundingClientRect();return r.bottom>0&&r.top<innerHeight}function apply(dst,src){var s=src&&(src.currentSrc||src.src)||"";if(!s)return!1;dst.alt=src.alt||"";var ss=src.getAttribute&&src.getAttribute("srcset"),sz=src.getAttribute&&src.getAttribute("sizes");ss?dst.setAttribute("srcset",ss):dst.removeAttribute("srcset");sz?dst.setAttribute("sizes",sz):dst.removeAttribute("sizes");dst.src=s;return!0}function killRaf(){try{raf&&cancelAnimationFrame(raf)}catch(e){}raf=0}function emit(vn){var im=pick();if(!im)return;var clone=baseImg.cloneNode(!1);try{clone.removeAttribute("id")}catch(e){}try{clone.setAttribute("aria-hidden","true")}catch(e){}if(!apply(clone,im))return;clone.style.position="absolute";clone.style.inset="0";clone.style.width="100%";clone.style.height="100%";clone.style.pointerEvents="none";clone.style.zIndex="20";stage.appendChild(clone);live.push(clone);while(live.length>MAX_LIVE){var old=live.shift();old&&old!==clone&&old.remove&&old.remove()}var d=clamp(1.1-vn*.55,.55,1.1),sc=clamp(1.16-vn*.1,1.04,1.16);gs.set(clone,{yPercent:-120,scale:sc,transformOrigin:"50% 0%",force3D:!0});gs.to(clone,{yPercent:0,scale:1,duration:d,ease:"power3.out",force3D:!0})}function pump(){raf=0;if(scrolling||!inSection()||now()<cool)return;var vn=clamp(vs/1.05,0,1),thr=clamp(170-vn*115,55,170),fired=0,maxPer=vn<.25?1:vn<.65?2:3;while(distAcc>=thr&&fired<maxPer){distAcc-=thr;emit(vn);fired++;vn=clamp(vs/1.05,0,1);thr=clamp(170-vn*115,55,170)}if(!scrolling&&(distAcc>2||vs>.02))raf=requestAnimationFrame(pump)}function kick(){raf||(raf=requestAnimationFrame(pump))}function onMove(e){if(scrolling||!inSection()||now()<cool)return;var t=now(),x=e.clientX||0,y=e.clientY||0;if(!lx&&!ly){lx=x;ly=y;lt=t;return}var dx=x-lx,dy=y-ly;lx=x;ly=y;var dist=Math.sqrt(dx*dx+dy*dy);if(dist<.55)return;var dt=t-lt;if(dt<10)dt=10;if(dt>140)dt=140;lt=t;var v=dist/dt;vs=vs+(v-vs)*.12;distAcc+=dist*.85;kick()}
 						function onScroll(){
-							if(scrolling)return;
-							scrolling=1;
-							cool=now()+700;
+							console.log("---- SCROLL START ----");
+						
+							if(scrolling){
+								console.log("Already scrolling flag true → abort");
+								return;
+							}
+						
+							scrolling = 1;
+							cool = now()+700;
 							killRaf();
-							distAcc=0;
-							vs=0;
-							
+							distAcc = 0;
+							vs = 0;
+						
+							console.log("Live poll clones:", live.length);
+						
 							var last = live.length ? live[live.length-1] : null;
-							
-							if(last){
-								// keep only the last poll clone
+						
+							if(!last){
+								console.log("No poll clone found → nothing to restore");
+							}else{
+						
+								console.log("Last poll clone detected");
+						
+								// keep only last
 								live = [last];
 								last.style.zIndex = "18";
-								
+						
 								var it = items.find(function(el){
 									var r = el.getBoundingClientRect();
 									return r.top < innerHeight*.6 && r.bottom > innerHeight*.4;
 								});
-								
+						
+								console.log("Active section found:", !!it);
+						
 								if(it){
 									var im = desiredImgForItem(it);
+									console.log("Active image found:", !!im);
+						
 									if(im){
+										console.log("Calling stackTo with force=true");
+										console.log("Current STATE.currentSrc:", STATE.currentSrc);
+										console.log("Target src:", im.currentSrc || im.src);
 										stackTo(im,true);
 									}
 								}
-								
-								// remove poll clone after stack visually progresses
+						
 								setTimeout(function(){
+									console.log("Removing poll clone");
 									try{
 										gs.to(last,{
 											autoAlpha:0,
 											duration:.25,
 											onComplete:function(){
+												console.log("Poll clone removed");
 												try{ last.remove(); }catch(e){}
 											}
 										});
@@ -408,10 +429,11 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 									}
 								},800);
 							}
-							
+						
 							scrollTO=setTimeout(function(){
 								scrollTO=0;
 								scrolling=0;
+								console.log("---- SCROLL END ----");
 							},260);
 						}
 						
