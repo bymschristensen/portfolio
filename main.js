@@ -19,7 +19,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	
 		function dlog(...args) { if (state.debug) console.debug('[Nav]', ...args); }
 		function isInternalAnchor(e){if(!e||"A"!==e.tagName)return null;var t=(e.getAttribute("href")||"").trim();if(!t||"#"===t||/^javascript:/i.test(t))return null;if(e.hasAttribute("download"))return null;var r=e.getAttribute("target");if(r&&"_self"!==r)return null;if(/^(mailto|tel):/i.test(t))return null;var n;try{n=new URL(t,location.href)}catch(a){return null}return n.origin!==location.origin?null:{el:e,url:n,href:n.href,hash:n.hash,path:n.pathname,search:n.search}}
-		function installLinkInterceptor(){if(state.installed)return;state.clickHandler=function(e){if(e.defaultPrevented)return;if(e.target&&e.target.closest&&e.target.closest(".w-tabs,.w-tab-menu,.w-tab-link,[data-w-tab],.w-tab-pane"))return;if(e.target&&e.target.closest&&e.target.closest('[id^="archive-filter-"],[id^="nav-archive-filter-"],.modal-filters-item,.filters-container,.nav-button-filter,.archive-switch-block,.archive-switch,.archive-switch-dot'))return;var t=e.target&&("A"===e.target.tagName?e.target:e.target.closest?e.target.closest("a"):null);if(!t)return;var r=(t.getAttribute("href")||"").trim();if(!r||"#"===r||/^javascript:/i.test(r))return;var n=(document.querySelector('[data-barba="container"]')&&document.querySelector('[data-barba="container"]').dataset&&document.querySelector('[data-barba="container"]').dataset.barbaNamespace)||"";if("info"===n&&e.target&&e.target.closest&&e.target.closest('a[id^="recommendationsOpen"]'))return;if(e.target&&e.target.closest&&e.target.closest(".nav-button-menu,.nav-button-close-case,[data-router-ignore='true']"))return;var a=isInternalAnchor(t);if(!a)return;if("archive"!==n&&"resources"!==n){var o=t.closest&&t.closest("[data-barba-prevent]");if(o&&"true"===o.getAttribute("data-barba-prevent"))return}if(state.locks&&state.locks.size){e.preventDefault();e.stopPropagation();return void e.stopImmediatePropagation()}if(a.hash&&a.path===location.pathname&&a.search===location.search){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var i=a.hash.slice(1);try{i=decodeURIComponent(i)}catch(s){}var c=function(e){return(e||"").replace(/([ !"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g,"\\$1")},l=null;try{l=document.getElementById(i)||document.querySelector('[name="'+i.replace(/"/g,'\\"')+'"]')||document.querySelector("#"+c(i))}catch(s){}try{history.pushState(null,"",a.hash)}catch(s){}if(l){var u=matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;l.scrollIntoView(u?{block:"start"}:{behavior:"smooth",block:"start"})}else try{location.hash=a.hash}catch(s){}return}e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();window.barba&&window.barba.go?barba.go(a.url.href):location.href=a.url.href};addEventListener("click",state.clickHandler,{capture:!0});state.installed=!0}
+		function installLinkInterceptor(){if(state.installed)return;state.clickHandler=function(e){if(e.defaultPrevented)return;if(e.target&&e.target.closest&&e.target.closest(".w-tabs,.w-tab-menu,.w-tab-link,[data-w-tab],.w-tab-pane"))return;if(e.target&&e.target.closest&&e.target.closest('[id^="archive-filter-"],[id^="nav-archive-filter-"],.modal-filters-item,.filters-container,.nav-button-filter,.archive-switch-block,.archive-switch,.archive-switch-dot'))return;var t=e.target&&("A"===e.target.tagName?e.target:e.target.closest?e.target.closest("a"):null);if(!t)return;var r=(t.getAttribute("href")||"").trim();if(!r||"#"===r||/^javascript:/i.test(r))return;var n=(document.querySelector('[data-barba="container"]')&&document.querySelector('[data-barba="container"]').dataset&&document.querySelector('[data-barba="container"]').dataset.barbaNamespace)||"";if("info"===n&&e.target&&e.target.closest&&e.target.closest('a[id^="recommendationsOpen"]'))return;if(e.target&&e.target.closest&&e.target.closest(".nav-button-menu,.nav-button-close-case,[data-router-ignore='true']"))return;var a=isInternalAnchor(t);if(!a)return;if("archive"!==n&&"resources"!==n){var o=t.closest&&t.closest("[data-barba-prevent]");if(o&&"true"===o.getAttribute("data-barba-prevent"))return}if(state.locks&&state.locks.size){e.preventDefault();e.stopPropagation();return void e.stopImmediatePropagation()}if(a.hash&&a.path===location.pathname&&a.search===location.search){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();var i=a.hash.slice(1);try{i=decodeURIComponent(i)}catch(s){}var c=function(e){return(e||"").replace(/([ !"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g,"\\$1")},l=null;try{l=document.getElementById(i)||document.querySelector('[name="'+i.replace(/"/g,'\\"')+'"]')||document.querySelector("#"+c(i))}catch(s){}try{history.pushState(null,"",a.hash)}catch(s){}if(l){var u=matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;l.scrollIntoView(u?{block:"start"}:{behavior:"smooth",block:"start"})}else try{location.hash=a.hash}catch(s){}return}e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();window.barba&&window.barba.go?barba.go(a.url.href,t):location.href=a.url.href};addEventListener("click",state.clickHandler,{capture:!0});state.installed=!0}
 		function setLock(t,c){t&&(c?state.locks.add(t):state.locks.delete(t),dlog(c?"lock +":"lock -",t,"| active:",[...state.locks]))}
 		function isLocked() { return state.locks.size > 0; }
 		function reason() { return [...state.locks]; }
@@ -534,14 +534,34 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		EntryAnimations.caseStudy=function(e){e=e||document;var t=gsap.timeline(),i=e.querySelector(".cs-hero-image"),r=e.querySelector(".cs-headline-wrapper"),a=e.querySelector("h1.cs-headline")||e.querySelector(".cs-headline"),n=e.querySelector(".cs-titles-inner .headline-m");i&&gsap.set(i,{autoAlpha:0,y:100,filter:"blur(10px)"}),r&&gsap.set(r,{autoAlpha:1,clearProps:"visibility"}),a&&gsap.set(a,{autoAlpha:0,display:"block",clearProps:"visibility"}),n&&gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),i&&t.to(i,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.7,ease:"power2.out"},0),a&&t.addLabel("cs_h",.15).set(r,{autoAlpha:1,clearProps:"visibility"},"cs_h").set(a,{autoAlpha:1,display:"block",clearProps:"visibility"},"cs_h").call(function(){var e=CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve();e.then(function(){if(window.SplitText&&window.splitAndMask&&window.animateLines&&window.safelyRevertSplit)try{var e=splitAndMask(a);animateLines(e.lines).eventCallback("onComplete",function(){safelyRevertSplit(e,a)})}catch(e){gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})}else gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})})},null,"cs_h"),n&&t.to(n,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.5,ease:"power2.out"},"cs_h+=0.6");return t};
 		function runPageEntryAnimations(e){const{delayHero:t,entryOffset:r}=getEntryConfig(e),a=gsap.timeline(),n=(e.dataset&&e.dataset.barbaNamespace)||"";return("archive"===n||e.querySelector(".section-archive")||e.querySelector(".section-archive-playful")||e.querySelector(".section-archive-minimal"))&&a.add(EntryAnimations.archive(e),0),"info"===n&&a.add(EntryAnimations.info(e),0),"resources"===n&&a.add(EntryAnimations.resources(e),0),("capabilities"===n||e.querySelector(".hero-section-showreel")||e.querySelector(".showreel-container")||e.querySelector(".showreel-visual-device"))&&a.add(EntryAnimations.capabilities(e,{delayHero:t}),0),("selected"===n||e.querySelector(".selected-item-outer"))&&a.add(EntryAnimations.selected(e),0),(e.querySelector(".cs-hero-image")||e.querySelector(".cs-headline"))&&a.add(EntryAnimations.caseStudy(e),0),{tl:a,entryOffset:r}}
 
-		// Decide once per navigation (fade only for nav-work-item clicks)
-		barba.hooks.before((data)=>{
-		  var t = window.__BARBA_FADE_INTENT_T || 0;
-		  window.__BARBA_SHOULD_FADE = (t && (Date.now() - t) < 1500) ? 1 : 0;
-		  window.__BARBA_FADE_INTENT_T = 0; // consume
-		});
-		
-		barba.hooks.after(()=>{ window.__BARBA_SHOULD_FADE = 0; });
+		// Fade intent gate (ONLY .nav-work .nav-work-item pointer intent should fade)
+		(function(){
+			if(window.__FADE_INTENT_INSTALLED)return;
+			window.__FADE_INTENT_INSTALLED=1;
+			window.__BARBA_FADE_INTENT=null;
+			
+			function absHref(a){
+			try{
+			var h=(a.getAttribute("href")||a.href||"").trim();
+			if(!h) return "";
+			return new URL(h, location.href).href;
+			}catch(e){return ""}
+			}
+			
+			document.addEventListener("pointerdown", function(ev){
+			try{
+			var t=ev.target;
+			if(!t||!t.closest) return;
+			var item=t.closest(".nav-work .nav-work-item");
+			if(!item) return;
+			
+			var a=item.tagName==="A"?item:item.closest("a");
+			if(!a) return;
+			
+			window.__BARBA_FADE_INTENT={t:Date.now(),href:absHref(a)};
+			}catch(e){}
+			}, true);
+		})();
 		
 		// Barba init
 		function init() {
@@ -578,35 +598,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					ScrollManager.unlock();
 				}
 			});
-
-			// Fade intent gate (ONLY .nav-work .nav-work-item clicks should fade)
-			(function(){
-			  if(window.__FADE_INTENT_INSTALLED) return;
-			  window.__FADE_INTENT_INSTALLED = 1;
-			  window.__BARBA_FADE_INTENT_T = 0;
-			
-			  document.addEventListener("click", function(ev){
-				  try{
-				    var t = ev.target;
-				    if(!t || !t.closest) return;
-				
-				    // Must be inside the nav-work area AND on/inside a nav-work-item
-				    var item = t.closest(".nav-work .nav-work-item");
-				    if(!item) return;
-				
-				    // Resolve the actual anchor
-				    var a = (item.tagName === "A") ? item : item.closest("a");
-				    if(!a) return;
-				
-				    // Mark fade for the next navigation
-				    window.__BARBA_FADE_INTENT_T = Date.now();
-				
-				    // Optional debug:
-				    console.log("[fade-intent] set", a.getAttribute("href") || a.href);
-				
-				  }catch(e){}
-				}, true);
-			})();
 			
 			barba.init({
 				debug: window.DEBUG,
@@ -631,10 +622,19 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				transitions: [
 					  {
 					    name: 'fade',
-					    custom(){ return !!window.__BARBA_SHOULD_FADE; },
+					    custom(data){
+							console.log("[fade custom] trigger:", data && data.trigger);
+						  var tr = data && data.trigger;
+						  if(!tr) return false;
+						
+						  // normalize to the actual <a> if trigger is a child
+						  if(tr.tagName !== "A" && tr.closest) tr = tr.closest("a") || tr;
+						
+						  // allow either class on the <a> itself or wrapper
+						  return !!(tr && tr.closest && tr.closest(".nav-work") && (tr.classList?.contains("nav-work-item") || tr.closest(".nav-work-item")));
+						},
 					    async leave({ current }) {
 					      ScrollManager.lock();
-					      ScrollManager.topHard();
 					      NavigationManager?.setLock('overlay', true);
 					
 					      window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
@@ -665,7 +665,15 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					  },
 					  {
 					    name: 'swipe',
-					    custom(){ return !window.__BARBA_SHOULD_FADE; },
+					    custom(data){
+						  var tr = data && data.trigger;
+						  if(!tr) return true;
+						
+						  if(tr.tagName !== "A" && tr.closest) tr = tr.closest("a") || tr;
+						
+						  var isFade = !!(tr && tr.closest && tr.closest(".nav-work") && (tr.classList?.contains("nav-work-item") || tr.closest(".nav-work-item")));
+						  return !isFade;
+						},
 					    async leave({ current }) {
 					      ScrollManager.lock();
 					      ScrollManager.topHard();
