@@ -569,6 +569,35 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					ScrollManager.unlock();
 				}
 			});
+
+			// Fade intent gate (ONLY .nav-work .nav-work-item clicks should fade)
+			(function(){
+				if(window.__FADE_INTENT_INSTALLED)return;
+				window.__FADE_INTENT_INSTALLED=1;
+				window.__BARBA_FADE_INTENT=null;
+				
+				function absHref(a){
+					try{
+						var h=(a.getAttribute("href")||a.href||"").trim();
+						if(!h) return "";
+						return new URL(h, location.href).href;
+					}catch(e){return ""}
+				}
+				
+				document.addEventListener("pointerdown", function(ev){
+					try{
+						var t=ev.target;
+						if(!t||!t.closest) return;
+						var item=t.closest(".nav-work .nav-work-item");
+						if(!item) return;
+						
+						var a=item.tagName==="A"?item:item.closest("a");
+						if(!a) return;
+				
+						window.__BARBA_FADE_INTENT={t:Date.now(),href:absHref(a)};
+					}catch(e){}
+				}, true);
+			})();
 			
 			barba.init({
 				debug: window.DEBUG,
@@ -590,78 +619,105 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					return false;
 				},
 				transitions: [
-					{
-						name: 'fade',
-						from: { namespace: ['selected','archive','resources'] },
-						to: { namespace: ['selected','archive','resources'] },
-						async leave({ current }) {
-							ScrollManager.lock();
-  							ScrollManager.topHard();
-							
-							NavigationManager?.setLock('overlay', true);
-							window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
-							await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-							
-							await InitManager.cleanup({ preserveServicePins: false });
-							current.container.remove();
-						},
-						async enter({ next }) {
-							ScrollManager.topHard();
-							await WebflowAdapter.enter(next);
-							try{document.documentElement.removeAttribute("data-preloading")}catch{}
-							
-							NavigationManager?.setLock('overlay', false);
-							await runEntryFlow(next.container, { withCoverOut: false });
-							
-							document.documentElement.removeAttribute('data-preloading');
-							ScrollManager.unlock();
-						},
-						afterEnter({ next }) {
-							requestAnimationFrame(() => {
-								const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-								if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
-							});
-							window.__MEDIA_KICK&&window.__MEDIA_KICK(next.container);
+					(function(){
+						function consumeFadeIntent(data){
+							try{
+								var it=window.__BARBA_FADE_INTENT;
+								if(!it) return false;
+								if(Date.now()-it.t>1500){ window.__BARBA_FADE_INTENT=null; return false; }
+					
+								// If Barba gives us a next URL, require it to match the clicked link (prevents weird mismatches)
+								var nh="";
+								try{
+									nh=(data && data.next && data.next.url && (data.next.url.href||data.next.url))||"";
+								}catch(e){}
+					
+								if(it.href && nh){
+									// normalize trailing slash mismatch
+									var A=String(it.href).replace(/\/+$/,"");
+									var B=String(nh).replace(/\/+$/,"");
+									if(A!==B){ window.__BARBA_FADE_INTENT=null; return false; }
+								}
+					
+								window.__BARBA_FADE_INTENT=null;
+								return true;
+							}catch(e){
+								try{window.__BARBA_FADE_INTENT=null}catch(_){}
+								return false;
+							}
 						}
-					},{
-						name: 'swipe',
-						custom({ current, next }) {
-							const work = ['selected','archive','resources'];
-							return !(work.includes(current?.namespace) && work.includes(next?.namespace));
-						},
-						async leave({ current }) {
-							ScrollManager.lock();
-  							ScrollManager.topHard();
-							
-							NavigationManager?.setLock('overlay', true);
-							window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
-							const ok = await TransitionEffects.coverIn();
-							if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
-							
-							await InitManager.cleanup({ preserveServicePins: false });
-							current.container.remove();
-						},
-						async enter({ next }) {
-							ScrollManager.topHard();
-							await WebflowAdapter.enter(next);
-							try { document.documentElement.removeAttribute("data-preloading"); } catch {}
-							
-							NavigationManager?.setLock('overlay', false);
-							await EntryOrchestrator.runEntryFlow(next.container, { withCoverOut: true });
-							
-							document.documentElement.removeAttribute('data-preloading');
-							ScrollManager.unlock();
-						},
-						afterEnter({ next }) {
-							EntryOrchestrator?.forceCloseMenus?.();
-							requestAnimationFrame(() => {
-								const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-								if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
-							});
-							window.__MEDIA_KICK&&window.__MEDIA_KICK(next.container);
-						}
-					}
-				]
+					
+						return [
+							{
+								name: 'fade',
+								custom(data){ return consumeFadeIntent(data); },
+								async leave({ current }) {
+									ScrollManager.lock();
+									ScrollManager.topHard();
+									
+									NavigationManager?.setLock('overlay', true);
+									window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
+									await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
+									
+									await InitManager.cleanup({ preserveServicePins: false });
+									current.container.remove();
+								},
+								async enter({ next }) {
+									ScrollManager.topHard();
+									await WebflowAdapter.enter(next);
+									try{document.documentElement.removeAttribute("data-preloading")}catch{}
+									
+									NavigationManager?.setLock('overlay', false);
+									await runEntryFlow(next.container, { withCoverOut: false });
+									
+									document.documentElement.removeAttribute('data-preloading');
+									ScrollManager.unlock();
+								},
+								afterEnter({ next }) {
+									requestAnimationFrame(() => {
+										const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+										if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
+									});
+									window.__MEDIA_KICK&&window.__MEDIA_KICK(next.container);
+								}
+							},{
+								name: 'swipe',
+								custom(data){ return !consumeFadeIntent(data); },
+								async leave({ current }) {
+									ScrollManager.lock();
+									ScrollManager.topHard();
+									
+									NavigationManager?.setLock('overlay', true);
+									window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
+									const ok = await TransitionEffects.coverIn();
+									if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
+									
+									await InitManager.cleanup({ preserveServicePins: false });
+									current.container.remove();
+								},
+								async enter({ next }) {
+									ScrollManager.topHard();
+									await WebflowAdapter.enter(next);
+									try { document.documentElement.removeAttribute("data-preloading"); } catch {}
+									
+									NavigationManager?.setLock('overlay', false);
+									await EntryOrchestrator.runEntryFlow(next.container, { withCoverOut: true });
+									
+									document.documentElement.removeAttribute('data-preloading');
+									ScrollManager.unlock();
+								},
+								afterEnter({ next }) {
+									EntryOrchestrator?.forceCloseMenus?.();
+									requestAnimationFrame(() => {
+										const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+										if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
+									});
+									window.__MEDIA_KICK&&window.__MEDIA_KICK(next.container);
+								}
+							}
+						];
+					})()
+				].flat()
 			});
 			
 			if (typeof installDebugProbes === 'function') installDebugProbes();
