@@ -534,34 +534,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		EntryAnimations.caseStudy=function(e){e=e||document;var t=gsap.timeline(),i=e.querySelector(".cs-hero-image"),r=e.querySelector(".cs-headline-wrapper"),a=e.querySelector("h1.cs-headline")||e.querySelector(".cs-headline"),n=e.querySelector(".cs-titles-inner .headline-m");i&&gsap.set(i,{autoAlpha:0,y:100,filter:"blur(10px)"}),r&&gsap.set(r,{autoAlpha:1,clearProps:"visibility"}),a&&gsap.set(a,{autoAlpha:0,display:"block",clearProps:"visibility"}),n&&gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),i&&t.to(i,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.7,ease:"power2.out"},0),a&&t.addLabel("cs_h",.15).set(r,{autoAlpha:1,clearProps:"visibility"},"cs_h").set(a,{autoAlpha:1,display:"block",clearProps:"visibility"},"cs_h").call(function(){var e=CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve();e.then(function(){if(window.SplitText&&window.splitAndMask&&window.animateLines&&window.safelyRevertSplit)try{var e=splitAndMask(a);animateLines(e.lines).eventCallback("onComplete",function(){safelyRevertSplit(e,a)})}catch(e){gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})}else gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})})},null,"cs_h"),n&&t.to(n,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.5,ease:"power2.out"},"cs_h+=0.6");return t};
 		function runPageEntryAnimations(e){const{delayHero:t,entryOffset:r}=getEntryConfig(e),a=gsap.timeline(),n=(e.dataset&&e.dataset.barbaNamespace)||"";return("archive"===n||e.querySelector(".section-archive")||e.querySelector(".section-archive-playful")||e.querySelector(".section-archive-minimal"))&&a.add(EntryAnimations.archive(e),0),"info"===n&&a.add(EntryAnimations.info(e),0),"resources"===n&&a.add(EntryAnimations.resources(e),0),("capabilities"===n||e.querySelector(".hero-section-showreel")||e.querySelector(".showreel-container")||e.querySelector(".showreel-visual-device"))&&a.add(EntryAnimations.capabilities(e,{delayHero:t}),0),("selected"===n||e.querySelector(".selected-item-outer"))&&a.add(EntryAnimations.selected(e),0),(e.querySelector(".cs-hero-image")||e.querySelector(".cs-headline"))&&a.add(EntryAnimations.caseStudy(e),0),{tl:a,entryOffset:r}}
 
-		// Fade intent gate (ONLY .nav-work .nav-work-item pointer intent should fade)
-		(function(){
-			if(window.__FADE_INTENT_INSTALLED)return;
-			window.__FADE_INTENT_INSTALLED=1;
-			window.__BARBA_FADE_INTENT=null;
-			
-			function absHref(a){
-			try{
-			var h=(a.getAttribute("href")||a.href||"").trim();
-			if(!h) return "";
-			return new URL(h, location.href).href;
-			}catch(e){return ""}
-			}
-			
-			document.addEventListener("pointerdown", function(ev){
-			try{
-			var t=ev.target;
-			if(!t||!t.closest) return;
-			var item=t.closest(".nav-work .nav-work-item");
-			if(!item) return;
-			
-			var a=item.tagName==="A"?item:item.closest("a");
-			if(!a) return;
-			
-			window.__BARBA_FADE_INTENT={t:Date.now(),href:absHref(a)};
-			}catch(e){}
-			}, true);
-		})();
+		window.TransitionDecider=window.TransitionDecider||function(){var i=null;function h(a){try{var r=(a.getAttribute("href")||a.href||"").trim();return r?new URL(r,location.href).href:""}catch(e){return""}}document.addEventListener("pointerdown",function(e){try{var t=e.target;if(!t||!t.closest)return;var a=t.closest("a");if(!a)return;if(!a.closest('[data-transition="fade"]'))return;i={t:Date.now(),href:h(a)}}catch(n){}},!0);function s(d){try{if(!i)return!1;if(Date.now()-i.t>1500)return i=null,!1;var n="";try{n=d&&d.next&&d.next.url&&(d.next.url.href||d.next.url)||""}catch(e){}if(i.href&&n){var A=String(i.href).replace(/\/+$/,""),B=String(n).replace(/\/+$/,"");if(A!==B)return i=null,!1}return i=null,!0}catch(e){return i=null,!1}}return{shouldFadeFor:s}}();
 		
 		// Barba init
 		function init() {
@@ -605,7 +578,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				prevent: ({ el }) => {
 					const a = el && (el.tagName === 'A' ? el : el.closest('a'));
 					if (!a) return false;
-					if (a.closest && a.closest(".nav-work .nav-work-item")) return false;
+					if (a.closest && a.closest('[data-transition="fade"]')) return false;
 					try {
 						const url = new URL(a.getAttribute('href') || a.href, location.href);
 						const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
@@ -619,94 +592,19 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					}
 					return false;
 				},
-				transitions: [
-					  {
-					    name: 'fade',
-					    custom(data){
-							console.log("[fade custom] trigger:", data && data.trigger);
-						  var tr = data && data.trigger;
-						  if(!tr) return false;
-						
-						  // normalize to the actual <a> if trigger is a child
-						  if(tr.tagName !== "A" && tr.closest) tr = tr.closest("a") || tr;
-						
-						  // allow either class on the <a> itself or wrapper
-						  return !!(tr && tr.closest && tr.closest(".nav-work") && (tr.classList?.contains("nav-work-item") || tr.closest(".nav-work-item")));
-						},
-					    async leave({ current }) {
-					      ScrollManager.lock();
-					      NavigationManager?.setLock('overlay', true);
-					
-					      window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
-					      await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-					
-					      await InitManager.cleanup({ preserveServicePins: false });
-					      current.container.remove();
-					    },
-					    async enter({ next }) {
-					      ScrollManager.topHard();
-					      await WebflowAdapter.enter(next);
-					      try{document.documentElement.removeAttribute("data-preloading")}catch{}
-					
-					      NavigationManager?.setLock('overlay', false);
-					      await EntryOrchestrator.runEntryFlow(next.container, { withCoverOut: false });
-					
-					      document.documentElement.removeAttribute('data-preloading');
-					      ScrollManager.unlock();
-					    },
-					    afterEnter({ next }) {
-					      EntryOrchestrator?.forceCloseMenus?.();
-					      requestAnimationFrame(() => {
-					        const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-					        if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
-					      });
-					      window.__MEDIA_KICK && window.__MEDIA_KICK(next.container);
-					    }
-					  },
-					  {
-					    name: 'swipe',
-					    custom(data){
-						  var tr = data && data.trigger;
-						  if(!tr) return true;
-						
-						  if(tr.tagName !== "A" && tr.closest) tr = tr.closest("a") || tr;
-						
-						  var isFade = !!(tr && tr.closest && tr.closest(".nav-work") && (tr.classList?.contains("nav-work-item") || tr.closest(".nav-work-item")));
-						  return !isFade;
-						},
-					    async leave({ current }) {
-					      ScrollManager.lock();
-					      ScrollManager.topHard();
-					      NavigationManager?.setLock('overlay', true);
-					
-					      window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
-					      const ok = await TransitionEffects.coverIn();
-					      if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
-					
-					      await InitManager.cleanup({ preserveServicePins: false });
-					      current.container.remove();
-					    },
-					    async enter({ next }) {
-					      ScrollManager.topHard();
-					      await WebflowAdapter.enter(next);
-					      try { document.documentElement.removeAttribute("data-preloading"); } catch {}
-					
-					      NavigationManager?.setLock('overlay', false);
-					      await EntryOrchestrator.runEntryFlow(next.container, { withCoverOut: true });
-					
-					      document.documentElement.removeAttribute('data-preloading');
-					      ScrollManager.unlock();
-					    },
-					    afterEnter({ next }) {
-					      EntryOrchestrator?.forceCloseMenus?.();
-					      requestAnimationFrame(() => {
-					        const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-					        if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
-					      });
-					      window.__MEDIA_KICK && window.__MEDIA_KICK(next.container);
-					    }
-					  }
-				],
+				transitions:[
+					{
+						name:"fade",custom:function(d){return!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d))},
+						leave:async function({current:c}){ScrollManager.lock();ScrollManager.topHard();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
+						enter:async function({next:n}){ScrollManager.topHard();await WebflowAdapter.enter(n);NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});ScrollManager.unlock()},
+						afterEnter:function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)}
+					},{
+						name:"swipe",custom:function(){return!0},
+						leave:async function({current:c}){ScrollManager.lock();ScrollManager.topHard();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
+						enter:async function({next:n}){ScrollManager.topHard();await WebflowAdapter.enter(n);NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});ScrollManager.unlock()},
+						afterEnter:function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)}
+					}
+				]
 			});
 			
 			if (typeof installDebugProbes === 'function') installDebugProbes();
