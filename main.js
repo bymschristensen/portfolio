@@ -577,20 +577,70 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				timeout: 8000,
 				prevent: ({el})=>{var a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;if(a.closest&&a.closest('[data-transition="fade"]'))return console.log("[barba][prevent] allow (fade link)",a),!1;try{var u=new URL(a.getAttribute("href")||a.href,location.href),p=u.pathname.replace(/\/+$/,""),cp=location.pathname.replace(/\/+$/,"");if(p===cp&&u.hash)return console.log("[barba][prevent] block (samePath+hash)",u.href,a),!0}catch(e){}if(a.hasAttribute("download")||a.target==="_blank"||a.getAttribute("rel")==="external")return console.log("[barba][prevent] block (download/blank/external)",a),!0;var c=document.querySelector('[data-barba="container"]'),ns=c&&c.dataset?c.dataset.barbaNamespace:"";if(ns!=="archive"&&ns!=="resources"){var b=a.closest&&a.closest("[data-barba-prevent]");if(b&&b.getAttribute("data-barba-prevent")==="true")return console.log("[barba][prevent] block (data-barba-prevent)",b,a),!0}return console.log("[barba][prevent] allow (default)",a),!1},
 				transitions:[
-					{
-						name:"fade",
-						custom:function(d){var v=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));console.log("[barba][custom] fade =",v,d&&d.trigger,d&&d.next&&d.next.url&&d.next.url.href);return v},
-						leave:async function({current:c}){try{TransitionDecider&&TransitionDecider.consume&&TransitionDecider.consume()}catch(e){}console.log("[barba][fade] leave:start");ScrollManager.lock();ScrollManager.topHard();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove();console.log("[barba][fade] leave:done")},
-						enter:async function({next:n}){console.log("[barba][fade] enter");ScrollManager.topHard();await WebflowAdapter.enter(n);NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});ScrollManager.unlock()},
-						afterEnter:function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)}
-					},{
-						name:"swipe",
-						custom:function(d){console.log("[barba][custom] swipe = true",d&&d.trigger,d&&d.next&&d.next.url&&d.next.url.href);return!0},
-						leave:async function({current:c}){console.log("[barba][swipe] leave:start");ScrollManager.lock();ScrollManager.topHard();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){console.log("[barba][swipe] enter");ScrollManager.topHard();await WebflowAdapter.enter(n);NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});ScrollManager.unlock()},
-						afterEnter:function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)}
-					}
-				]
+{
+name:"fade",
+custom:function(d){
+var v=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));
+console.log("[barba][custom] fade =",v,d&&d.trigger,d&&d.next&&d.next.url&&d.next.url.href);
+return v
+},
+leave:async function({current:c}){
+try{TransitionDecider&&TransitionDecider.consume&&TransitionDecider.consume()}catch(e){}
+console.log("[barba][fade] leave:start");
+ScrollManager.lock();
+ScrollManager.topHard();
+NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);
+await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});
+await InitManager.cleanup({preserveServicePins:!1});
+c.container.remove();
+console.log("[barba][fade] leave:done")
+},
+enter:async function({next:n}){
+console.log("[barba][fade] enter");
+ScrollManager.topHard();
+await WebflowAdapter.enter(n);
+NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);
+await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});
+ScrollManager.unlock()
+},
+afterEnter:function({next:n}){
+EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();
+window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)
+}
+},
+{
+name:"swipe",
+custom:function(d){
+var fade=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));
+var v=!fade;
+console.log("[barba][custom] swipe =",v,d&&d.trigger,d&&d.next&&d.next.url&&d.next.url.href);
+return v
+},
+leave:async function({current:c}){
+console.log("[barba][swipe] leave:start");
+ScrollManager.lock();
+ScrollManager.topHard();
+NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);
+var ok=await TransitionEffects.coverIn();
+ok||await gsap.to(c.container,{autoAlpha:0,duration:.35});
+await InitManager.cleanup({preserveServicePins:!1});
+c.container.remove()
+},
+enter:async function({next:n}){
+console.log("[barba][swipe] enter");
+ScrollManager.topHard();
+await WebflowAdapter.enter(n);
+await TransitionEffects.coverOut();
+NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);
+await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});
+ScrollManager.unlock()
+},
+afterEnter:function({next:n}){
+EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();
+window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)
+}
+}
+]
 			});
 			
 			if (typeof installDebugProbes === 'function') installDebugProbes();
