@@ -534,40 +534,13 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		EntryAnimations.caseStudy=function(e){e=e||document;var t=gsap.timeline(),i=e.querySelector(".cs-hero-image"),r=e.querySelector(".cs-headline-wrapper"),a=e.querySelector("h1.cs-headline")||e.querySelector(".cs-headline"),n=e.querySelector(".cs-titles-inner .headline-m");i&&gsap.set(i,{autoAlpha:0,y:100,filter:"blur(10px)"}),r&&gsap.set(r,{autoAlpha:1,clearProps:"visibility"}),a&&gsap.set(a,{autoAlpha:0,display:"block",clearProps:"visibility"}),n&&gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),i&&t.to(i,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.7,ease:"power2.out"},0),a&&t.addLabel("cs_h",.15).set(r,{autoAlpha:1,clearProps:"visibility"},"cs_h").set(a,{autoAlpha:1,display:"block",clearProps:"visibility"},"cs_h").call(function(){var e=CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve();e.then(function(){if(window.SplitText&&window.splitAndMask&&window.animateLines&&window.safelyRevertSplit)try{var e=splitAndMask(a);animateLines(e.lines).eventCallback("onComplete",function(){safelyRevertSplit(e,a)})}catch(e){gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})}else gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})})},null,"cs_h"),n&&t.to(n,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.5,ease:"power2.out"},"cs_h+=0.6");return t};
 		function runPageEntryAnimations(e){const{delayHero:t,entryOffset:r}=getEntryConfig(e),a=gsap.timeline(),n=(e.dataset&&e.dataset.barbaNamespace)||"";return("archive"===n||e.querySelector(".section-archive")||e.querySelector(".section-archive-playful")||e.querySelector(".section-archive-minimal"))&&a.add(EntryAnimations.archive(e),0),"info"===n&&a.add(EntryAnimations.info(e),0),"resources"===n&&a.add(EntryAnimations.resources(e),0),("capabilities"===n||e.querySelector(".hero-section-showreel")||e.querySelector(".showreel-container")||e.querySelector(".showreel-visual-device"))&&a.add(EntryAnimations.capabilities(e,{delayHero:t}),0),("selected"===n||e.querySelector(".selected-item-outer"))&&a.add(EntryAnimations.selected(e),0),(e.querySelector(".cs-hero-image")||e.querySelector(".cs-headline"))&&a.add(EntryAnimations.caseStudy(e),0),{tl:a,entryOffset:r}}
 
-		function _consumeFadeIntentOnce(data){
-			try{
-			var it=window.__BARBA_FADE_INTENT;
-			if(!it) return false;
-			if(Date.now()-it.t>1500){ window.__BARBA_FADE_INTENT=null; return false; }
-			
-			// optional: keep URL match, but make it tolerant
-			var nh="";
-			try{
-			  var u=data&&data.next&&data.next.url;
-			  nh=(u&&(u.href||u.url||u))||"";
-			}catch(e){}
-			
-			if(it.href && nh){
-			  var A=String(it.href).replace(/\/+$/,"");
-			  var B=String(nh).replace(/\/+$/,"");
-			  if(A!==B){ window.__BARBA_FADE_INTENT=null; return false; }
-			}
-			
-			window.__BARBA_FADE_INTENT=null; // consume once
-			return true;
-			}catch(e){
-			try{window.__BARBA_FADE_INTENT=null}catch(_){}
-			return false;
-			}
-		}
-
-		// Decide once per navigation
+		// Decide once per navigation (fade only for nav-work-item clicks)
 		barba.hooks.before((data)=>{
-		  // store a stable decision for this navigation
-		  window.__BARBA_SHOULD_FADE = _consumeFadeIntentOnce(data);
+		  var t = window.__BARBA_FADE_INTENT_T || 0;
+		  window.__BARBA_SHOULD_FADE = (t && (Date.now() - t) < 1500) ? 1 : 0;
+		  window.__BARBA_FADE_INTENT_T = 0; // consume
 		});
 		
-		// Cleanup after
 		barba.hooks.after(()=>{ window.__BARBA_SHOULD_FADE = 0; });
 		
 		// Barba init
@@ -608,31 +581,25 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
 			// Fade intent gate (ONLY .nav-work .nav-work-item clicks should fade)
 			(function(){
-				if(window.__FADE_INTENT_INSTALLED)return;
-				window.__FADE_INTENT_INSTALLED=1;
-				window.__BARBA_FADE_INTENT=null;
-				
-				function absHref(a){
-					try{
-						var h=(a.getAttribute("href")||a.href||"").trim();
-						if(!h) return "";
-						return new URL(h, location.href).href;
-					}catch(e){return ""}
-				}
-				
-				document.addEventListener("pointerdown", function(ev){
-					try{
-						var t=ev.target;
-						if(!t||!t.closest) return;
-						var item=t.closest(".nav-work .nav-work-item");
-						if(!item) return;
-						
-						var a=item.tagName==="A"?item:item.closest("a");
-						if(!a) return;
-				
-						window.__BARBA_FADE_INTENT={t:Date.now(),href:absHref(a)};
-					}catch(e){}
-				}, true);
+			  if(window.__FADE_INTENT_INSTALLED) return;
+			  window.__FADE_INTENT_INSTALLED = 1;
+			  window.__BARBA_FADE_INTENT_T = 0;
+			
+			  document.addEventListener("pointerdown", function(ev){
+			    try{
+			      var t = ev.target;
+			      if(!t || !t.closest) return;
+			
+			      // Accept either:
+			      // 1) inside .nav-work AND .nav-work-item
+			      // 2) direct .nav-work-item (safety)
+			      var a = t.closest(".nav-work .nav-work-item") || t.closest(".nav-work-item");
+			      if(!a) return;
+			
+			      // mark: fade requested for the next navigation
+			      window.__BARBA_FADE_INTENT_T = Date.now();
+			    }catch(e){}
+			  }, true);
 			})();
 			
 			barba.init({
@@ -656,105 +623,76 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					return false;
 				},
 				transitions: [
-					(function(){
-						function consumeFadeIntent(data){
-							try{
-								var it=window.__BARBA_FADE_INTENT;
-								if(!it) return false;
-								if(Date.now()-it.t>1500){ window.__BARBA_FADE_INTENT=null; return false; }
+					  {
+					    name: 'fade',
+					    custom(){ return !!window.__BARBA_SHOULD_FADE; },
+					    async leave({ current }) {
+					      ScrollManager.lock();
+					      ScrollManager.topHard();
+					      NavigationManager?.setLock('overlay', true);
 					
-								// If Barba gives us a next URL, require it to match the clicked link (prevents weird mismatches)
-								var nh="";
-								try{
-									nh=(data && data.next && data.next.url && (data.next.url.href||data.next.url))||"";
-								}catch(e){}
+					      window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
+					      await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
 					
-								if(it.href && nh){
-									// normalize trailing slash mismatch
-									var A=String(it.href).replace(/\/+$/,"");
-									var B=String(nh).replace(/\/+$/,"");
-									if(A!==B){ window.__BARBA_FADE_INTENT=null; return false; }
-								}
+					      await InitManager.cleanup({ preserveServicePins: false });
+					      current.container.remove();
+					    },
+					    async enter({ next }) {
+					      ScrollManager.topHard();
+					      await WebflowAdapter.enter(next);
+					      try{document.documentElement.removeAttribute("data-preloading")}catch{}
 					
-								window.__BARBA_FADE_INTENT=null;
-								return true;
-							}catch(e){
-								try{window.__BARBA_FADE_INTENT=null}catch(_){}
-								return false;
-							}
-						}
+					      NavigationManager?.setLock('overlay', false);
+					      await EntryOrchestrator.runEntryFlow(next.container, { withCoverOut: false });
 					
-						return [
-							{
-								name: 'fade',
-								custom(){ return !!window.__BARBA_SHOULD_FADE; },
-								async leave({ current }) {
-									ScrollManager.lock();
-									ScrollManager.topHard();
-									
-									NavigationManager?.setLock('overlay', true);
-									window.__logTransitionChoice && window.__logTransitionChoice('fade', arguments[0]);
-									await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' });
-									
-									await InitManager.cleanup({ preserveServicePins: false });
-									current.container.remove();
-								},
-								async enter({ next }) {
-									ScrollManager.topHard();
-									await WebflowAdapter.enter(next);
-									try{document.documentElement.removeAttribute("data-preloading")}catch{}
-									
-									NavigationManager?.setLock('overlay', false);
-									await runEntryFlow(next.container, { withCoverOut: false });
-									
-									document.documentElement.removeAttribute('data-preloading');
-									ScrollManager.unlock();
-								},
-								afterEnter({ next }) {
-									requestAnimationFrame(() => {
-										const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-										if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
-									});
-									window.__MEDIA_KICK&&window.__MEDIA_KICK(next.container);
-								}
-							},{
-								name: 'swipe',
-								custom(){ return !window.__BARBA_SHOULD_FADE; },
-								async leave({ current }) {
-									ScrollManager.lock();
-									ScrollManager.topHard();
-									
-									NavigationManager?.setLock('overlay', true);
-									window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
-									const ok = await TransitionEffects.coverIn();
-									if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
-									
-									await InitManager.cleanup({ preserveServicePins: false });
-									current.container.remove();
-								},
-								async enter({ next }) {
-									ScrollManager.topHard();
-									await WebflowAdapter.enter(next);
-									try { document.documentElement.removeAttribute("data-preloading"); } catch {}
-									
-									NavigationManager?.setLock('overlay', false);
-									await EntryOrchestrator.runEntryFlow(next.container, { withCoverOut: true });
-									
-									document.documentElement.removeAttribute('data-preloading');
-									ScrollManager.unlock();
-								},
-								afterEnter({ next }) {
-									EntryOrchestrator?.forceCloseMenus?.();
-									requestAnimationFrame(() => {
-										const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
-										if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
-									});
-									window.__MEDIA_KICK&&window.__MEDIA_KICK(next.container);
-								}
-							}
-						];
-					})()
-				].flat()
+					      document.documentElement.removeAttribute('data-preloading');
+					      ScrollManager.unlock();
+					    },
+					    afterEnter({ next }) {
+					      EntryOrchestrator?.forceCloseMenus?.();
+					      requestAnimationFrame(() => {
+					        const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+					        if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
+					      });
+					      window.__MEDIA_KICK && window.__MEDIA_KICK(next.container);
+					    }
+					  },
+					  {
+					    name: 'swipe',
+					    custom(){ return !window.__BARBA_SHOULD_FADE; },
+					    async leave({ current }) {
+					      ScrollManager.lock();
+					      ScrollManager.topHard();
+					      NavigationManager?.setLock('overlay', true);
+					
+					      window.__logTransitionChoice && window.__logTransitionChoice('swipe', arguments[0]);
+					      const ok = await TransitionEffects.coverIn();
+					      if (!ok) { await gsap.to(current.container, { autoAlpha: 0, duration: 0.45, ease: 'power1.out' }); }
+					
+					      await InitManager.cleanup({ preserveServicePins: false });
+					      current.container.remove();
+					    },
+					    async enter({ next }) {
+					      ScrollManager.topHard();
+					      await WebflowAdapter.enter(next);
+					      try { document.documentElement.removeAttribute("data-preloading"); } catch {}
+					
+					      NavigationManager?.setLock('overlay', false);
+					      await EntryOrchestrator.runEntryFlow(next.container, { withCoverOut: true });
+					
+					      document.documentElement.removeAttribute('data-preloading');
+					      ScrollManager.unlock();
+					    },
+					    afterEnter({ next }) {
+					      EntryOrchestrator?.forceCloseMenus?.();
+					      requestAnimationFrame(() => {
+					        const h1 = next.container.querySelector('h1, [role="heading"][aria-level="1"]');
+					        if (h1) { h1.setAttribute('tabindex', '-1'); h1.focus({ preventScroll: true }); setTimeout(() => h1.removeAttribute('tabindex'), 0); }
+					      });
+					      window.__MEDIA_KICK && window.__MEDIA_KICK(next.container);
+					    }
+					  }
+				],
 			});
 			
 			if (typeof installDebugProbes === 'function') installDebugProbes();
