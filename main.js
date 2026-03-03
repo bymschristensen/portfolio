@@ -719,7 +719,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 								}
 							},{
 								name: 'swipe',
-								custom(){ return !!window.__BARBA_SHOULD_FADE; },
+								custom(){ return !window.__BARBA_SHOULD_FADE; },
 								async leave({ current }) {
 									ScrollManager.lock();
 									ScrollManager.topHard();
