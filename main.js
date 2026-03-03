@@ -585,21 +585,27 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			  window.__FADE_INTENT_INSTALLED = 1;
 			  window.__BARBA_FADE_INTENT_T = 0;
 			
-			  document.addEventListener("pointerdown", function(ev){
-			    try{
-			      var t = ev.target;
-			      if(!t || !t.closest) return;
-			
-			      // Accept either:
-			      // 1) inside .nav-work AND .nav-work-item
-			      // 2) direct .nav-work-item (safety)
-			      var a = t.closest(".nav-work .nav-work-item") || t.closest(".nav-work-item");
-			      if(!a) return;
-			
-			      // mark: fade requested for the next navigation
-			      window.__BARBA_FADE_INTENT_T = Date.now();
-			    }catch(e){}
-			  }, true);
+			  document.addEventListener("click", function(ev){
+				  try{
+				    var t = ev.target;
+				    if(!t || !t.closest) return;
+				
+				    // Must be inside the nav-work area AND on/inside a nav-work-item
+				    var item = t.closest(".nav-work .nav-work-item");
+				    if(!item) return;
+				
+				    // Resolve the actual anchor
+				    var a = (item.tagName === "A") ? item : item.closest("a");
+				    if(!a) return;
+				
+				    // Mark fade for the next navigation
+				    window.__BARBA_FADE_INTENT_T = Date.now();
+				
+				    // Optional debug:
+				    console.log("[fade-intent] set", a.getAttribute("href") || a.href);
+				
+				  }catch(e){}
+				}, true);
 			})();
 			
 			barba.init({
