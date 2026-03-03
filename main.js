@@ -534,7 +534,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		EntryAnimations.caseStudy=function(e){e=e||document;var t=gsap.timeline(),i=e.querySelector(".cs-hero-image"),r=e.querySelector(".cs-headline-wrapper"),a=e.querySelector("h1.cs-headline")||e.querySelector(".cs-headline"),n=e.querySelector(".cs-titles-inner .headline-m");i&&gsap.set(i,{autoAlpha:0,y:100,filter:"blur(10px)"}),r&&gsap.set(r,{autoAlpha:1,clearProps:"visibility"}),a&&gsap.set(a,{autoAlpha:0,display:"block",clearProps:"visibility"}),n&&gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),i&&t.to(i,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.7,ease:"power2.out"},0),a&&t.addLabel("cs_h",.15).set(r,{autoAlpha:1,clearProps:"visibility"},"cs_h").set(a,{autoAlpha:1,display:"block",clearProps:"visibility"},"cs_h").call(function(){var e=CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve();e.then(function(){if(window.SplitText&&window.splitAndMask&&window.animateLines&&window.safelyRevertSplit)try{var e=splitAndMask(a);animateLines(e.lines).eventCallback("onComplete",function(){safelyRevertSplit(e,a)})}catch(e){gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})}else gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})})},null,"cs_h"),n&&t.to(n,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.5,ease:"power2.out"},"cs_h+=0.6");return t};
 		function runPageEntryAnimations(e){const{delayHero:t,entryOffset:r}=getEntryConfig(e),a=gsap.timeline(),n=(e.dataset&&e.dataset.barbaNamespace)||"";return("archive"===n||e.querySelector(".section-archive")||e.querySelector(".section-archive-playful")||e.querySelector(".section-archive-minimal"))&&a.add(EntryAnimations.archive(e),0),"info"===n&&a.add(EntryAnimations.info(e),0),"resources"===n&&a.add(EntryAnimations.resources(e),0),("capabilities"===n||e.querySelector(".hero-section-showreel")||e.querySelector(".showreel-container")||e.querySelector(".showreel-visual-device"))&&a.add(EntryAnimations.capabilities(e,{delayHero:t}),0),("selected"===n||e.querySelector(".selected-item-outer"))&&a.add(EntryAnimations.selected(e),0),(e.querySelector(".cs-hero-image")||e.querySelector(".cs-headline"))&&a.add(EntryAnimations.caseStudy(e),0),{tl:a,entryOffset:r}}
 
-		window.TransitionDecider=window.TransitionDecider||function(){var i=null;function h(a){try{var r=(a.getAttribute("href")||a.href||"").trim();return r?new URL(r,location.href).href:""}catch(e){return""}}function c(a){try{if(!a||!a.closest||!a.closest('[data-transition="fade"]'))return;i={t:Date.now(),href:h(a)}}catch(e){}}document.addEventListener("pointerdown",function(e){try{var t=e.target;if(!t||!t.closest)return;var a=t.closest("a");a&&c(a)}catch(n){}},!0);document.addEventListener("click",function(e){try{var t=e.target;if(!t||!t.closest)return;var a=t.closest("a");a&&c(a)}catch(n){}},!0);document.addEventListener("keydown",function(e){try{if(e.key!=="Enter"&&e.key!==" ")return;var t=document.activeElement;if(!t||!t.closest)return;var a=t.tagName==="A"?t:t.closest("a");a&&c(a)}catch(n){}},!0);function s(d){try{if(!i)return!1;if(Date.now()-i.t>1500)return i=null,!1;var n="";try{n=d&&d.next&&d.next.url&&(d.next.url.href||d.next.url)||""}catch(e){}if(i.href&&n){var A=String(i.href).replace(/\/+$/,""),B=String(n).replace(/\/+$/,"");if(A!==B)return i=null,!1}return i=null,!0}catch(e){return i=null,!1}}return{shouldFadeFor:s}}();
+		window.TransitionDecider=window.TransitionDecider||function(){var i=null,t=1500;function n(e){try{var t=(e.getAttribute("href")||e.href||"").trim();return t?new URL(t,location.href).href:""}catch(e){return""}}function o(e){try{if(!e||!e.closest)return null;var t=e.closest("a");return t||null}catch(e){return null}}function r(e){try{if(!e||!e.closest)return null;var t=e.closest('[data-transition="fade"]');return t||null}catch(e){return null}}function a(e,t){try{if(!t||!t.closest)return;var o=r(t);if(!o)return;var a=o.tagName==="A"?o:o.querySelector&&o.querySelector("a")||null;if(!a)a=t.tagName==="A"?t:t.closest("a");if(!a)return;var s=n(a);i={t:Date.now(),href:s};console.log("[TransitionDecider] intent:set",{via:e,href:s,el:a,fadeEl:o})}catch(e){console.warn("[TransitionDecider] intent:set failed",e)}}document.addEventListener("pointerdown",function(e){try{var t=o(e.target);if(!t)return;a("pointerdown",t)}catch(e){}},!0);document.addEventListener("click",function(e){try{var t=o(e.target);if(!t)return;a("click",t)}catch(e){}},!0);document.addEventListener("keydown",function(e){try{if("Enter"!==e.key&&" "!==e.key)return;var t=document.activeElement;if(!t)return;var n=o(t);if(!n)return;a("keydown",n)}catch(e){}},!0);function s(e){try{console.log("[TransitionDecider] shouldFadeFor:call",{hasIntent:!!i,age:i?Date.now()-i.t:null,trigger:e&&e.trigger,next:e&&e.next&&e.next.url&&((e.next.url.href||e.next.url)+"")});if(!i)return console.log("[TransitionDecider] shouldFadeFor:false (no intent)"),!1;if(Date.now()-i.t>t)return console.log("[TransitionDecider] shouldFadeFor:false (expired)",{age:Date.now()-i.t}),i=null,!1;var o="";try{o=e&&e.next&&e.next.url&&(e.next.url.href||e.next.url)||""}catch(e){}if(i.href&&o){var r=String(i.href).replace(/\/+$/,""),a=String(o).replace(/\/+$/,"");if(r!==a)return console.log("[TransitionDecider] shouldFadeFor:false (href mismatch)",{intent:r,next:a}),i=null,!1}return console.log("[TransitionDecider] shouldFadeFor:true",i),i=null,!0}catch(e){return console.warn("[TransitionDecider] shouldFadeFor:error",e),i=null,!1}}return{shouldFadeFor:s}}();
 		
 		// Barba init
 		function init() {
@@ -576,33 +576,55 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				debug: window.DEBUG,
 				timeout: 8000,
 				prevent: ({ el }) => {
-					const a = el && (el.tagName === 'A' ? el : el.closest('a'));
-					if (!a) return false;
-					if (a.closest && a.closest('[data-transition="fade"]')) return false;
-					try {
-						const url = new URL(a.getAttribute('href') || a.href, location.href);
-						const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
-						if (samePath && url.hash) return true;
-					} catch {}
-					if (a.hasAttribute('download') || a.target === '_blank' || a.getAttribute('rel') === 'external') return true;
-					const ns = document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace || '';
-					if (ns !== 'archive' && ns !== 'resources') {
-						const blocker = a.closest('[data-barba-prevent]');
-						if (blocker && blocker.getAttribute('data-barba-prevent') === 'true') return true;
-					}
-					return false;
+					  const a = el && (el.tagName === 'A' ? el : el.closest('a'));
+					  if (!a) return false;
+					
+					  // allow Barba to handle fade links
+					  if (a.closest && a.closest('[data-transition="fade"]')) {
+					    console.log("[barba][prevent] allow (fade link)", a);
+					    return false;
+					  }
+					
+					  try {
+					    const url = new URL(a.getAttribute('href') || a.href, location.href);
+					    const samePath = url.pathname.replace(/\/+$/,'') === location.pathname.replace(/\/+$/,'');
+					    if (samePath && url.hash) {
+					      console.log("[barba][prevent] block (samePath+hash)", url.href, a);
+					      return true;
+					    }
+					  } catch {}
+					
+					  if (a.hasAttribute('download') || a.target === '_blank' || a.getAttribute('rel') === 'external') {
+					    console.log("[barba][prevent] block (download/blank/external)", a);
+					    return true;
+					  }
+					
+					  const ns = document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace || '';
+					  if (ns !== 'archive' && ns !== 'resources') {
+					    const blocker = a.closest('[data-barba-prevent]');
+					    if (blocker && blocker.getAttribute('data-barba-prevent') === 'true') {
+					      console.log("[barba][prevent] block (data-barba-prevent)", blocker, a);
+					      return true;
+					    }
+					  }
+					
+					  // default: allow Barba
+					  console.log("[barba][prevent] allow (default)", a);
+					  return false;
 				},
 				transitions:[
 					{
-						name:"fade",custom:function(d){return!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d))},
-						leave:async function({current:c}){ScrollManager.lock();ScrollManager.topHard();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){ScrollManager.topHard();await WebflowAdapter.enter(n);NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});ScrollManager.unlock()},
-						afterEnter:function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)}
+						name: "fade",
+						custom: function(d){var v=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));console.log("[barba][custom] fade =",v,d&&d.trigger,d&&d.next&&d.next.url&&d.next.url.href);return v},
+						leave: async function({current:c}){ScrollManager.lock();ScrollManager.topHard();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
+						enter: async function({next:n}){ScrollManager.topHard();await WebflowAdapter.enter(n);NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});ScrollManager.unlock()},
+						afterEnter: function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)}
 					},{
-						name:"swipe",custom:function(){return!0},
-						leave:async function({current:c}){ScrollManager.lock();ScrollManager.topHard();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){ScrollManager.topHard();await WebflowAdapter.enter(n);NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});ScrollManager.unlock()},
-						afterEnter:function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)}
+						name: "swipe",
+						custom:function(d){var fade=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));console.log("[barba][custom] swipe =",!fade,"(fade was)",fade);return !fade;},
+						leave: async function({current:c}){ScrollManager.lock();ScrollManager.topHard();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
+						enter: async function({next:n}){ScrollManager.topHard();await WebflowAdapter.enter(n);NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});ScrollManager.unlock()},
+						afterEnter: function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)}
 					}
 				]
 			});
