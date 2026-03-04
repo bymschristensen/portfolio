@@ -1,15 +1,23 @@
 if ("scrollRestoration" in history) {history.scrollRestoration = "manual";}
 (function(){
-let lastY=-1;
-function logScroll(){
-  const y=window.scrollY||window.pageYOffset||document.documentElement.scrollTop||0;
-  if(y!==lastY){
-    console.log("[scroll-change]",y,"time:",performance.now().toFixed(1));
-    lastY=y;
+  let last = -1;
+  function getY(){
+    return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
   }
-}
-window.addEventListener("scroll",logScroll,{passive:true});
+  function log(stage){
+    const y = getY();
+    if(y !== last){
+      console.log("[scroll-change]", stage, y);
+      last = y;
+    }
+  }
+
+  window.__logScroll = log;
+
+  window.addEventListener("scroll", () => log("native-scroll"), {passive:true});
 })();
+
+
 if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — skipping."); } else { window.__PORTFOLIO_MAIN__ = true; (function MAIN(){ 
 window.__PORTFOLIO_MAIN__ = true;
 console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&document.currentScript.src)||'(inline)');
@@ -19,16 +27,9 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	try{if(window.gsap&&gsap.registerPlugin){var _p=[];typeof window.ScrollTrigger!=="undefined"&&_p.push(window.ScrollTrigger);typeof window.Flip!=="undefined"&&_p.push(window.Flip);typeof window.SplitText!=="undefined"&&_p.push(window.SplitText);typeof window.TextPlugin!=="undefined"&&_p.push(window.TextPlugin);typeof window.Observer!=="undefined"&&_p.push(window.Observer);gsap.registerPlugin.apply(gsap,_p)}}catch(e){}
 	window.DEBUG = typeof window.DEBUG!="undefined" ? window.DEBUG : true;
 	if(window.ScrollTrigger){
-  ScrollTrigger.addEventListener("refreshInit",()=>{
-    console.log("[ScrollTrigger] refreshInit",window.scrollY);
-  });
-
-  ScrollTrigger.addEventListener("refresh",()=>{
-    console.log("[ScrollTrigger] refreshDone",window.scrollY);
-  });
-}
-	
-	
+	  ScrollTrigger.addEventListener("refreshInit",()=>__logScroll("ScrollTrigger refreshInit"));
+	  ScrollTrigger.addEventListener("refresh",()=>__logScroll("ScrollTrigger refresh"));
+	}
 
 // Navigation Manager Test
 	window.NavigationManager = (function () {
@@ -75,16 +76,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			enter,
 		};
 	})();
-
-const _wfEnter = WebflowAdapter.enter;
-
-WebflowAdapter.enter = async function(...args){
-  console.log("[WebflowAdapter] enter start",window.scrollY);
-  const result = await _wfEnter.apply(this,args);
-  console.log("[WebflowAdapter] enter end",window.scrollY);
-  return result;
-};
-	
 
 // Core Utilities
 	window.CoreUtilities = (function () {
@@ -538,14 +529,6 @@ WebflowAdapter.enter = async function(...args){
 
 // Scroll Manager
 	window.ScrollManager=function(){var l=document.scrollingElement||document.documentElement,b=0,y=0,ov="",sb="";function topHard(){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{e.scrollTop=0,document.body.scrollTop=0,window.scrollTo(0,0)}catch(t){}try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory("manual")}catch(t){}}function setY(t){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(o){}try{e.scrollTop=t,document.body.scrollTop=t,window.scrollTo(0,t)}catch(o){}}try{history.scrollRestoration="manual"}catch(t){}try{sb=getComputedStyle(document.documentElement).scrollBehavior||""}catch(t){}return{lock:function(){if(b)return;b=1;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{l=document.scrollingElement||document.documentElement}catch(t){}y=window.pageYOffset||l.scrollTop||0;ov=document.documentElement.style.overflow||"";document.documentElement.style.overflow="hidden";document.body.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=-y+"px";document.body.style.width="100%";},unlock:function(){if(!b)return;b=0;document.documentElement.style.overflow=ov;document.body.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";try{sb?document.documentElement.style.scrollBehavior=sb:document.documentElement.style.removeProperty("scroll-behavior")}catch(t){}},topHard:topHard,setY:setY}}();
-
-	const _topHard = ScrollManager.topHard;
-ScrollManager.topHard = function(){
-  console.log("[ScrollManager.topHard] BEFORE",window.scrollY);
-  const r=_topHard.apply(this,arguments);
-  console.log("[ScrollManager.topHard] AFTER",window.scrollY);
-  return r;
-};
 	
 // Transition Effects
 	window.TransitionEffects = (function () {
@@ -610,9 +593,9 @@ ScrollManager.topHard = function(){
 				}
 			});
 
-			barba.hooks.before(()=>{window.__BARBA_NAVIGATING=!0;ScrollManager.lock()});
-			barba.hooks.beforeEnter(()=>{try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory("manual")}catch(e){}});
-			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING=!1;ScrollManager.unlock()});
+			barba.hooks.before(()=>{console.log("[barba] before");__logScroll("before");window.__BARBA_NAVIGATING=!0;ScrollManager.lock()});
+			barba.hooks.beforeEnter(()=>{console.log("[barba] beforeEnter");__logScroll("beforeEnter");try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory("manual")}catch(e){}});
+			barba.hooks.afterEnter(()=>{console.log("[barba] afterEnter");__logScroll("afterEnter");window.__BARBA_NAVIGATING=!1;ScrollManager.unlock()});
 			
 			barba.init({
 				debug: window.DEBUG,
@@ -629,7 +612,27 @@ ScrollManager.topHard = function(){
 						name:"swipe",
 						custom:function(d){var fade=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));return !fade},
 						leave:async function({current:c}){ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){await WebflowAdapter.enter(n);try{ScrollManager.topHard()}catch(e){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0}NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});ScrollManager.unlock()},
+						//enter:async function({next:n}){await WebflowAdapter.enter(n);try{ScrollManager.topHard()}catch(e){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0}NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});ScrollManager.unlock()},
+						enter:async function({next:n}){
+							console.log("[barba] enter start");
+							__logScroll("enter-start");
+							
+							await WebflowAdapter.enter(n);
+							console.log("[barba] after WebflowAdapter.enter");
+							__logScroll("after-WebflowAdapter");
+							
+							try{ScrollManager.topHard()}catch(e){}
+							__logScroll("after-topHard");
+							
+							NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);
+							
+							await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});
+							console.log("[barba] after runEntryFlow");
+							__logScroll("after-entryFlow");
+							
+							ScrollManager.unlock();
+							console.log("[barba] unlock");
+						},
 						afterEnter:function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container)}
 					}
 				]
@@ -638,34 +641,6 @@ ScrollManager.topHard = function(){
 			if (typeof installDebugProbes === 'function') installDebugProbes();
 			if (typeof logBarbaSanity    === 'function') logBarbaSanity();
 		}
-
-		barba.hooks.before(() => {
-  console.log("[barba] before",window.scrollY);
-});
-
-barba.hooks.beforeLeave(() => {
-  console.log("[barba] beforeLeave",window.scrollY);
-});
-
-barba.hooks.leave(() => {
-  console.log("[barba] leave",window.scrollY);
-});
-
-barba.hooks.afterLeave(() => {
-  console.log("[barba] afterLeave",window.scrollY);
-});
-
-barba.hooks.beforeEnter(() => {
-  console.log("[barba] beforeEnter",window.scrollY);
-});
-
-barba.hooks.enter(() => {
-  console.log("[barba] enter",window.scrollY);
-});
-
-barba.hooks.afterEnter(() => {
-  console.log("[barba] afterEnter",window.scrollY);
-});
 		
 		return {
 			init,
