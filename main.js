@@ -627,6 +627,10 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						enter:async function({next:n}){
 						  await WebflowAdapter.enter(n);
 						  NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);
+							if(window.ScrollTrigger){
+								ScrollTrigger.clearScrollMemory();
+								window.scrollTo(0,0);
+							}
 						  try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory()}catch(e){}
 						  await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});
 						},
@@ -638,6 +642,10 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						enter:async function({next:n}){
 						  await WebflowAdapter.enter(n);
 						  NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);
+							if(window.ScrollTrigger){
+							    ScrollTrigger.clearScrollMemory();
+							    window.scrollTo(0,0);
+							  }
 						  try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory()}catch(e){}
 						  await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});
 						},
