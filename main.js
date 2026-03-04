@@ -587,20 +587,32 @@ ScrollManager.topHard = function(){
 		
 			if (typeof logBarbaSanity === 'function') logBarbaSanity();
 
-			barba.hooks.once(async ({next:n})=>{
-				if(window.__ENTRY_ONCE_RAN)return;window.__ENTRY_ONCE_RAN=1;
+			barba.hooks.once(async({next:n})=>{
+				if(window.__ENTRY_ONCE_RAN)return;
+				window.__ENTRY_ONCE_RAN=1;
 				try{
-					ScrollManager.lock();await WebflowAdapter.enter(n);await runEntryFlow(n.container,{withCoverOut:!1});
+					ScrollManager.lock();
+					await WebflowAdapter.enter(n);
+					await runEntryFlow(n.container,{withCoverOut:!1});
 					// if you ever enable it again:
 					// if (PreloaderService.shouldRun()) await PreloaderService.maybeRun();
 				}catch(e){
 					console.warn("[once] entry failed",e);
-				}finally{try{if(EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard){EntryOrchestrator.releasePreloadingGuard();}else{document.documentElement.removeAttribute("data-preloading");}}catch(_){}ScrollManager.unlock();}
+				}finally{
+					try{
+						if(EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard){
+							EntryOrchestrator.releasePreloadingGuard();
+						}else{
+							document.documentElement.removeAttribute("data-preloading");
+						}
+					}catch(_){}
+					ScrollManager.unlock();
+				}
 			});
 
-			barba.hooks.before(()=>{window.__BARBA_NAVIGATING=!0});
-				barba.hooks.beforeEnter(()=>{try{if(window.ScrollTrigger) ScrollTrigger.clearScrollMemory("manual");ScrollManager.topHard();}catch(e){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;}});
-			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING=!1});
+			barba.hooks.before(()=>{window.__BARBA_NAVIGATING=!0;ScrollManager.lock()});
+			barba.hooks.beforeEnter(()=>{try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory("manual");ScrollManager.topHard()}catch(e){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0}});
+			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING=!1;ScrollManager.unlock()});
 			
 			barba.init({
 				debug: window.DEBUG,
