@@ -537,7 +537,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
 		window.TransitionDecider=window.TransitionDecider||function(){var D=window.DEBUG||window.__TRANSITION_DEBUG;function shouldFadeFor(d){try{var a=d&&d.trigger&&(d.trigger.tagName==="A"?d.trigger:d.trigger.closest&&d.trigger.closest("a"));if(!a)return!1;var f=!!(a.closest&&a.closest('[data-transition="fade"]'));D&&console.log("[TransitionDecider] trigger:",a,"fade:",f);return f}catch(e){return!1}}function consume(){}return{shouldFadeFor:shouldFadeFor,consume:consume}}();
 		barba.hooks.before(() => {try { document.documentElement.setAttribute("data-preloading","true"); } catch(e){}});
-		barba.hooks.afterLeave((data)=>{try{if(data && data.next && data.next.container){data.next.container.style.opacity="0";data.next.container.style.visibility="hidden";}}catch(e){}});
 		
 		// Barba init
 		function init() {
