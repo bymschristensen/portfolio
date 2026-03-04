@@ -93,7 +93,7 @@ WebflowAdapter.enter = async function(...args){
 		const Cursor={setDestroy(t){state.cursorDestroy="function"==typeof t?t:null},destroy(){try{state.cursorDestroy&&state.cursorDestroy()}catch{}finally{state.cursorDestroy=null}}};
 		function nukeCursorDom(){try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((r=>{try{r.remove()}catch{}}))}catch{}}
 		async function doubleRAF(){await new Promise((e=>requestAnimationFrame(e))),await new Promise((e=>requestAnimationFrame(e)))}
-		function safeRefresh(r,f){try{var ST=window.ScrollTrigger;if(!ST)return;if(window.__ST_RF_LOCK&&!f)return;window.__ST_RF_LOCK=1;var y=window.pageYOffset||document.documentElement.scrollTop||0;requestAnimationFrame(function(){requestAnimationFrame(function(){try{ST.refresh(!0)}catch(e){}try{ST.update&&ST.update()}catch(e){}try{var y2=window.pageYOffset||document.documentElement.scrollTop||0;Math.abs(y2-y)>2&&scrollTo(0,y)}catch(e){}window.__ST_RF_LOCK=0})})}catch(e){try{window.__ST_RF_LOCK=0}catch(_){}}}
+		function safeRefresh(r,f){try{var ST=window.ScrollTrigger;if(!ST)return;if(window.__ST_RF_LOCK&&!f)return;window.__ST_RF_LOCK=1;var allow=!window.__BARBA_NAVIGATING,y=window.pageYOffset||document.documentElement.scrollTop||0;requestAnimationFrame(function(){requestAnimationFrame(function(){try{ST.refresh(!0)}catch(e){}try{ST.update&&ST.update()}catch(e){}if(allow)try{var y2=window.pageYOffset||document.documentElement.scrollTop||0;Math.abs(y2-y)>2&&scrollTo(0,y)}catch(e){}window.__ST_RF_LOCK=0})})}catch(e){try{window.__ST_RF_LOCK=0}catch(_){}}}
 		const InitManager={run:async function(r,o){r=r||document,o=o||{};var e=!!o.preserveServicePins;Observers.clearAll({preserveServicePins:e}),Cursor.destroy(),nukeCursorDom(),"function"==typeof window.initAllYourInits&&window.initAllYourInits(r),await doubleRAF(),await doubleRAF();try{window.ScrollTrigger&&safeRefresh&&safeRefresh("late",!0)}catch{}},cleanup:function(o){o=o||{};var e=!!o.preserveServicePins;Observers.clearAll({preserveServicePins:e}),Cursor.destroy(),nukeCursorDom()}};
 		const Fonts={async ready(){try{await(document.fonts?.ready||Promise.resolve())}catch{}}};
 		const layoutReady=(r,d)=>{let s=0,t=0,l="";const m=()=>((document.documentElement.scrollHeight||0)+"|"+((r||document).body?Math.round((r||document).body.getBoundingClientRect().height):0)),c=()=>{const g=m();g===l?s++:(s=0,l=g);if(s>=2){setTimeout(d,120);return}t++<40&&requestAnimationFrame(c)};requestAnimationFrame(c)};
@@ -587,31 +587,20 @@ ScrollManager.topHard = function(){
 		
 			if (typeof logBarbaSanity === 'function') logBarbaSanity();
 
-			// register ONCE hook first
 			barba.hooks.once(async ({next:n})=>{
-				if(window.__ENTRY_ONCE_RAN)return;
-				window.__ENTRY_ONCE_RAN=1;
+				if(window.__ENTRY_ONCE_RAN)return;window.__ENTRY_ONCE_RAN=1;
 				try{
-					ScrollManager.lock();
-					await WebflowAdapter.enter(n);
-					await runEntryFlow(n.container,{withCoverOut:!1});
+					ScrollManager.lock();await WebflowAdapter.enter(n);await runEntryFlow(n.container,{withCoverOut:!1});
 					// if you ever enable it again:
 					// if (PreloaderService.shouldRun()) await PreloaderService.maybeRun();
 				}catch(e){
 					console.warn("[once] entry failed",e);
-				}finally{
-					try{
-						if(EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard){
-							EntryOrchestrator.releasePreloadingGuard();
-						}else{
-							document.documentElement.removeAttribute("data-preloading");
-						}
-					}catch(_){}
-					ScrollManager.unlock();
-				}
+				}finally{try{if(EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard){EntryOrchestrator.releasePreloadingGuard();}else{document.documentElement.removeAttribute("data-preloading");}}catch(_){}ScrollManager.unlock();}
 			});
-			
-			barba.hooks.beforeEnter(()=>{try{if(window.ScrollTrigger) ScrollTrigger.clearScrollMemory("manual");ScrollManager.topHard();}catch(e){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;}});
+
+			barba.hooks.before(()=>{window.__BARBA_NAVIGATING=!0});
+				barba.hooks.beforeEnter(()=>{try{if(window.ScrollTrigger) ScrollTrigger.clearScrollMemory("manual");ScrollManager.topHard();}catch(e){window.scrollTo(0,0);document.documentElement.scrollTop=0;document.body.scrollTop=0;}});
+			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING=!1});
 			
 			barba.init({
 				debug: window.DEBUG,
