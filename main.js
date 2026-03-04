@@ -574,6 +574,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					ScrollManager.unlock();
 				}
 			});
+
+			barba.hooks.beforeEnter(() => {try{ScrollManager.topHard();if(window.ScrollTrigger)ScrollTrigger.clearScrollMemory();}catch(e){window.scrollTo(0,0);}});
 			
 			barba.init({
 				debug: window.DEBUG,
