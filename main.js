@@ -598,9 +598,16 @@ console.log("[barba][fade] leave:done")
 enter:async function({next:n}){
 console.log("[barba][fade] enter");
 ScrollManager.topHard();
+
+/* hide new container immediately */
+gsap.set(n.container,{autoAlpha:0});
+
 await WebflowAdapter.enter(n);
 NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!1);
+
+/* now run entry animation which reveals content */
 await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});
+
 ScrollManager.unlock()
 },
 afterEnter:function({next:n}){
