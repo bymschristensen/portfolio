@@ -506,8 +506,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	})();
 
 // Scroll Manager
-	window.ScrollManager=function(){var l=document.scrollingElement||document.documentElement,b=0,y=0,ov="",sb="";function topHard(){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{e.scrollTop=0,document.body.scrollTop=0,window.scrollTo(0,0)}catch(t){}try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory("manual")}catch(t){}}function setY(t){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(o){}try{e.scrollTop=t,document.body.scrollTop=t,window.scrollTo(0,t)}catch(o){}}try{history.scrollRestoration="manual"}catch(t){}try{sb=getComputedStyle(document.documentElement).scrollBehavior||""}catch(t){}return{lock:function(){if(b)return;b=1;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{l=document.scrollingElement||document.documentElement}catch(t){}y=window.pageYOffset||l.scrollTop||0;ov=document.documentElement.style.overflow||"";document.documentElement.style.overflow="hidden";document.body.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=-y+"px";document.body.style.width="100%";},unlock:function(){if(!b)return;b=0;document.documentElement.style.overflow=ov;document.body.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";try{sb?document.documentElement.style.scrollBehavior=sb:document.documentElement.style.removeProperty("scroll-behavior")}catch(t){}},topHard:topHard,setY:setY}}();
-	
+	window.ScrollManager=function(){var l=document.scrollingElement||document.documentElement,b=0,y=0,ov="",sb="";function setY(t){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(o){}try{e.scrollTop=t,document.body.scrollTop=t,window.scrollTo(0,t)}catch(o){}}try{history.scrollRestoration="manual"}catch(t){}try{sb=getComputedStyle(document.documentElement).scrollBehavior||""}catch(t){}return{lock:function(){if(b)return;b=1;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{l=document.scrollingElement||document.documentElement}catch(t){}y=window.pageYOffset||l.scrollTop||0;ov=document.documentElement.style.overflow||"";document.documentElement.style.overflow="hidden";document.body.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=-y+"px";document.body.style.width="100%"},unlock:function(){if(!b)return;b=0;document.documentElement.style.overflow=ov;document.body.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";try{sb?document.documentElement.style.scrollBehavior=sb:document.documentElement.style.removeProperty("scroll-behavior")}catch(t){}},setY:setY}}();
+
 // Transition Effects
 	window.TransitionEffects = (function () {
 		let runningCoverOut = null;
@@ -623,7 +623,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			window.__ENTRY_BOOTED = 1;
 
 			// 1) Always hard-reset scroll on real page load / reload
-			try { if (window.ScrollManager && typeof ScrollManager.topHard === "function") { ScrollManager.topHard(); }} catch (e) { console.warn("[BOOT] ScrollManager.topHard on boot failed", e); }
+			try{window.scrollTo(0,0)}catch(e){console.warn("[BOOT] scroll reset failed",e)}
 			
 			// 2) Set up navigation & debug
 			try { NavigationManager.init({ debug: DEBUG }); NavigationManager.ensureBarbaClickRouting(); } catch (a) { console.warn("[BOOT] NavigationManager init failed", a); }
