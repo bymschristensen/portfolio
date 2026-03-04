@@ -18,6 +18,30 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 // GSAP
 	try{if(window.gsap&&gsap.registerPlugin){var _p=[];typeof window.ScrollTrigger!=="undefined"&&_p.push(window.ScrollTrigger);typeof window.Flip!=="undefined"&&_p.push(window.Flip);typeof window.SplitText!=="undefined"&&_p.push(window.SplitText);typeof window.TextPlugin!=="undefined"&&_p.push(window.TextPlugin);typeof window.Observer!=="undefined"&&_p.push(window.Observer);gsap.registerPlugin.apply(gsap,_p)}}catch(e){}
 	window.DEBUG = typeof window.DEBUG!="undefined" ? window.DEBUG : true;
+	if(window.ScrollTrigger){
+  ScrollTrigger.addEventListener("refreshInit",()=>{
+    console.log("[ScrollTrigger] refreshInit",window.scrollY);
+  });
+
+  ScrollTrigger.addEventListener("refresh",()=>{
+    console.log("[ScrollTrigger] refreshDone",window.scrollY);
+  });
+}
+	const _wfEnter = WebflowAdapter.enter;
+
+WebflowAdapter.enter = async function(...args){
+  console.log("[WebflowAdapter] enter start",window.scrollY);
+  const result = await _wfEnter.apply(this,args);
+  console.log("[WebflowAdapter] enter end",window.scrollY);
+  return result;
+};
+	const _topHard = ScrollManager.topHard;
+ScrollManager.topHard = function(){
+  console.log("[ScrollManager.topHard] BEFORE",window.scrollY);
+  const r=_topHard.apply(this,arguments);
+  console.log("[ScrollManager.topHard] AFTER",window.scrollY);
+  return r;
+};
 
 // Navigation Manager Test
 	window.NavigationManager = (function () {
@@ -614,6 +638,34 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			if (typeof installDebugProbes === 'function') installDebugProbes();
 			if (typeof logBarbaSanity    === 'function') logBarbaSanity();
 		}
+
+		barba.hooks.before(() => {
+  console.log("[barba] before",window.scrollY);
+});
+
+barba.hooks.beforeLeave(() => {
+  console.log("[barba] beforeLeave",window.scrollY);
+});
+
+barba.hooks.leave(() => {
+  console.log("[barba] leave",window.scrollY);
+});
+
+barba.hooks.afterLeave(() => {
+  console.log("[barba] afterLeave",window.scrollY);
+});
+
+barba.hooks.beforeEnter(() => {
+  console.log("[barba] beforeEnter",window.scrollY);
+});
+
+barba.hooks.enter(() => {
+  console.log("[barba] enter",window.scrollY);
+});
+
+barba.hooks.afterEnter(() => {
+  console.log("[barba] afterEnter",window.scrollY);
+});
 		
 		return {
 			init,
