@@ -27,21 +27,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
     console.log("[ScrollTrigger] refreshDone",window.scrollY);
   });
 }
-	const _wfEnter = WebflowAdapter.enter;
-
-WebflowAdapter.enter = async function(...args){
-  console.log("[WebflowAdapter] enter start",window.scrollY);
-  const result = await _wfEnter.apply(this,args);
-  console.log("[WebflowAdapter] enter end",window.scrollY);
-  return result;
-};
-	const _topHard = ScrollManager.topHard;
-ScrollManager.topHard = function(){
-  console.log("[ScrollManager.topHard] BEFORE",window.scrollY);
-  const r=_topHard.apply(this,arguments);
-  console.log("[ScrollManager.topHard] AFTER",window.scrollY);
-  return r;
-};
+	
+	
 
 // Navigation Manager Test
 	window.NavigationManager = (function () {
@@ -88,6 +75,16 @@ ScrollManager.topHard = function(){
 			enter,
 		};
 	})();
+
+const _wfEnter = WebflowAdapter.enter;
+
+WebflowAdapter.enter = async function(...args){
+  console.log("[WebflowAdapter] enter start",window.scrollY);
+  const result = await _wfEnter.apply(this,args);
+  console.log("[WebflowAdapter] enter end",window.scrollY);
+  return result;
+};
+	
 
 // Core Utilities
 	window.CoreUtilities = (function () {
@@ -542,6 +539,14 @@ ScrollManager.topHard = function(){
 // Scroll Manager
 	window.ScrollManager=function(){var l=document.scrollingElement||document.documentElement,b=0,y=0,ov="",sb="";function topHard(){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{e.scrollTop=0,document.body.scrollTop=0,window.scrollTo(0,0)}catch(t){}try{window.ScrollTrigger&&ScrollTrigger.clearScrollMemory&&ScrollTrigger.clearScrollMemory("manual")}catch(t){}}function setY(t){var e=l;try{document.documentElement.style.scrollBehavior="auto"}catch(o){}try{e.scrollTop=t,document.body.scrollTop=t,window.scrollTo(0,t)}catch(o){}}try{history.scrollRestoration="manual"}catch(t){}try{sb=getComputedStyle(document.documentElement).scrollBehavior||""}catch(t){}return{lock:function(){if(b)return;b=1;try{document.documentElement.style.scrollBehavior="auto"}catch(t){}try{l=document.scrollingElement||document.documentElement}catch(t){}y=window.pageYOffset||l.scrollTop||0;ov=document.documentElement.style.overflow||"";document.documentElement.style.overflow="hidden";document.body.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=-y+"px";document.body.style.width="100%";},unlock:function(){if(!b)return;b=0;document.documentElement.style.overflow=ov;document.body.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";try{sb?document.documentElement.style.scrollBehavior=sb:document.documentElement.style.removeProperty("scroll-behavior")}catch(t){}},topHard:topHard,setY:setY}}();
 
+	const _topHard = ScrollManager.topHard;
+ScrollManager.topHard = function(){
+  console.log("[ScrollManager.topHard] BEFORE",window.scrollY);
+  const r=_topHard.apply(this,arguments);
+  console.log("[ScrollManager.topHard] AFTER",window.scrollY);
+  return r;
+};
+	
 // Transition Effects
 	window.TransitionEffects = (function () {
 		let runningCoverOut = null;
