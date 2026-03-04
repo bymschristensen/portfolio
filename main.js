@@ -1,4 +1,15 @@
 if ("scrollRestoration" in history) {history.scrollRestoration = "manual";}
+(function(){
+let lastY=-1;
+function logScroll(){
+  const y=window.scrollY||window.pageYOffset||document.documentElement.scrollTop||0;
+  if(y!==lastY){
+    console.log("[scroll-change]",y,"time:",performance.now().toFixed(1));
+    lastY=y;
+  }
+}
+window.addEventListener("scroll",logScroll,{passive:true});
+})();
 if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — skipping."); } else { window.__PORTFOLIO_MAIN__ = true; (function MAIN(){ 
 window.__PORTFOLIO_MAIN__ = true;
 console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&document.currentScript.src)||'(inline)');
