@@ -7,6 +7,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 // GSAP
 	try{if(window.gsap&&gsap.registerPlugin){var _p=[];typeof window.ScrollTrigger!=="undefined"&&_p.push(window.ScrollTrigger);typeof window.Flip!=="undefined"&&_p.push(window.Flip);typeof window.SplitText!=="undefined"&&_p.push(window.SplitText);typeof window.TextPlugin!=="undefined"&&_p.push(window.TextPlugin);typeof window.Observer!=="undefined"&&_p.push(window.Observer);gsap.registerPlugin.apply(gsap,_p)}}catch(e){}
 	ScrollTrigger.config({autoRefreshEvents:"visibilitychange,DOMContentLoaded,load",ignoreMobileResize:!0});
+	ScrollTrigger.normalizeScroll(false);
 	(function(){
   const originalScrollTo = window.scrollTo;
   window.scrollTo = function(...args){
