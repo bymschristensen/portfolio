@@ -7,6 +7,14 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 // GSAP
 	try{if(window.gsap&&gsap.registerPlugin){var _p=[];typeof window.ScrollTrigger!=="undefined"&&_p.push(window.ScrollTrigger);typeof window.Flip!=="undefined"&&_p.push(window.Flip);typeof window.SplitText!=="undefined"&&_p.push(window.SplitText);typeof window.TextPlugin!=="undefined"&&_p.push(window.TextPlugin);typeof window.Observer!=="undefined"&&_p.push(window.Observer);gsap.registerPlugin.apply(gsap,_p)}}catch(e){}
 	ScrollTrigger.config({autoRefreshEvents:"visibilitychange,DOMContentLoaded,load",ignoreMobileResize:!0});
+	(function(){
+  const originalScrollTo = window.scrollTo;
+  window.scrollTo = function(...args){
+    console.log("SCROLL TO CALLED:", args);
+    console.trace("scrollTo stack");
+    return originalScrollTo.apply(this,args);
+  };
+})();
 	!function(){var u=navigator.userAgent||"",s=/AppleWebKit/i.test(u)&&/Safari/i.test(u)&&!/Chrome|CriOS|Edg|EdgiOS|FxiOS|OPR|OPiOS|Chromium/i.test(u);if(!s||window.__SAF_SCROLL_GUARD)return;window.__SAF_SCROLL_GUARD=1;var o=window.scrollTo.bind(window),t=0,l=0;function n(){return performance&&performance.now?performance.now():Date.now()}function r(){return window.pageYOffset||document.documentElement.scrollTop||0}window.__armSafariScrollGuard=function(e){t=n()+(e||600);l=r()};window.addEventListener("scroll",function(){if(n()<t){var e=r();e>2&&(l=e)}},{passive:!0});window.scrollTo=function(e,i){try{if(e&&"object"==typeof e){i=e.top;e=e.left}}catch(a){}var c=+i||0;return n()<t&&0===c&&l>2?void 0:o.apply(window,arguments)}}();
 	window.DEBUG = typeof window.DEBUG!="undefined" ? window.DEBUG : true;
 
