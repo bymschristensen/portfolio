@@ -586,7 +586,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			if (typeof installDebugProbes === 'function') installDebugProbes();
 			if (typeof logBarbaSanity    === 'function') logBarbaSanity();
 		}
-		try{barba&&barba.hooks&&barba.hooks.afterEnter&&barba.hooks.afterEnter(function(){window.ScrollTrigger&&safeRefresh("barba.afterEnter",1)})}catch(e){}
+		try{barba&&barba.hooks&&barba.hooks.afterEnter&&barba.hooks.afterEnter(function(){window.CoreUtilities&&CoreUtilities.safeRefresh&&CoreUtilities.safeRefresh("barba.afterEnter",!0)})}catch(e){}
 		
 		return {
 			init,
