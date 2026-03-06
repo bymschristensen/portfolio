@@ -84,8 +84,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			InitManager,
 			Fonts,
 			layoutReady,
-			Text,
-			safeRefresh
+			Text
 		};
 	})();
 
