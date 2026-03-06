@@ -553,8 +553,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				}catch(e){console.warn("[once] entry failed",e);}finally{try{if(EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard){EntryOrchestrator.releasePreloadingGuard();}else{document.documentElement.removeAttribute("data-preloading");}}catch(_){}ScrollManager.unlock();}
 			});
 
-			barba.hooks.before(()=>{window.__BARBA_NAVIGATING = true;ScrollManager.setY(0);ScrollManager.lock();try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}});
-			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING = false;requestAnimationFrame(()=>{requestAnimationFrame(()=>{try{WebflowAdapter.reinit("afterEnter")}catch(e){}ScrollManager.unlock();ScrollManager.refresh("barba.afterEnter");});});});
+			barba.hooks.before(()=>{window.__BARBA_NAVIGATING = true;ScrollManager.lock();try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}});
+			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING = false;requestAnimationFrame(()=>{requestAnimationFrame(()=>{try{WebflowAdapter.reinit("afterEnter")}catch(e){}ScrollManager.setY(0);ScrollManager.unlock();ScrollManager.refresh("barba.afterEnter");});});});
 			
 			barba.init({
 				debug: window.DEBUG,
