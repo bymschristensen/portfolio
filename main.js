@@ -6,18 +6,10 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
 // GSAP
 	try{if(window.gsap&&gsap.registerPlugin){var _p=[];typeof window.ScrollTrigger!=="undefined"&&_p.push(window.ScrollTrigger);typeof window.Flip!=="undefined"&&_p.push(window.Flip);typeof window.SplitText!=="undefined"&&_p.push(window.SplitText);typeof window.TextPlugin!=="undefined"&&_p.push(window.TextPlugin);typeof window.Observer!=="undefined"&&_p.push(window.Observer);gsap.registerPlugin.apply(gsap,_p)}}catch(e){}
-	ScrollTrigger.config({autoRefreshEvents:"visibilitychange,DOMContentLoaded,load",ignoreMobileResize:!0});
+	ScrollTrigger.config({autoRefreshEvents:"visibilitychange",ignoreMobileResize:true});
 	ScrollTrigger.normalizeScroll(false);
-	(function(){
-  const originalScrollTo = window.scrollTo;
-  window.scrollTo = function(...args){
-    console.log("SCROLL TO CALLED:", args);
-    console.trace("scrollTo stack");
-    return originalScrollTo.apply(this,args);
-  };
-})();
-	!function(){var u=navigator.userAgent||"",s=/AppleWebKit/i.test(u)&&/Safari/i.test(u)&&!/Chrome|CriOS|Edg|EdgiOS|FxiOS|OPR|OPiOS|Chromium/i.test(u);if(!s||window.__SAF_SCROLL_GUARD)return;window.__SAF_SCROLL_GUARD=1;var o=window.scrollTo.bind(window),t=0,l=0;function n(){return performance&&performance.now?performance.now():Date.now()}function r(){return window.pageYOffset||document.documentElement.scrollTop||0}window.__armSafariScrollGuard=function(e){t=n()+(e||600);l=r()};window.addEventListener("scroll",function(){if(n()<t){var e=r();e>2&&(l=e)}},{passive:!0});window.scrollTo=function(e,i){try{if(e&&"object"==typeof e){i=e.top;e=e.left}}catch(a){}var c=+i||0;return n()<t&&0===c&&l>2?void 0:o.apply(window,arguments)}}();
-	window.DEBUG = typeof window.DEBUG!="undefined" ? window.DEBUG : true;
+	window.ScrollManager=(function(){let refreshPending=false;function refresh(reason){if(!window.ScrollTrigger) return;if(refreshPending) return;refreshPending=true;requestAnimationFrame(()=>{requestAnimationFrame(()=>{try{ScrollTrigger.refresh(true);ScrollTrigger.update();}catch(e){}refreshPending=false;});});}return{refresh};})();
+	window.DEBUG=false;
 
 // Navigation Manager Test
 	window.NavigationManager = (function () {
@@ -55,7 +47,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function reset({next:e}){syncHead(e)}
 		function reinit(r){try{if(!window.Webflow)return;try{Webflow.destroy&&Webflow.destroy()}catch(e){}try{Webflow.ready&&Webflow.ready()}catch(e){}try{if(Webflow.require){var ix=Webflow.require("ix2");ix&&(ix.destroy&&ix.destroy(),ix.init&&ix.init())}}catch(e){}try{if(Webflow.require){["commerce","lightbox","slider","tabs","dropdown","navbar"].forEach(function(k){try{var m=Webflow.require(k);m&&(m.destroy&&m.destroy(),m.ready&&m.ready(),m.init&&m.init(),m.redraw&&m.redraw())}catch(e){}})}}catch(e){} }catch(e){console.warn("[WebflowAdapter.reinit] failed:",e,r||"")}}
 		function reparent(e){(e=e||document).querySelectorAll("[data-child]").forEach((t=>{if(t.matches(".w-tab-link, .w-tab-pane"))return;const a=t.getAttribute("data-child");let r=e.querySelector(`[data-parent="${a}"]`)||document.querySelector(`[data-parent="${a}"]`);r&&t.parentNode!==r&&r.appendChild(t)}))}
-		async function enter(n){try{reset({next:n}),reparent(n.container||document),await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e)),reinit("enter"),await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e));try{var eng=window.__productEngine;if(eng&&eng.requestRefresh)eng.requestRefresh("wf.enter");else window.CoreUtilities&&CoreUtilities.safeRefresh?CoreUtilities.safeRefresh("wf.enter",!0):window.ScrollTrigger&&(ScrollTrigger.refresh(!0),ScrollTrigger.update&&ScrollTrigger.update())}catch(e){}}catch(e){console.warn("[WebflowAdapter.enter] failed:",e)}}
+		async function enter(n){try{reset({next:n}),reparent(n.container||document),await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e)),reinit("enter"),await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e));try{var eng=window.__productEngine;if(eng&&eng.requestRefresh)eng.requestRefresh("wf.enter");else ScrollManager.refresh("wf.enter")}catch(e){}}catch(e){console.warn("[WebflowAdapter.enter] failed:",e)}}
 		
 		return {
 			reset,
@@ -74,7 +66,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		async function doubleRAF(){await new Promise((e=>requestAnimationFrame(e))),await new Promise((e=>requestAnimationFrame(e)))}
 		window.__SafariScrollJail=window.__SafariScrollJail||function(){var u=navigator.userAgent||"",s=/AppleWebKit/i.test(u)&&/Safari/i.test(u)&&!/Chrome|CriOS|EdgiOS|FxiOS|OPiOS|Chromium/i.test(u),o=window.scrollTo,a=0,e=0,l=0,t=0;function y(){return window.pageYOffset||document.documentElement.scrollTop||0}function arm(n){if(!s)return;a=1;e=performance.now()+900;l=typeof n=="number"?n:y()}function disarm(){a=0}window.__IS_SAFARI=s;addEventListener("scroll",function(){var n=y();n>0&&(l=n);t=performance.now()},{passive:!0});window.scrollTo=function(){try{var n=arguments[0],r=arguments[1],i=null;if(typeof n=="object"&&n)i=n.top;else if(typeof r=="number")i=r;var c=y(),p=performance.now();if(s&&a&&i===0&&c>2&&p<e&&p-t<1400)return o.call(window,0,l)}catch(_){}return o.apply(window,arguments)};return{arm:arm,disarm:disarm,isSafari:s}}();
 		window.__USER_SCROLLED=window.__USER_SCROLLED||function(){return(window.pageYOffset||document.documentElement.scrollTop||0)>5};
-		function safeRefresh(r,f){try{var ST=window.ScrollTrigger;if(!ST)return;if(!f&&window.__USER_SCROLLED&&window.__USER_SCROLLED())return;if(window.__ST_RF_LOCK&&!f)return;window.__ST_RF_LOCK=1;requestAnimationFrame(function(){requestAnimationFrame(function(){if(!f&&window.__USER_SCROLLED&&window.__USER_SCROLLED()){window.__ST_RF_LOCK=0;return}try{ST.refresh(!0)}catch(e){}try{ST.update&&ST.update()}catch(e){}window.__ST_RF_LOCK=0})})}catch(e){try{window.__ST_RF_LOCK=0}catch(_){}}}
 		const InitManager={run:async function(r,o){r=r||document,o=o||{};var e=!!o.preserveServicePins;Observers.clearAll({preserveServicePins:e}),Cursor.destroy(),nukeCursorDom(),"function"==typeof window.initAllYourInits&&window.initAllYourInits(r),await doubleRAF(),await doubleRAF();try{window.ScrollTrigger&&safeRefresh&&safeRefresh("late",!0)}catch{}},cleanup:function(o){o=o||{};var e=!!o.preserveServicePins;Observers.clearAll({preserveServicePins:e}),Cursor.destroy(),nukeCursorDom()}};
 		const Fonts={async ready(){try{await(document.fonts?.ready||Promise.resolve())}catch{}}};
 		const layoutReady=(r,d)=>{let s=0,t=0,l="";const m=()=>((document.documentElement.scrollHeight||0)+"|"+((r||document).body?Math.round((r||document).body.getBoundingClientRect().height):0)),c=()=>{const g=m();g===l?s++:(s=0,l=g);if(s>=2){setTimeout(d,120);return}t++<40&&requestAnimationFrame(c)};requestAnimationFrame(c)};
@@ -97,7 +88,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			safeRefresh
 		};
 	})();
-	window.__ST_SAFE_REFRESH=function(r,f){try{return window.CoreUtilities&&CoreUtilities.safeRefresh?CoreUtilities.safeRefresh(r,f):void 0}catch(e){}};
 
 // Init Manager
 	window.InitManager = (function () {
@@ -446,7 +436,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 
 		function sortByStage(t){const e={early:0,main:1,late:2};return t.slice().sort(((t,a)=>(e[t.stage]??1)-(e[a.stage]??1)))}
 		function buildIndex(){if(state.installed)return;const e=[...registries.common,...registries.pages.selected,...registries.pages.archive,...registries.pages.resources,...registries.pages.capabilities,...registries.pages.info,...registries.pages.caseStudy];state.features=sortByStage(e),state.installed=!0}
-		async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(e){console.warn("[InitManager]",r.id,"init failed:",e)}try{await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e));var o=window.__productEngine;if(o&&o.requestRefresh)return void o.requestRefresh("init-run");if(window.ScrollTrigger){layoutReady(e,function(){try{window.CoreUtilities&&CoreUtilities.safeRefresh?CoreUtilities.safeRefresh("init-run",!0):(ScrollTrigger.refresh(!0),ScrollTrigger.update&&ScrollTrigger.update&&ScrollTrigger.update())}catch(e){}})}}catch{}}
+		async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl,.custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(e){console.warn("[InitManager]",r.id,"init failed:",e)}try{await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e));var o=window.__productEngine;if(o&&o.requestRefresh)return void o.requestRefresh("init-run");if(window.ScrollTrigger){layoutReady(e,function(){try{ScrollManager.refresh("init-run")}catch(e){}})}}catch{}}
 		async function cleanup(r=document,{preserveServicePins:e=!1}={}){var o=r||document;for(const r of state.features)if("function"==typeof r.destroy)try{await r.destroy(o,{})}catch(e){console.warn("[InitManager]",r.id,"destroy failed:",e)}try{CoreUtilities.Observers.clearAll({preserveServicePins:e})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((r=>{try{r.remove()}catch{}}))}catch{}}
 		function enable(id, on = true) { const f = state.featuresById.get(id); if (f) f.enabled = !!on; }
 		function disable(id) { enable(id, false); }
@@ -534,7 +524,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		const entryConfigByNamespace={selected:{delayHero:!1,entryOffset:-.2},archive:{delayHero:!1,entryOffset:-.2},resources:{delayHero:!1,entryOffset:-.2},capabilities:{delayHero:!0,entryOffset:.1},info:{delayHero:!1,entryOffset:-.2}};
 		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
 		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
-		async function finalizeAfterEntry(r){try{await new Promise(e=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(e,30))));var ST=window.ScrollTrigger;if(!ST)return;var eng=window.__productEngine;if(window.__USER_SCROLLED&&window.__USER_SCROLLED())return;var y0=window.pageYOffset||document.documentElement.scrollTop||0,tries=0;function run(){try{if(window.__USER_SCROLLED&&window.__USER_SCROLLED())return;if(eng&&eng.requestRefresh)return eng.requestRefresh("entry-final");if(window.CoreUtilities&&CoreUtilities.safeRefresh)return CoreUtilities.safeRefresh("entry-final",!0);try{ST.refresh()}catch(e){}try{ST.update&&ST.update()}catch(e){}}catch(e){}}(function tick(){var y1=window.pageYOffset||document.documentElement.scrollTop||0;if(Math.abs(y1-y0)>2){y0=y1;return tries++<20?setTimeout(tick,120):void 0}run()})()}catch(e){}}
+		async function finalizeAfterEntry(r){try{await new Promise(e=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(e,30))));if(window.__USER_SCROLLED&&window.__USER_SCROLLED())return;var y0=window.pageYOffset||document.documentElement.scrollTop||0,tries=0;!function tick(){var y1=window.pageYOffset||document.documentElement.scrollTop||0;if(Math.abs(y1-y0)>2){y0=y1;return tries++<20?setTimeout(tick,120):void 0}try{ScrollManager.refresh("entry-final")}catch(e){}}()}catch(e){}}
 		function releasePreloadingGuard(){try{var e=document&&document.documentElement;e&&e.hasAttribute("data-preloading")&&e.removeAttribute("data-preloading")}catch(e){}}
 		async function runEntryFlow(r,t){r=r||document,t=t||{};let n=null,e=0,a=null;try{t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(a=TransitionEffects.coverOut()),InitManager&&InitManager.run&&await InitManager.run(r,{preserveServicePins:!1});const i=runPageEntryAnimations?runPageEntryAnimations(r):null;n=i&&i.tl?i.tl:gsap.timeline(),e=i&&"number"==typeof i.entryOffset?i.entryOffset:0,releasePreloadingGuard()}catch(r){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",r),n=n||null,e=0,releasePreloadingGuard()}const i=t.withCoverOut?e:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise((r=>n.eventCallback("onComplete",r)))}catch(r){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",r)}if(a)try{await a}catch(r){console.warn("[EntryOrchestrator.runEntryFlow] coverOut failed",r)}try{await finalizeAfterEntry(r)}catch(r){console.warn("[EntryOrchestrator.finalizeAfterEntry] failed",r)}}
 		window.TransitionDecider=window.TransitionDecider||function(){function shouldFadeFor(d){try{var a=d&&d.trigger&&(d.trigger.tagName==="A"?d.trigger:d.trigger.closest&&d.trigger.closest("a"));if(!a)return!1;return!!(a.closest&&a.closest('[data-transition="fade"]'))}catch(e){return!1}}function consume(){}return{shouldFadeFor:shouldFadeFor,consume:consume}}();
@@ -556,8 +546,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function init() {
 			if (window.__barbaInited) return;
 			window.__barbaInited = true;
-		
-			if (typeof logBarbaSanity === 'function') logBarbaSanity();
 
 			barba.hooks.once(async({next:n})=>{
 				if(window.__ENTRY_ONCE_RAN)return;
@@ -592,11 +580,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 					}
 				]
 			});
-			
-			if (typeof installDebugProbes === 'function') installDebugProbes();
-			if (typeof logBarbaSanity    === 'function') logBarbaSanity();
 		}
-		try{barba&&barba.hooks&&barba.hooks.afterEnter&&barba.hooks.afterEnter(function(){window.CoreUtilities&&CoreUtilities.safeRefresh&&CoreUtilities.safeRefresh("barba.afterEnter",!0)})}catch(e){}
+		try{barba&&barba.hooks&&barba.hooks.afterEnter&&barba.hooks.afterEnter(function(){ScrollManager.refresh("barba.afterEnter")})}catch(e){}
 		
 		return {
 			init,
@@ -611,23 +596,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 	})();
 	
 
-// Debug Core
-	window.DebugCore = window.DebugCore || (function () {
-		function logBarbaSanity(){try{const e=document.querySelector('[data-barba="container"]')?.getAttribute("data-barba-namespace")||"(none)",o=!!document.querySelector(".page-overlay"),t=["selected","archive","resources"];console.group("%c[Sanity] Page state","color:#0aa; font-weight:bold"),console.log("Namespace:",e),console.log("Overlay present:",o);[["/new-index","selected"],["/archive","archive"],["/resources","resources"],["/capabilities","capabilities"],["/info","info"]].forEach((([e,o])=>{const t=[...document.querySelectorAll(`a[href*="${e}"]`)];t.length&&(console.groupCollapsed(`Links → ${o} (${t.length})`),t.forEach(((e,o)=>{const t=e.closest("[data-barba-prevent]"),r=t?.getAttribute("data-barba-prevent");console.log(`#${o+1}`,{text:(e.textContent||"").trim().slice(0,60),href:e.getAttribute("href")||e.href,hasPreventAncestor:!!t,preventValue:r??null})})),console.groupEnd())})),console.log("Work set:",t.join(", ")," | work→work should be FADE, others SWIPE"),console.groupEnd()}catch(e){console.warn("[Sanity] Failed:",e)}}
-		function installDebugProbes(){if(window.barba&&!barba.__preventWrapped&&barba.options&&"function"==typeof barba.options.prevent){const e=barba.options.prevent;barba.options.prevent=t=>{const a=e(t);if(a){const e=t.el&&("A"===t.el.tagName?t.el:t.el.closest?.("a"));console.warn("[barba][prevent] blocked",{text:e?(e.textContent||"").trim().slice(0,80):null,href:e?e.getAttribute("href")||e.href:null,el:e})}return a},barba.__preventWrapped=!0}window.__linkProbeInstalled||(document.addEventListener("click",(e=>{const t=e.target&&("A"===e.target.tagName?e.target:e.target.closest?.("a"));if(!t)return;const a=t.closest("[data-barba-prevent]"),n=a?.getAttribute("data-barba-prevent");console.log("[link]",{href:t.getAttribute("href")||t.href,text:(t.textContent||"").trim().slice(0,80),hasPreventAncestor:!!a,preventValue:n??null})}),!0),window.__linkProbeInstalled=!0),window.__logTransitionChoice||(window.__logTransitionChoice=(e,t)=>{const a=t?.current?.container?.dataset?.barbaNamespace||"(none)",n=t?.next?.container?.dataset?.barbaNamespace||"(none)";console.info(`[transition] ${e}`,{from:a,to:n})}),window.barba&&barba.hooks&&!window.__barbaHooksInstalled&&(barba.hooks.before((({current:e,next:t})=>{const a=e?.container?.dataset?.barbaNamespace||"(none)",n=t?.container?.dataset?.barbaNamespace||"(none)";console.group("%c[barba] navigating","color:#6a0dad; font-weight:bold"),console.log("from → to:",a,"→",n),console.groupEnd()})),barba.hooks.after((()=>setTimeout(logBarbaSanity,0))),window.__barbaHooksInstalled=!0)}
-		function install(){if(window.DEBUG){if(window.__debugCoreErrors||(window.addEventListener("error",(e=>console.error("[Error]",e.message,e.filename,e.lineno,e.error))),window.addEventListener("unhandledrejection",(e=>console.error("[Unhandled Rejection]",e.reason))),window.__debugCoreErrors=!0),window.dlog||(window.dlog=(...e)=>console.debug("[DEBUG]",...e)),window.ScrollTrigger&&!window.__debugCoreST){try{ScrollTrigger.defaults({markers:!0})}catch{}try{ScrollTrigger.config({ignoreMobileResize:!0})}catch{}window.__debugCoreST=!0}installDebugProbes(),setTimeout(logBarbaSanity,0)}}
-		function probes () { installDebugProbes(); }
-		function sanity () { logBarbaSanity(); }
-		window.logBarbaSanity     = logBarbaSanity;
-		window.installDebugProbes = installDebugProbes;
-		
-		return {
-			install,
-			probes,
-			sanity
-		};
-	})();
-
+// Boot
 	function waitFor(t,n,i){i=i||80;var e=performance.now();!function r(){t()?n():performance.now()-e>24e3||requestAnimationFrame(r)}()}
 	(function () {
 		function boot() {
@@ -639,7 +608,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			
 			// 2) Set up navigation & debug
 			try { NavigationManager.init({ debug: DEBUG }); NavigationManager.ensureBarbaClickRouting(); } catch (a) { console.warn("[BOOT] NavigationManager init failed", a); }
-			try { DebugCore.install(); } catch (e) { console.warn("[BOOT] DebugCore.install failed", e); }
 
 			// 3) Fallback if Barba never comes up
 			function fallback(){if(!window.__ENTRY_FALLBACK_RAN){window.__ENTRY_FALLBACK_RAN=1;try{var r=document.querySelector('[data-barba="container"]')||document.body;if(EntryOrchestrator&&EntryOrchestrator.runEntryFlow&&r)EntryOrchestrator.runEntryFlow(r,{withCoverOut:!1}).finally((function(){try{EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard&&EntryOrchestrator.releasePreloadingGuard()}catch(r){}}));else{console.warn("[BOOT] runEntryFlow missing");try{EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard&&EntryOrchestrator.releasePreloadingGuard()}catch(r){}}}catch(r){console.warn("[BOOT] fallback entry failed",r);try{EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard&&EntryOrchestrator.releasePreloadingGuard()}catch(r){}}}}
