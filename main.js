@@ -10,7 +10,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 // Scroll Manager
 	ScrollTrigger.config({autoRefreshEvents:"visibilitychange",ignoreMobileResize:true});
 	ScrollTrigger.normalizeScroll(false);
-	window.ScrollManager=(function(){let r=0,p=0,l=0;function y(){return window.pageYOffset||document.documentElement.scrollTop||0}function refresh(){if(!window.ScrollTrigger)return;r=1;if(p)return;p=1;requestAnimationFrame(()=>{requestAnimationFrame(()=>{if(!r){p=0;return}r=0;try{ScrollTrigger.refresh(true);ScrollTrigger.update()}catch{}p=0})})}function lock(){l=y();document.documentElement.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=-l+"px";document.body.style.width="100%"}function unlock(){document.documentElement.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";window.scrollTo(0,l)}function setY(t){window.scrollTo(0,t||0)}function scrollTo(t,s){s?window.scrollTo({top:t,behavior:"smooth"}):window.scrollTo(0,t||0)}return{refresh:refresh,lock:lock,unlock:unlock,setY:setY,scrollTo:scrollTo}})();
+	window.ScrollManager=(function(){let q=0,r=0,l=0;function y(){return window.pageYOffset||document.documentElement.scrollTop||0}function refresh(){if(!window.ScrollTrigger)return;q=1;if(r)return;r=1;requestAnimationFrame(()=>{requestAnimationFrame(()=>{if(!q){r=0;return}q=0;try{ScrollTrigger.refresh(true);ScrollTrigger.update()}catch(e){}r=0})})}function lock(){l=y();document.documentElement.style.overflow="hidden";document.body.style.position="fixed";document.body.style.top=-l+"px";document.body.style.width="100%"}function unlock(){document.documentElement.style.overflow="";document.body.style.position="";document.body.style.top="";document.body.style.width="";window.scrollTo(0,l)}function setY(t){requestAnimationFrame(()=>{window.scrollTo(0,t||0)})}function scrollTo(t,s){requestAnimationFrame(()=>{s?window.scrollTo({top:t,behavior:"smooth"}):window.scrollTo(0,t||0)})}return{refresh:refresh,lock:lock,unlock:unlock,setY:setY,scrollTo:scrollTo}})();
 	window.DEBUG=false;
 
 // Navigation Manager Test
@@ -49,7 +49,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function reset({next:e}){syncHead(e)}
 		function reinit(r){try{if(!window.Webflow)return;try{Webflow.destroy&&Webflow.destroy()}catch(e){}try{Webflow.ready&&Webflow.ready()}catch(e){}try{if(Webflow.require){var ix=Webflow.require("ix2");ix&&(ix.destroy&&ix.destroy(),ix.init&&ix.init())}}catch(e){}try{if(Webflow.require){["commerce","lightbox","slider","tabs","dropdown","navbar"].forEach(function(k){try{var m=Webflow.require(k);m&&(m.destroy&&m.destroy(),m.ready&&m.ready(),m.init&&m.init(),m.redraw&&m.redraw())}catch(e){}})}}catch(e){} }catch(e){console.warn("[WebflowAdapter.reinit] failed:",e,r||"")}}
 		function reparent(e){(e=e||document).querySelectorAll("[data-child]").forEach((t=>{if(t.matches(".w-tab-link, .w-tab-pane"))return;const a=t.getAttribute("data-child");let r=e.querySelector(`[data-parent="${a}"]`)||document.querySelector(`[data-parent="${a}"]`);r&&t.parentNode!==r&&r.appendChild(t)}))}
-		async function enter(n){try{reset({next:n}),reparent(n.container||document),await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e)),reinit("enter"),await new Promise(e=>requestAnimationFrame(e)),await new Promise(e=>requestAnimationFrame(e));try{var eng=window.__productEngine;if(eng&&eng.requestRefresh)eng.requestRefresh("wf.enter");else ScrollManager.refresh("wf.enter")}catch(e){}}catch(e){console.warn("[WebflowAdapter.enter] failed:",e)}}
+		async function enter(n){try{reset({next:n});reparent(n.container||document);await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e));reinit("enter");await new Promise(e=>requestAnimationFrame(e));await new Promise(e=>requestAnimationFrame(e));try{ScrollManager.refresh("wf.enter")}catch(e){}}catch(e){console.warn("[WebflowAdapter.enter] failed:",e)}}
 		
 		return {
 			reset,
@@ -554,8 +554,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			});
 
 			barba.hooks.before(()=>{window.__BARBA_NAVIGATING=!0;ScrollManager.lock();try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}});
-			barba.hooks.beforeEnter(()=>{ScrollManager.setY(0);});
-			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING=!1;ScrollManager.unlock()});
+			barba.hooks.afterEnter(({next})=>{window.__BARBA_NAVIGATING = false;requestAnimationFrame(()=>{requestAnimationFrame(()=>{try{WebflowAdapter.reinit("afterEnter");}catch(e){}ScrollManager.setY(0);ScrollManager.unlock();});});});
 			
 			barba.init({
 				debug: window.DEBUG,
