@@ -10,7 +10,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 // Scroll Manager
 	ScrollTrigger.config({autoRefreshEvents:"visibilitychange",ignoreMobileResize:true});
 	ScrollTrigger.normalizeScroll(false);
-	window.ScrollManager=(function(){let q=0,r=0,l=0;function y(){return window.pageYOffset||document.documentElement.scrollTop||0}function refresh(){if(!window.ScrollTrigger)return;q=1;if(r)return;r=1;var run=function(){if(!q){r=0;return}q=0;var s=window.scrollY;try{ScrollTrigger.refresh(!0);ScrollTrigger.update();window.scrollTo(0,s)}catch(e){}r=0};requestAnimationFrame(function(){requestAnimationFrame(function(){window.__BARBA_NAVIGATING?requestAnimationFrame(run):run()})})}function lock(){l=y();document.documentElement.style.overflow="hidden"}function unlock(){document.documentElement.style.overflow="";if(!window.__BARBA_NAVIGATING)window.scrollTo(0,l)}function setY(t){window.scrollTo(0,t||0)}function scrollTo(t,s){requestAnimationFrame(function(){s?window.scrollTo({top:t,behavior:"smooth"}):window.scrollTo(0,t||0)})}return{refresh:refresh,lock:lock,unlock:unlock,setY:setY,scrollTo:scrollTo}})();
+	window.ScrollManager=(function(){let q=0,r=0,l=0;function y(){return window.pageYOffset||document.documentElement.scrollTop||0}function refresh(){if(!window.ScrollTrigger)return;q=1;if(r)return;r=1;var run=function(){if(!q){r=0;return}q=0;var s=window.scrollY;try{ScrollTrigger.refresh(!0);ScrollTrigger.update();window.scrollTo(0,s)}catch(e){}r=0};requestAnimationFrame(function(){requestAnimationFrame(function(){window.__BARBA_NAVIGATING?requestAnimationFrame(run):run()})})}function lock(){l=y();document.documentElement.style.overflow="hidden"}function unlock(){document.documentElement.style.overflow="";if(!window.__BARBA_NAVIGATING)window.scrollTo(0,l)}function setY(t){if(window.__BARBA_NAVIGATING){requestAnimationFrame(()=>window.scrollTo(0,0));return}requestAnimationFrame(()=>window.scrollTo(0,t||0))}function scrollTo(t,s){if(window.__BARBA_NAVIGATING){requestAnimationFrame(()=>window.scrollTo(0,0));return}requestAnimationFrame(()=>{s?window.scrollTo({top:t,behavior:"smooth"}):window.scrollTo(0,t||0)})}return{refresh:refresh,lock:lock,unlock:unlock,setY:setY,scrollTo:scrollTo}})();
 	window.DEBUG=false;
 
 // Navigation Manager Test
@@ -554,7 +554,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			});
 
 			barba.hooks.before(()=>{window.__BARBA_NAVIGATING = true;ScrollManager.lock();try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}});
-			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING = false;requestAnimationFrame(()=>{requestAnimationFrame(()=>{try{WebflowAdapter.reinit("afterEnter")}catch(e){}ScrollManager.setY(0);ScrollManager.unlock();ScrollManager.refresh("barba.afterEnter");});});});
+			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING = false;requestAnimationFrame(()=>{requestAnimationFrame(()=>{try{WebflowAdapter.reinit("afterEnter")}catch(e){}ScrollManager.setY(0);ScrollManager.unlock();requestAnimationFrame(()=>{ScrollManager.refresh("barba.afterEnter");});});});});
 			
 			barba.init({
 				debug: window.DEBUG,
@@ -577,7 +577,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				]
 			});
 		}
-		try{barba&&barba.hooks&&barba.hooks.afterEnter&&barba.hooks.afterEnter(function(){ScrollManager.refresh("barba.afterEnter")})}catch(e){}
 		
 		return {
 			init,
