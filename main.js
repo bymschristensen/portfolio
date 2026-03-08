@@ -461,7 +461,7 @@ return{
 				stage: "main",
 				namespaces: ['info'],
     			selectors: [],
-				init: async r=>{const t=["recommendationsOpen1","recommendationsOpen2","recommendationsOpen3","recommendationsOpen4"],n=()=>document.getElementById("recommendations")||document.querySelector('.w-tabs .w-tab-link[data-w-tab="Recommendations"]'),o=()=>{const e=document.getElementById("details")||document.querySelector(".section-details");if(!e)return;const t=e.getBoundingClientRect().top+window.pageYOffset-24;ScrollManager.setY(t)};t.forEach(t=>{const e=r.querySelector("#"+t)||document.getElementById(t);e&&!e.classList.contains("w-tab-link")&&e.addEventListener("click",e=>{e.preventDefault();(n()||{}).click?.();requestAnimationFrame(()=>requestAnimationFrame(o))},{passive:!1})})}
+				init:async r=>{const i=["recommendationsOpen1","recommendationsOpen2","recommendationsOpen3","recommendationsOpen4"],t=()=>document.getElementById("recommendations")||document.querySelector('.w-tabs .w-tab-link[data-w-tab="Recommendations"]'),n=()=>{const e=document.getElementById("details")||document.querySelector(".section-details");if(!e)return;const o=e.getBoundingClientRect().top+window.pageYOffset-24;ScrollManager.scrollTo(o,!0)};i.forEach(i=>{const e=r.querySelector("#"+i)||document.getElementById(i);e&&!e.classList.contains("w-tab-link")&&e.addEventListener("click",e=>{e.preventDefault();(t()||{}).click?.();requestAnimationFrame(()=>requestAnimationFrame(n))},{passive:!1})})}
 			}),
 			feature({
 				id: "wfSliderKick",
