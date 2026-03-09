@@ -522,7 +522,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
 		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
 		function releasePreloadingGuard(){try{var e=document&&document.documentElement;e&&e.hasAttribute("data-preloading")&&e.removeAttribute("data-preloading")}catch(e){}}
-		async function runEntryFlow(r,t){r=r||document,t=t||{};let n=null,e=0,a=null;try{InitManager&&InitManager.run&&await InitManager.run(r,{preserveServicePins:!1});t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(a=TransitionEffects.coverOut());const i=runPageEntryAnimations?runPageEntryAnimations(r):null;n=i&&i.tl?i.tl:gsap.timeline(),e=i&&"number"==typeof i.entryOffset?i.entryOffset:0,releasePreloadingGuard()}catch(o){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",o),n=n||null,e=0,releasePreloadingGuard()}const i=t.withCoverOut?e:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise(o=>n.eventCallback("onComplete",o))}catch(o){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",o)}if(a)try{await a}catch(o){console.warn("[EntryOrchestrator.runEntryFlow] coverOut failed",o)}}
+		async function runEntryFlow(r,t){r=r||document,t=t||{};let n=null,e=0,a=null;try{InitManager&&InitManager.run&&await InitManager.run(r,{preserveServicePins:!1});t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(a=TransitionEffects.coverOut());const i=runPageEntryAnimations?runPageEntryAnimations(r):null;n=i&&i.tl?i.tl:gsap.timeline(),e=i&&"number"==typeof i.entryOffset?i.entryOffset:0,releasePreloadingGuard()}catch(o){n=n||null,e=0,releasePreloadingGuard()}const i=t.withCoverOut?e:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise(o=>n.eventCallback("onComplete",o))}catch(o){}if(a)try{await a}catch(o){}}
 		window.TransitionDecider=window.TransitionDecider||function(){function shouldFadeFor(d){try{var a=d&&d.trigger&&(d.trigger.tagName==="A"?d.trigger:d.trigger.closest&&d.trigger.closest("a"));if(!a)return!1;return!!(a.closest&&a.closest('[data-transition="fade"]'))}catch(e){return!1}}function consume(){}return{shouldFadeFor:shouldFadeFor,consume:consume}}();
 		
 		// Entry Animations
@@ -543,36 +543,44 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			if (window.__barbaInited) return;
 			window.__barbaInited = true;
 
-			barba.hooks.once(async({next:n})=>{
-				if(window.__ENTRY_ONCE_RAN)return;
-				window.__ENTRY_ONCE_RAN=1;
-				try{
-					ScrollManager.lock();await WebflowAdapter.enter(n);await runEntryFlow(n.container,{withCoverOut:!1});
-					//if you ever enable it again: if (PreloaderService.shouldRun()) await PreloaderService.maybeRun();
-				}catch(e){console.warn("[once] entry failed",e);}finally{try{if(EntryOrchestrator&&EntryOrchestrator.releasePreloadingGuard){EntryOrchestrator.releasePreloadingGuard();}else{document.documentElement.removeAttribute("data-preloading");}}catch(_){}ScrollManager.unlock();}
+			barba.hooks.once(async ({ next: n }) => {
+				if (window.__ENTRY_ONCE_RAN) return;window.__ENTRY_ONCE_RAN = 1;try {ScrollManager.lock();await WebflowAdapter.enter(n);await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));await runEntryFlow(n.container, { withCoverOut: !1 });
+					// if you ever enable it again: if (PreloaderService.shouldRun()) await PreloaderService.maybeRun();
+				} catch (e) {} finally {try {if (EntryOrchestrator && EntryOrchestrator.releasePreloadingGuard) {EntryOrchestrator.releasePreloadingGuard();} else {document.documentElement.removeAttribute("data-preloading");}} catch (_) {}ScrollManager.unlock();}
 			});
+			barba.hooks.before(()=>{
+				window.__BARBA_NAVIGATING = true;
+				ScrollManager.lock();
+				try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}
+			})
 
-			barba.hooks.before(()=>{window.__BARBA_NAVIGATING = true;ScrollManager.lock();try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}});
+			barba.hooks.leave(async ({current:c})=>{
+				window.scrollTo(0,0)
+				await InitManager.cleanup({preserveServicePins:!1})
+			})
+			
+			barba.hooks.enter(async ({next:n})=>{
+				await WebflowAdapter.enter(n)
+				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
+			})
+			
+			barba.hooks.afterEnter(async ({next:n})=>{
+			  	await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0})
+			})
+			
+			barba.hooks.after(()=>{
+			  	ScrollManager.unlock()
+			})
 			
 			barba.init({
 				debug: window.DEBUG,
 				timeout: 8000,
 				prevent: ({el})=>{var a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;if(a.closest&&a.closest('[data-transition="fade"]'))return!1;try{var u=new URL(a.getAttribute("href")||a.href,location.href),p=u.pathname.replace(/\/+$/,""),cp=location.pathname.replace(/\/+$/,"");if(p===cp&&u.hash)return!0}catch(e){}if(a.hasAttribute("download")||a.target==="_blank"||a.getAttribute("rel")==="external")return!0;var c=document.querySelector('[data-barba="container"]'),ns=c&&c.dataset?c.dataset.barbaNamespace:"";if(ns!=="archive"&&ns!=="resources"){var b=a.closest&&a.closest("[data-barba-prevent]");if(b&&b.getAttribute("data-barba-prevent")==="true")return!0}return!1},
-				transitions:[
-					{
-						name:"fade",
-						custom:d=>!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d)),
-						leave:async function({current:c}){try{TransitionDecider&&TransitionDecider.consume&&TransitionDecider.consume()}catch(e){}ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});window.scrollTo(0,0);await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});},
-						afterEnter:async({next:n})=>{EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock()}
-					},{
-						name:"swipe",
-						custom:d=>{var fade=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));return !fade},
-						leave:async function({current:c}){ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();window.scrollTo(0,0);ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});},
-						afterEnter:async({next:n})=>{EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock()}
-					}
-				]
+				transitions:[{
+					name:"fade",custom:function(d){return!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d))},leave:async function({current:c}){await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"})}
+				},{
+					name:"swipe",custom:function(d){var f=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));return!f},leave:async function(){await TransitionEffects.coverIn()}
+				}]
 			});
 		}
 		
