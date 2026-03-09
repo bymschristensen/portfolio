@@ -18,6 +18,11 @@ if(window.DEBUG && window.DebugCore){
   DebugCore.install();
   DebugCore.trace("DebugCore installed");
 }
+window.__ENTRY_DEBUG__ = function(label,data){
+	try{
+		console.log("%c[ENTRY]", "color:#0cf;font-weight:bold", label, data||"");
+	}catch(e){}
+};
 
 // Navigation Manager Test
 	window.NavigationManager = (function () {
@@ -442,7 +447,7 @@ if(window.DEBUG && window.DebugCore){
 
 		function sortByStage(t){const e={early:0,main:1,late:2};return t.slice().sort(((t,a)=>(e[t.stage]??1)-(e[a.stage]??1)))}
 		function buildIndex(){if(state.installed)return;const e=[...registries.common,...registries.pages.selected,...registries.pages.archive,...registries.pages.resources,...registries.pages.capabilities,...registries.pages.info,...registries.pages.caseStudy];state.features=sortByStage(e),state.installed=!0}
-		async function run(e=document,{preserveServicePins:r=!1}={}){DebugCore.trace("InitManager.run complete");buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl,.custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(o){console.warn("[InitManager]",r.id,"init failed:",o)}try{await new Promise(r=>requestAnimationFrame(r));await new Promise(r=>requestAnimationFrame(r));if(window.ScrollTrigger)layoutReady(e,function(){try{ScrollManager.refresh("init")}catch{}});}catch{}}
+		async function run(e=document,{preserveServicePins:r=!1}={}){__ENTRY_DEBUG__("InitManager.run finished");DebugCore.trace("InitManager.run complete");buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl,.custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(o){console.warn("[InitManager]",r.id,"init failed:",o)}try{await new Promise(r=>requestAnimationFrame(r));await new Promise(r=>requestAnimationFrame(r));if(window.ScrollTrigger)layoutReady(e,function(){try{ScrollManager.refresh("init")}catch{}});}catch{}}
 		async function cleanup(r=document,{preserveServicePins:e=!1}={}){var o=r||document;for(const r of state.features)if("function"==typeof r.destroy)try{await r.destroy(o,{})}catch(e){console.warn("[InitManager]",r.id,"destroy failed:",e)}try{CoreUtilities.Observers.clearAll({preserveServicePins:e})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((r=>{try{r.remove()}catch{}}))}catch{}}
 		function enable(id, on = true) { const f = state.featuresById.get(id); if (f) f.enabled = !!on; }
 		function disable(id) { enable(id, false); }
@@ -537,21 +542,23 @@ if(window.DEBUG && window.DebugCore){
 			EntryAnimations.info=function(e){e=e||document;var t=gsap.timeline(),m=!!(window.matchMedia&&matchMedia("(max-width:1023px)").matches),h=null,s=null,p=null;if(m){p=e.querySelector(".section-portrait-device");h=e.querySelector(".hero-section-text h1.hero-headline-devices")||e.querySelector(".hero-section-text .hero-text h1.hero-headline-devices");s=e.querySelector(".hero-subtext")||e.querySelector(".hero-section-text .hero-text .hero-subtext");if(!p&&!h&&!s)return t;try{p&&gsap.set(p,{visibility:"visible",autoAlpha:0,y:100,filter:"blur(10px)",willChange:"transform,opacity,filter"})}catch{}try{h&&gsap.set(h,{visibility:"visible",autoAlpha:0})}catch{}try{s&&gsap.set(s,{visibility:"visible",autoAlpha:0,y:20,filter:"blur(10px)",willChange:"transform,opacity,filter"})}catch{}t.addLabel("m",0);p&&t.to(p,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.9,ease:"power2.out",clearProps:"y,filter,willChange"},"m");if(h){t.addLabel("m_h","m+=0.2");t.set(h,{autoAlpha:1},"m_h").call(function(){(CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve()).then(function(){try{if(window.splitAndMask&&window.animateLines&&window.safelyRevertSplit){var e2=splitAndMask(h);animateLines(e2.lines).eventCallback("onComplete",function(){try{safelyRevertSplit(e2,h)}catch{}})}else gsap.to(h,{y:0,opacity:1,duration:.6,ease:"power2.out"})}catch(e3){try{gsap.to(h,{y:0,opacity:1,duration:.6,ease:"power2.out"})}catch{}}})},null,"m_h")}s&&t.to(s,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out",clearProps:"y,filter,willChange"},h?"m_h+=0.48":"m+=0.48");return t}var n=e.querySelector(".hero-section-text h1:not(.hero-headline-devices)")||e.querySelector(".hero-section-text .hero-text h1:not(.hero-headline-devices)")||e.querySelector(".hero-section-text h1")||e.querySelector(".hero-section-text .hero-text h1"),r=e.querySelector(".hero-subtext")||e.querySelector(".hero-section-text .hero-text .hero-subtext");var entries=[...e.querySelectorAll(".bio-photo-entry")].sort(function(a,b){var wa=a.querySelector(".bio-photo-wrapper[data-photo]"),wb=b.querySelector(".bio-photo-wrapper[data-photo]");return(+(wa&&wa.getAttribute("data-photo")||0))-(+(wb&&wb.getAttribute("data-photo")||0))});if(entries.length){try{gsap.set(entries,{visibility:"visible",opacity:0,y:120,filter:"blur(10px)",willChange:"transform,opacity,filter"})}catch{}/* ensure wrappers inside are visible (no opacity meddling here) */try{gsap.set(entries.map(function(x){return x.querySelector(".bio-photo-wrapper")}).filter(Boolean),{visibility:"visible"})}catch{}var a=.9,l=.14;t.addLabel("p",0).to(entries,{opacity:1,y:0,filter:"blur(0px)",duration:a,ease:"power2.out",stagger:l,clearProps:"y,filter,willChange"},"p").addLabel("h","p+="+(l+a-.6))}else t.addLabel("h",0);n&&(gsap.set(n,{visibility:"visible",autoAlpha:0}),t.set(n,{autoAlpha:1},"h").call(function(){(CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve()).then(function(){if(window.splitAndMask&&window.animateLines&&window.safelyRevertSplit){var e2=splitAndMask(n);animateLines(e2.lines).eventCallback("onComplete",function(){safelyRevertSplit(e2,n)})}else gsap.to(n,{y:0,opacity:1,duration:.6,ease:"power2.out"})})},null,"h"));r&&(gsap.set(r,{visibility:"visible",autoAlpha:0,y:20,filter:"blur(10px)"}),t.to(r,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},"h+=0.48"));return t};
 			EntryAnimations.caseStudy=function(e){e=e||document;var t=gsap.timeline(),i=e.querySelector(".cs-hero-image"),r=e.querySelector(".cs-headline-wrapper"),a=e.querySelector("h1.cs-headline")||e.querySelector(".cs-headline"),n=e.querySelector(".cs-titles-inner .headline-m");i&&gsap.set(i,{autoAlpha:0,y:100,filter:"blur(10px)"}),r&&gsap.set(r,{autoAlpha:1,clearProps:"visibility"}),a&&gsap.set(a,{autoAlpha:0,display:"block",clearProps:"visibility"}),n&&gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),i&&t.to(i,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.7,ease:"power2.out"},0),a&&t.addLabel("cs_h",.15).set(r,{autoAlpha:1,clearProps:"visibility"},"cs_h").set(a,{autoAlpha:1,display:"block",clearProps:"visibility"},"cs_h").call(function(){var e=CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve();e.then(function(){if(window.SplitText&&window.splitAndMask&&window.animateLines&&window.safelyRevertSplit)try{var e=splitAndMask(a);animateLines(e.lines).eventCallback("onComplete",function(){safelyRevertSplit(e,a)})}catch(e){gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})}else gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})})},null,"cs_h"),n&&t.to(n,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.5,ease:"power2.out"},"cs_h+=0.6");return t};
 			function runPageEntryAnimations(e){const{delayHero:t,entryOffset:r}=getEntryConfig(e),a=gsap.timeline(),n=(e.dataset&&e.dataset.barbaNamespace)||"";return("archive"===n||e.querySelector(".section-archive")||e.querySelector(".section-archive-playful")||e.querySelector(".section-archive-minimal"))&&a.add(EntryAnimations.archive(e),0),"info"===n&&a.add(EntryAnimations.info(e),0),"resources"===n&&a.add(EntryAnimations.resources(e),0),("capabilities"===n||e.querySelector(".hero-section-showreel")||e.querySelector(".showreel-container")||e.querySelector(".showreel-visual-device"))&&a.add(EntryAnimations.capabilities(e,{delayHero:t}),0),("selected"===n||e.querySelector(".selected-item-outer"))&&a.add(EntryAnimations.selected(e),0),(e.querySelector(".cs-hero-image")||e.querySelector(".cs-headline"))&&a.add(EntryAnimations.caseStudy(e),0),{tl:a,entryOffset:r}}
-
-		
+			__ENTRY_DEBUG__("Entry animations finished");
 		// Barba init
 		function init() {
 			DebugCore.trace("EntryOrchestrator.init()");
+			__ENTRY_DEBUG__("EntryOrchestrator.init()");
 			if (window.__barbaInited) return;
 			window.__barbaInited = true;
 
 			async function orchestrateLeave({current}){
+				__ENTRY_DEBUG__("orchestrateLeave");
 				ScrollManager.lock()
 				document.querySelectorAll(".nav-primary-wrap").forEach(e=>{var m=e._menuTimeline,f=e._filterTimeline;m&&m.progress()>0&&m.timeScale(2).reverse(),f&&f.progress()>0&&f.timeScale(2).reverse();var w=e.querySelector(".menu-wrapper"),c=e.querySelector(".menu-container"),l=e.querySelector(".filters-container");w&&(w.style.display="none"),c&&(c.style.display="none"),l&&(l.style.display="none")}),document.body.style.overflow=""
 				await InitManager.cleanup({preserveServicePins:false})
 			}
 
 			async function orchestrateEnter({next,transition}){
+				__ENTRY_DEBUG__("orchestrateEnter start");
 				DebugCore.trace("orchestrateEnter start");
 				document.documentElement.scrollTop=0
 				document.body.scrollTop=0
@@ -566,14 +573,17 @@ if(window.DEBUG && window.DebugCore){
 				ScrollManager.unlock()
 			}
 			
-			barba.hooks.before(()=>{document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
+			barba.hooks.before(()=>{__ENTRY_DEBUG__("barba.before");document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
 			barba.hooks.once(async({next})=>{
+				__ENTRY_DEBUG__("barba.once start");
 				ScrollManager.lock();document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0);await WebflowAdapter.enter(next);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await InitManager.run(next.container,{preserveServicePins:false});const entry=runPageEntryAnimations(next.container);if(entry&&entry.tl&&entry.tl.duration())entry.tl.play(entry.entryOffset||0);
 				/* if you ever enable it again: if (PreloaderService.shouldRun()) await PreloaderService.maybeRun(); */
 				document.documentElement.removeAttribute("data-preloading");ScrollManager.unlock()
+				__ENTRY_DEBUG__("barba.once end");
 			});
 			
 			DebugCore.trace("barba.init starting");
+			__ENTRY_DEBUG__("barba.init starting");
 			barba.init({
 				debug: window.DEBUG,
 				timeout: 8000,
@@ -593,6 +603,7 @@ if(window.DEBUG && window.DebugCore){
 				]
 			});
 			DebugCore.trace("barba.init finished");
+			__ENTRY_DEBUG__("barba.init finished");
 		}
 		
 		return {
