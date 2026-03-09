@@ -551,18 +551,17 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			barba.hooks.before(()=>{window.__BARBA_NAVIGATING = true;ScrollManager.lock();try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}});
 			barba.hooks.leave(async ({current:c})=>{await InitManager.cleanup({preserveServicePins:!1})});
 			barba.hooks.beforeEnter(async ({next:n})=>{window.scrollTo(0,0)});
-			barba.hooks.enter(async({next:n})=>{let f=!1;try{f=!!(barba.transitions&&barba.transitions.isRunning&&document.querySelector('[data-transition="fade"]'))}catch(e){}if(f)try{gsap.set(n.container,{autoAlpha:0})}catch(e){}try{window.scrollTo(0,0)}catch(e){}await WebflowAdapter.enter(n);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!f})});
+			barba.hooks.enter(async({next:n})=>{var f=window.__BARBA_LAST_TRANSITION==="fade";if(f)try{gsap.set(n.container,{autoAlpha:0})}catch(e){}try{window.scrollTo(0,0)}catch(e){}await WebflowAdapter.enter(n);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!f})});
 			barba.hooks.after(()=>{ScrollManager.unlock()});
 			
 			barba.init({
 				debug: window.DEBUG,
 				timeout: 8000,
 				prevent: ({el})=>{var a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;if(a.closest&&a.closest('[data-transition="fade"]'))return!1;try{var u=new URL(a.getAttribute("href")||a.href,location.href),p=u.pathname.replace(/\/+$/,""),cp=location.pathname.replace(/\/+$/,"");if(p===cp&&u.hash)return!0}catch(e){}if(a.hasAttribute("download")||a.target==="_blank"||a.getAttribute("rel")==="external")return!0;var c=document.querySelector('[data-barba="container"]'),ns=c&&c.dataset?c.dataset.barbaNamespace:"";if(ns!=="archive"&&ns!=="resources"){var b=a.closest&&a.closest("[data-barba-prevent]");if(b&&b.getAttribute("data-barba-prevent")==="true")return!0}return!1},
-				transitions:[{
-					name:"fade",custom:function(d){return!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d))},leave:async function({current:c}){await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"})}
-				},{
-					name:"swipe",custom:function(d){var f=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));return!f},leave:async function(){await TransitionEffects.coverIn()}
-				}]
+				transitions:[
+					{name:"fade",custom:function(d){var f=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));if(f)window.__BARBA_LAST_TRANSITION="fade";return f},leave:async function({current:c}){await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"})}},
+					{name:"swipe",custom:function(d){var f=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));if(!f)window.__BARBA_LAST_TRANSITION="swipe";return!f},leave:async function(){await TransitionEffects.coverIn()}}
+				]
 			});
 		}
 		
