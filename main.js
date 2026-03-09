@@ -550,8 +550,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			});
 			barba.hooks.before(()=>{window.__BARBA_NAVIGATING = true;ScrollManager.lock();try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}});
 			barba.hooks.leave(async ({current:c})=>{await InitManager.cleanup({preserveServicePins:!1})});
-			barba.hooks.beforeEnter(async ({next:n})=>{window.scrollTo(0,0)});
-			barba.hooks.enter(async({next:n})=>{var f=window.__BARBA_LAST_TRANSITION==="fade";if(f)try{gsap.set(n.container,{autoAlpha:0})}catch(e){}try{window.scrollTo(0,0)}catch(e){}await WebflowAdapter.enter(n);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!f})});
+			barba.hooks.enter(async({next:n})=>{var f=window.__BARBA_LAST_TRANSITION==="fade";if(f)try{gsap.set(n.container,{autoAlpha:0})}catch(e){}try{document.documentElement.scrollTop=0,document.body.scrollTop=0,window.scrollTo(0,0)}catch(e){}await WebflowAdapter.enter(n);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!f})});
 			barba.hooks.after(()=>{ScrollManager.unlock()});
 			
 			barba.init({
