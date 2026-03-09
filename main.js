@@ -551,7 +551,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			barba.hooks.before(()=>{window.__BARBA_NAVIGATING = true;ScrollManager.lock();try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}});
 			barba.hooks.leave(async ({current:c})=>{await InitManager.cleanup({preserveServicePins:!1})});
 			barba.hooks.beforeEnter(async ({next:n})=>{window.scrollTo(0,0)});
-			barba.hooks.enter(async({next:n,trigger:t})=>{let f=!1;try{f=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor({trigger:t}))}catch(e){}if(f)try{gsap.set(n.container,{autoAlpha:0})}catch(e){}await WebflowAdapter.enter(n);try{window.scrollTo(0,0)}catch(e){}await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!f})});
+			barba.hooks.enter(async({next:n})=>{let f=!1;try{f=!!(barba.transitions&&barba.transitions.isRunning&&document.querySelector('[data-transition="fade"]'))}catch(e){}if(f)try{gsap.set(n.container,{autoAlpha:0})}catch(e){}try{window.scrollTo(0,0)}catch(e){}await WebflowAdapter.enter(n);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!f})});
 			barba.hooks.after(()=>{ScrollManager.unlock()});
 			
 			barba.init({
