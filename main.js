@@ -10,7 +10,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 // Scroll Manager
 	ScrollTrigger.config({autoRefreshEvents:"visibilitychange",ignoreMobileResize:true});
 	ScrollTrigger.normalizeScroll(false);
-	window.ScrollManager=function(){let e=0,t=0;function r(){if(!window.ScrollTrigger)return;e=1,t||(t=1,requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!e)return void(t=0);e=0;try{ScrollTrigger.refresh(!0),ScrollTrigger.update()}catch(e){}t=0}))))}function o(){document.documentElement.style.overflow="hidden"}function n(){document.documentElement.style.overflow=""}function c(e,t){requestAnimationFrame(()=>{t?window.scrollTo({top:e,behavior:"smooth"}):window.scrollTo(0,e||0)})}return{refresh:r,lock:o,unlock:n,scrollTo:c}}();
+	window.ScrollManager=function(){let e=0,t=0;function r(){if(!window.ScrollTrigger)return;e=1;if(t)return;t=1;requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!e){t=0;return}e=0;try{ScrollTrigger.refresh(!0);ScrollTrigger.update()}catch(e){}t=0}))}function o(){document.documentElement.style.overflow="hidden"}function n(){document.documentElement.style.overflow=""}function c(e,t){requestAnimationFrame(()=>{t?window.scrollTo({top:e,behavior:"smooth"}):window.scrollTo(0,e||0)})}return{refresh:r,lock:o,unlock:n,scrollTo:c}}();
 	window.DEBUG=false;
 
 // Navigation Manager Test
