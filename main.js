@@ -1,6 +1,7 @@
 if ("scrollRestoration" in history) {history.scrollRestoration = "manual";}
 if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — skipping."); } else { 
 	window.__PORTFOLIO_MAIN__ = true; (function MAIN(){window.__PORTFOLIO_MAIN__ = true;console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&document.currentScript.src)||'(inline)');!function(){if(["portfolio-13-ec6f18.webflow.io"].includes(location.hostname)){var K="gh:portfolio:main:sha",TTL=15000;try{var now=Date.now(),cached=null;try{cached=JSON.parse(sessionStorage.getItem(K)||"null")}catch{}if(cached&&cached.sha&&now-(cached.t||0)<TTL){console.info("[BOOT] latest main commit (cached):",cached.sha,cached.dateJST||cached.dateUTC||"");return}var ctrl=new AbortController,tm=setTimeout(function(){try{ctrl.abort()}catch{}},3000);fetch("https://api.github.com/repos/bymschristensen/portfolio/commits/main",{signal:ctrl.signal,cache:"no-store",headers:{Accept:"application/vnd.github+json"}}).then(function(r){return r.ok?r.json():Promise.reject(r)}).then(function(data){var item=Array.isArray(data)?data[0]:data,sha=(item&&item.sha?item.sha:"").slice(0,7),utc=(item&&item.commit&&item.commit.author&&item.commit.author.date)||"";if(!sha)return;var d=utc?new Date(utc):null;var jst=d?new Intl.DateTimeFormat("ja-JP-u-ca-gregory",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1,timeZone:"Asia/Tokyo"}).format(d)+" JST":"";var save={sha:sha,dateUTC:utc,dateJST:jst,t:Date.now()};try{sessionStorage.setItem(K,JSON.stringify(save))}catch{}console.info("[BOOT] latest main commit:",sha,jst||utc)}).catch(function(){}).finally(function(){clearTimeout(tm)})}catch{}}}();
+	window.DEBUG=true;
 	if(window.DEBUG && window.DebugCore) DebugCore.trace("MAIN SCRIPT START");
 
 // GSAP
@@ -10,7 +11,7 @@ if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — sk
 	ScrollTrigger.config({autoRefreshEvents:"visibilitychange",ignoreMobileResize:true});
 	ScrollTrigger.normalizeScroll(false);
 	window.ScrollManager=function(){let e=0,t=0;function r(){if(!window.ScrollTrigger)return;e=1;if(t)return;t=1;requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!e){t=0;return}e=0;try{ScrollTrigger.refresh(!0);ScrollTrigger.update()}catch(n){}t=0}))}function o(){document.documentElement.style.overflow="hidden"}function n(){document.documentElement.style.overflow=""}return{refresh:r,lock:o,unlock:n}}();
-	window.DEBUG=true;
+	
 
 // Debug Core
 window.DebugCore=window.DebugCore||function(){function s(e,o){try{console.log("%c[TRACE]","color:#0f0;background:#111;padding:2px 6px",e,o||"")}catch{}}function n(){try{const e=document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace||"(none)",o=!!document.querySelector(".page-overlay");console.group("%c[Sanity] Page state","color:#0aa;font-weight:bold"),console.log("Namespace:",e),console.log("Overlay present:",o),console.groupEnd()}catch(e){console.warn("[Sanity] Failed:",e)}}function r(){if(window.barba&&barba.hooks&&!window.__dbgHooks){barba.hooks.before(({current:e,next:o})=>{const t=e?.container?.dataset?.barbaNamespace||"(none)",a=o?.container?.dataset?.barbaNamespace||"(none)";console.group("%c[barba] navigating","color:#6a0dad;font-weight:bold"),console.log("from → to:",t,"→",a),console.groupEnd()}),barba.hooks.leave(()=>s("barba.leave")),barba.hooks.enter(()=>s("barba.enter")),barba.hooks.after(()=>{s("barba.after"),setTimeout(n,0)}),window.__dbgHooks=!0}window.__dbgLink||(document.addEventListener("click",e=>{const o=e.target&&("A"===e.target.tagName?e.target:e.target.closest?.("a"));if(!o)return;const t=o.closest("[data-barba-prevent]"),a=t?.getAttribute("data-barba-prevent");console.log("[link]",{href:o.getAttribute("href")||o.href,text:(o.textContent||"").trim().slice(0,60),prevent:!!t,value:a??null})},!0),window.__dbgLink=!0)}function i(){if(window.DEBUG){window.__dbgErr||(window.addEventListener("error",e=>console.error("[Error]",e.message,e.filename,e.lineno,e.error)),window.addEventListener("unhandledrejection",e=>console.error("[Promise]",e.reason)),window.__dbgErr=!0);window.dlog||(window.dlog=(...e)=>console.debug("[DEBUG]",...e));r();setTimeout(n,0)}}return{install:i,trace:s,sanity:n,probes:r}}();
@@ -591,7 +592,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			barba.hooks.before(()=>{__ENTRY_DEBUG__("barba.before");document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
 			barba.hooks.once(async({next})=>{
 				__ENTRY_DEBUG__("barba.once start");
-				ScrollManager.lock();document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0);await WebflowAdapter.enter(next);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await InitManager.run(next.container,{preserveServicePins:false});const entry=runPageEntryAnimations(next.container);if(entry&&entry.tl&&entry.tl.duration())entry.tl.play(entry.entryOffset||0);
+				ScrollManager.lock();document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0);await WebflowAdapter.enter(next);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await InitManager.run(next.container,{preserveServicePins:false});__ENTRY_DEBUG__("once InitManager.run finished");const entry=runPageEntryAnimations(next.container);if(entry&&entry.tl&&entry.tl.duration())entry.tl.play(entry.entryOffset||0);
 				/* if you ever enable it again: if (PreloaderService.shouldRun()) await PreloaderService.maybeRun(); */
 				document.documentElement.removeAttribute("data-preloading");ScrollManager.unlock()
 				__ENTRY_DEBUG__("barba.once end");
@@ -617,6 +618,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				]
 			});
 			__ENTRY_DEBUG__("barba.init finished");
+			setTimeout(()=>document.documentElement.removeAttribute("data-preloading"),100);
 		}
 		
 		return {
@@ -627,5 +629,5 @@ window.__ENTRY_DEBUG__ = function(label,data){
 		};
 	})();
 	
-	function bootEntryOrchestrator(){window.EntryOrchestrator&&EntryOrchestrator.init&&(window.DebugCore&&DebugCore.trace&&DebugCore.trace("Booting EntryOrchestrator"),EntryOrchestrator.init())}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",bootEntryOrchestrator):bootEntryOrchestrator();
+	function bootEntryOrchestrator(){if(window.EntryOrchestrator&&EntryOrchestrator.init){window.__ENTRY_DEBUG__&&__ENTRY_DEBUG__("Booting EntryOrchestrator");EntryOrchestrator.init()}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",bootEntryOrchestrator)}else{bootEntryOrchestrator()}
 })();}
