@@ -561,16 +561,16 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				transitions:[
 					{
 						name:"fade",
-						custom:function(d){return !!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d))},
-						leave:async function({current:c}){try{TransitionDecider&&TransitionDecider.consume&&TransitionDecider.consume()}catch(e){}ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});window.scrollTo(0,0);await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});},
-						afterEnter:async function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock();}
+						custom:d=>!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d)),
+						leave:async({current:c})=>{try{TransitionDecider&&TransitionDecider.consume&&TransitionDecider.consume()}catch(e){}ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});window.scrollTo(0,0);await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
+						enter:async({next:n})=>{NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1})},
+						afterEnter:async({next:n})=>{EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock()}
 					},{
 						name:"swipe",
-						custom:function(d){var fade=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));return !fade},
-						leave:async function({current:c}){ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();window.scrollTo(0,0);ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});},
-						afterEnter:async function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock();}
+						custom:d=>{var fade=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));return !fade},
+						leave:async({current:c})=>{ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();window.scrollTo(0,0);ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
+						enter:async({next:n})=>{NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0})},
+						afterEnter:async({next:n})=>{EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock()}
 					}
 				]
 			});
