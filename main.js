@@ -8,7 +8,7 @@ if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — sk
 	ScrollTrigger.config({autoRefreshEvents:"visibilitychange",ignoreMobileResize:true});
 	ScrollTrigger.normalizeScroll(false);
 	window.ScrollManager=function(){let e=0,t=0;function r(){if(!window.ScrollTrigger)return;e=1;if(t)return;t=1;requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!e){t=0;return}e=0;try{ScrollTrigger.refresh(!0);ScrollTrigger.update()}catch(n){}t=0}))}function o(){document.documentElement.style.overflow="hidden"}function n(){document.documentElement.style.overflow=""}return{refresh:r,lock:o,unlock:n}}();
-	window.DEBUG=false;
+	window.DEBUG=true;
 
 // Navigation Manager Test
 	window.NavigationManager = (function () {
