@@ -589,4 +589,6 @@ if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — sk
 			runPageEntryAnimations
 		};
 	})();
+	
+	document.addEventListener("DOMContentLoaded",()=>{window.EntryOrchestrator&&EntryOrchestrator.init&&EntryOrchestrator.init()});
 })();}
