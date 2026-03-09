@@ -603,5 +603,5 @@ if(window.DEBUG && window.DebugCore){
 		};
 	})();
 	
-	document.addEventListener("DOMContentLoaded",()=>{window.EntryOrchestrator&&EntryOrchestrator.init&&EntryOrchestrator.init()});
+	function bootEntryOrchestrator(){window.EntryOrchestrator&&EntryOrchestrator.init&&(window.DebugCore&&DebugCore.trace&&DebugCore.trace("Booting EntryOrchestrator"),EntryOrchestrator.init())}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",bootEntryOrchestrator):bootEntryOrchestrator();
 })();}
