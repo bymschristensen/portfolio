@@ -563,12 +563,9 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			});
 			
 			barba.hooks.enter(async ({next:n})=>{
-				await WebflowAdapter.enter(n)
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
-			});
-			
-			barba.hooks.afterEnter(async ({next:n})=>{
-			  	await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0})
+				await WebflowAdapter.enter(n);
+				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+				await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});
 			});
 			
 			barba.hooks.after(()=>{
