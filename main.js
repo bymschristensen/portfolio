@@ -1,6 +1,7 @@
 if ("scrollRestoration" in history) {history.scrollRestoration = "manual";}
 if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — skipping."); } else { 
 	window.__PORTFOLIO_MAIN__ = true; (function MAIN(){window.__PORTFOLIO_MAIN__ = true;console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&document.currentScript.src)||'(inline)');!function(){if(["portfolio-13-ec6f18.webflow.io"].includes(location.hostname)){var K="gh:portfolio:main:sha",TTL=15000;try{var now=Date.now(),cached=null;try{cached=JSON.parse(sessionStorage.getItem(K)||"null")}catch{}if(cached&&cached.sha&&now-(cached.t||0)<TTL){console.info("[BOOT] latest main commit (cached):",cached.sha,cached.dateJST||cached.dateUTC||"");return}var ctrl=new AbortController,tm=setTimeout(function(){try{ctrl.abort()}catch{}},3000);fetch("https://api.github.com/repos/bymschristensen/portfolio/commits/main",{signal:ctrl.signal,cache:"no-store",headers:{Accept:"application/vnd.github+json"}}).then(function(r){return r.ok?r.json():Promise.reject(r)}).then(function(data){var item=Array.isArray(data)?data[0]:data,sha=(item&&item.sha?item.sha:"").slice(0,7),utc=(item&&item.commit&&item.commit.author&&item.commit.author.date)||"";if(!sha)return;var d=utc?new Date(utc):null;var jst=d?new Intl.DateTimeFormat("ja-JP-u-ca-gregory",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!1,timeZone:"Asia/Tokyo"}).format(d)+" JST":"";var save={sha:sha,dateUTC:utc,dateJST:jst,t:Date.now()};try{sessionStorage.setItem(K,JSON.stringify(save))}catch{}console.info("[BOOT] latest main commit:",sha,jst||utc)}).catch(function(){}).finally(function(){clearTimeout(tm)})}catch{}}}();
+	if(window.DEBUG && window.DebugCore) DebugCore.trace("MAIN SCRIPT START");
 
 // GSAP
 	try{if(window.gsap&&gsap.registerPlugin){var _p=[];typeof window.ScrollTrigger!=="undefined"&&_p.push(window.ScrollTrigger);typeof window.Flip!=="undefined"&&_p.push(window.Flip);typeof window.SplitText!=="undefined"&&_p.push(window.SplitText);typeof window.TextPlugin!=="undefined"&&_p.push(window.TextPlugin);typeof window.Observer!=="undefined"&&_p.push(window.Observer);gsap.registerPlugin.apply(gsap,_p)}}catch(e){}
@@ -10,6 +11,13 @@ if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — sk
 	ScrollTrigger.normalizeScroll(false);
 	window.ScrollManager=function(){let e=0,t=0;function r(){if(!window.ScrollTrigger)return;e=1;if(t)return;t=1;requestAnimationFrame(()=>requestAnimationFrame(()=>{if(!e){t=0;return}e=0;try{ScrollTrigger.refresh(!0);ScrollTrigger.update()}catch(n){}t=0}))}function o(){document.documentElement.style.overflow="hidden"}function n(){document.documentElement.style.overflow=""}return{refresh:r,lock:o,unlock:n}}();
 	window.DEBUG=true;
+
+// Debug Core
+window.DebugCore=window.DebugCore||function(){function s(e,o){try{console.log("%c[TRACE]","color:#0f0;background:#111;padding:2px 6px",e,o||"")}catch{}}function n(){try{const e=document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace||"(none)",o=!!document.querySelector(".page-overlay");console.group("%c[Sanity] Page state","color:#0aa;font-weight:bold"),console.log("Namespace:",e),console.log("Overlay present:",o),console.groupEnd()}catch(e){console.warn("[Sanity] Failed:",e)}}function r(){if(window.barba&&barba.hooks&&!window.__dbgHooks){barba.hooks.before(({current:e,next:o})=>{const t=e?.container?.dataset?.barbaNamespace||"(none)",a=o?.container?.dataset?.barbaNamespace||"(none)";console.group("%c[barba] navigating","color:#6a0dad;font-weight:bold"),console.log("from → to:",t,"→",a),console.groupEnd()}),barba.hooks.leave(()=>s("barba.leave")),barba.hooks.enter(()=>s("barba.enter")),barba.hooks.after(()=>{s("barba.after"),setTimeout(n,0)}),window.__dbgHooks=!0}window.__dbgLink||(document.addEventListener("click",e=>{const o=e.target&&("A"===e.target.tagName?e.target:e.target.closest?.("a"));if(!o)return;const t=o.closest("[data-barba-prevent]"),a=t?.getAttribute("data-barba-prevent");console.log("[link]",{href:o.getAttribute("href")||o.href,text:(o.textContent||"").trim().slice(0,60),prevent:!!t,value:a??null})},!0),window.__dbgLink=!0)}function i(){if(window.DEBUG){window.__dbgErr||(window.addEventListener("error",e=>console.error("[Error]",e.message,e.filename,e.lineno,e.error)),window.addEventListener("unhandledrejection",e=>console.error("[Promise]",e.reason)),window.__dbgErr=!0);window.dlog||(window.dlog=(...e)=>console.debug("[DEBUG]",...e));r();setTimeout(n,0)}}return{install:i,trace:s,sanity:n,probes:r}}();
+if(window.DEBUG && window.DebugCore){
+  DebugCore.install();
+  DebugCore.trace("DebugCore installed");
+}
 
 // Navigation Manager Test
 	window.NavigationManager = (function () {
@@ -434,7 +442,7 @@ if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — sk
 
 		function sortByStage(t){const e={early:0,main:1,late:2};return t.slice().sort(((t,a)=>(e[t.stage]??1)-(e[a.stage]??1)))}
 		function buildIndex(){if(state.installed)return;const e=[...registries.common,...registries.pages.selected,...registries.pages.archive,...registries.pages.resources,...registries.pages.capabilities,...registries.pages.info,...registries.pages.caseStudy];state.features=sortByStage(e),state.installed=!0}
-		async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl,.custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(o){console.warn("[InitManager]",r.id,"init failed:",o)}try{await new Promise(r=>requestAnimationFrame(r));await new Promise(r=>requestAnimationFrame(r));if(window.ScrollTrigger)layoutReady(e,function(){try{ScrollManager.refresh("init")}catch{}});}catch{}}
+		async function run(e=document,{DebugCore.trace("InitManager.run complete");preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl,.custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(o){console.warn("[InitManager]",r.id,"init failed:",o)}try{await new Promise(r=>requestAnimationFrame(r));await new Promise(r=>requestAnimationFrame(r));if(window.ScrollTrigger)layoutReady(e,function(){try{ScrollManager.refresh("init")}catch{}});}catch{}}
 		async function cleanup(r=document,{preserveServicePins:e=!1}={}){var o=r||document;for(const r of state.features)if("function"==typeof r.destroy)try{await r.destroy(o,{})}catch(e){console.warn("[InitManager]",r.id,"destroy failed:",e)}try{CoreUtilities.Observers.clearAll({preserveServicePins:e})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((r=>{try{r.remove()}catch{}}))}catch{}}
 		function enable(id, on = true) { const f = state.featuresById.get(id); if (f) f.enabled = !!on; }
 		function disable(id) { enable(id, false); }
@@ -533,6 +541,7 @@ if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — sk
 		
 		// Barba init
 		function init() {
+			DebugCore.trace("EntryOrchestrator.init()");
 			if (window.__barbaInited) return;
 			window.__barbaInited = true;
 
@@ -543,6 +552,7 @@ if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — sk
 			}
 
 			async function orchestrateEnter({next,transition}){
+				DebugCore.trace("orchestrateEnter start");
 				document.documentElement.scrollTop=0
 				document.body.scrollTop=0
 				await WebflowAdapter.enter(next)
@@ -563,6 +573,7 @@ if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — sk
 				document.documentElement.removeAttribute("data-preloading");ScrollManager.unlock()
 			});
 			
+			DebugCore.trace("barba.init starting");
 			barba.init({
 				debug: window.DEBUG,
 				timeout: 8000,
@@ -571,16 +582,17 @@ if (window.__PORTFOLIO_MAIN__) { console.warn("[BOOT] main already loaded — sk
 					{
 						name:"fade",
 						custom:function(d){return TransitionDecider.shouldFadeFor(d)},
-						async leave(data){await orchestrateLeave(data);await gsap.to(data.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"})},
-						async enter(data){await orchestrateEnter({...data,transition:"fade"})}
+						async leave(data){DebugCore.trace("transition leave");await orchestrateLeave(data);await gsap.to(data.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"})},
+						async enter(data){DebugCore.trace("transition enter");await orchestrateEnter({...data,transition:"fade"})}
 					},{
 						name:"swipe",
 						custom:function(d){return !TransitionDecider.shouldFadeFor(d)},
-						async leave(data){await orchestrateLeave(data);gsap.set(data.current.container,{pointerEvents:"none",autoAlpha:0});await TransitionEffects.coverIn();},
-						async enter(data){await orchestrateEnter({...data,transition:"swipe"})}
+						async leave(data){DebugCore.trace("transition leave");await orchestrateLeave(data);gsap.set(data.current.container,{pointerEvents:"none",autoAlpha:0});await TransitionEffects.coverIn();},
+						async enter(data){DebugCore.trace("transition enter");await orchestrateEnter({...data,transition:"swipe"})}
 					}
 				]
 			});
+			DebugCore.trace("barba.init finished");
 		}
 		
 		return {
