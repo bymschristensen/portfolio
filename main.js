@@ -521,9 +521,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 		const entryConfigByNamespace={selected:{delayHero:!1,entryOffset:-.2},archive:{delayHero:!1,entryOffset:-.2},resources:{delayHero:!1,entryOffset:-.2},capabilities:{delayHero:!0,entryOffset:.1},info:{delayHero:!1,entryOffset:-.2}};
 		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
 		function forceCloseMenus(e=document){document.querySelectorAll(".nav-primary-wrap").forEach((e=>{const r=e._menuTimeline,n=e._filterTimeline;r&&r.progress()>0&&r.timeScale(2).reverse(),n&&n.progress()>0&&n.timeScale(2).reverse(),e.querySelector(".menu-wrapper")?.style&&(e.querySelector(".menu-wrapper").style.display="none"),e.querySelector(".menu-container")?.style&&(e.querySelector(".menu-container").style.display="none"),e.querySelector(".filters-container")?.style&&(e.querySelector(".filters-container").style.display="none")})),document.body.style.overflow=""}
-		async function finalizeAfterEntry(){try{ScrollManager.refresh("entry-final")}catch(e){}}
 		function releasePreloadingGuard(){try{var e=document&&document.documentElement;e&&e.hasAttribute("data-preloading")&&e.removeAttribute("data-preloading")}catch(e){}}
-		async function runEntryFlow(r,t){r=r||document,t=t||{};let n=null,e=0,a=null;try{InitManager&&InitManager.run&&await InitManager.run(r,{preserveServicePins:!1});await new Promise(o=>{let l=window.scrollY,s=0;function i(){let y=window.scrollY;if(Math.abs(y-l)<1)s++;else{s=0;l=y}if(s>6)o();else requestAnimationFrame(i)}requestAnimationFrame(i)});try{ScrollManager.refresh("entry-pre") }catch(o){}t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(a=TransitionEffects.coverOut());const i=runPageEntryAnimations?runPageEntryAnimations(r):null;n=i&&i.tl?i.tl:gsap.timeline(),e=i&&"number"==typeof i.entryOffset?i.entryOffset:0,releasePreloadingGuard()}catch(o){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",o),n=n||null,e=0,releasePreloadingGuard()}const i=t.withCoverOut?e:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise(o=>n.eventCallback("onComplete",o))}catch(o){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",o)}if(a)try{await a}catch(o){console.warn("[EntryOrchestrator.runEntryFlow] coverOut failed",o)}}
+		async function runEntryFlow(r,t){r=r||document,t=t||{};let n=null,e=0,a=null;try{InitManager&&InitManager.run&&await InitManager.run(r,{preserveServicePins:!1});await new Promise(o=>{let l=window.scrollY,s=0;function i(){let y=window.scrollY;if(Math.abs(y-l)<1)s++;else{s=0;l=y}if(s>6)o();else requestAnimationFrame(i)}requestAnimationFrame(i)});try{ScrollManager.refresh("entry-pre")}catch(o){}t.withCoverOut&&TransitionEffects&&TransitionEffects.coverOut&&(a=TransitionEffects.coverOut());const i=runPageEntryAnimations?runPageEntryAnimations(r):null;n=i&&i.tl?i.tl:gsap.timeline(),e=i&&"number"==typeof i.entryOffset?i.entryOffset:0,releasePreloadingGuard()}catch(o){console.warn("[EntryOrchestrator.runEntryFlow] failed before timeline",o),n=n||null,e=0,releasePreloadingGuard()}const i=t.withCoverOut?e:0;if(n&&n.duration&&n.duration())try{n.play(i),await new Promise(o=>n.eventCallback("onComplete",o))}catch(o){console.warn("[EntryOrchestrator.runEntryFlow] timeline error",o)}if(a)try{await a}catch(o){console.warn("[EntryOrchestrator.runEntryFlow] coverOut failed",o)}try{ScrollManager.refresh("entry-final")}catch(o){}}
 		window.TransitionDecider=window.TransitionDecider||function(){function shouldFadeFor(d){try{var a=d&&d.trigger&&(d.trigger.tagName==="A"?d.trigger:d.trigger.closest&&d.trigger.closest("a"));if(!a)return!1;return!!(a.closest&&a.closest('[data-transition="fade"]'))}catch(e){return!1}}function consume(){}return{shouldFadeFor:shouldFadeFor,consume:consume}}();
 		
 		// Entry Animations
@@ -564,13 +563,13 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 						name:"fade",
 						custom:function(d){return !!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d))},
 						leave:async function({current:c}){try{TransitionDecider&&TransitionDecider.consume&&TransitionDecider.consume()}catch(e){}ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});window.scrollTo(0,0);await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await new Promise(r=>{let t=window.scrollY,s=0;function e(){let y=window.scrollY;if(Math.abs(y-t)<1)s++;else{s=0;t=y}if(s>6)r();else requestAnimationFrame(e)}requestAnimationFrame(e)});ScrollManager.refresh("barba.pre-entry");await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});},
+						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1});}
 						afterEnter:async function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock();}
 					},{
 						name:"swipe",
 						custom:function(d){var fade=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));return !fade},
 						leave:async function({current:c}){ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();window.scrollTo(0,0);ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await new Promise(r=>{let t=window.scrollY,s=0;function e(){let y=window.scrollY;if(Math.abs(y-t)<1)s++;else{s=0;t=y}if(s>6)r();else requestAnimationFrame(e)}requestAnimationFrame(e)});ScrollManager.refresh("barba.pre-entry");await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});},
+						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);await WebflowAdapter.enter(n);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0});},
 						afterEnter:async function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock();}
 					}
 				]
@@ -581,7 +580,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			init,
 			getEntryConfig,
 			forceCloseMenus,
-			finalizeAfterEntry,
 			runEntryFlow,
 			EntryAnimations,
 			runPageEntryAnimations,
@@ -598,7 +596,7 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			window.__ENTRY_BOOTED = 1;
 
 			// 1) Always hard-reset scroll on real page load / reload
-			try{window.scrollTo(0,0)}catch(e){}
+			try{requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,0)))}catch(e){}
 			
 			// 2) Set up navigation & debug
 			try { NavigationManager.init({ debug: DEBUG }); NavigationManager.ensureBarbaClickRouting(); } catch (a) { console.warn("[BOOT] NavigationManager init failed", a); }
