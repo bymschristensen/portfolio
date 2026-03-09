@@ -552,28 +552,28 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				window.__BARBA_NAVIGATING = true;
 				ScrollManager.lock();
 				try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}
-			})
+			});
 
 			barba.hooks.leave(async ({current:c})=>{
 				await InitManager.cleanup({preserveServicePins:!1})
-			})
+			});
 
 			barba.hooks.beforeEnter(async ({next:n})=>{
 				window.scrollTo(0,0)
-			}
+			});
 			
 			barba.hooks.enter(async ({next:n})=>{
 				await WebflowAdapter.enter(n)
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
-			})
+			});
 			
 			barba.hooks.afterEnter(async ({next:n})=>{
 			  	await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0})
-			})
+			});
 			
 			barba.hooks.after(()=>{
 			  	ScrollManager.unlock()
-			})
+			});
 			
 			barba.init({
 				debug: window.DEBUG,
