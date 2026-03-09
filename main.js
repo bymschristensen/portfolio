@@ -619,6 +619,15 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					]
 				});
 				__ENTRY_DEBUG__("barba.init finished");
+
+				const container=document.querySelector('[data-barba="container"]');
+				if(container){
+					__ENTRY_DEBUG__("manual first entry");
+					orchestrateEnter({
+						next:{container},
+						transition:"none"
+					});
+				}
 			});
 		}
 		
