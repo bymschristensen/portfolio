@@ -559,8 +559,8 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				timeout: 8000,
 				prevent: ({el})=>{var a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;if(a.closest&&a.closest('[data-transition="fade"]'))return!1;try{var u=new URL(a.getAttribute("href")||a.href,location.href),p=u.pathname.replace(/\/+$/,""),cp=location.pathname.replace(/\/+$/,"");if(p===cp&&u.hash)return!0}catch(e){}if(a.hasAttribute("download")||a.target==="_blank"||a.getAttribute("rel")==="external")return!0;var c=document.querySelector('[data-barba="container"]'),ns=c&&c.dataset?c.dataset.barbaNamespace:"";if(ns!=="archive"&&ns!=="resources"){var b=a.closest&&a.closest("[data-barba-prevent]");if(b&&b.getAttribute("data-barba-prevent")==="true")return!0}return!1},
 				transitions:[
-					{name:"fade",custom:function(d){var f=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));if(f)window.__BARBA_LAST_TRANSITION="fade";return f},leave:async function({current:c}){await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"})}},
-					{name:"swipe",custom:function(d){var f=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));if(!f)window.__BARBA_LAST_TRANSITION="swipe";return!f},leave:async function(){await TransitionEffects.coverIn()}}
+					{name:"fade",custom:function(d){var f=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));if(f)window.__BARBA_LAST_TRANSITION="fade";return f},leave:async function({current:c}){gsap.set(c.container,{pointerEvents:"none"});await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"})}},
+					{name:"swipe",custom:function(d){var f=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));if(!f)window.__BARBA_LAST_TRANSITION="swipe";return!f},leave:async function({current:c}){gsap.set(c.container,{pointerEvents:"none",autoAlpha:0});await TransitionEffects.coverIn()}}
 				]
 			});
 		}
