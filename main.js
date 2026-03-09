@@ -447,7 +447,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 
 		function sortByStage(t){const e={early:0,main:1,late:2};return t.slice().sort(((t,a)=>(e[t.stage]??1)-(e[a.stage]??1)))}
 		function buildIndex(){if(state.installed)return;const e=[...registries.common,...registries.pages.selected,...registries.pages.archive,...registries.pages.resources,...registries.pages.capabilities,...registries.pages.info,...registries.pages.caseStudy];state.features=sortByStage(e),state.installed=!0}
-		async function run(e=document,{preserveServicePins:r=!1}={}){__ENTRY_DEBUG__("InitManager.run finished");DebugCore.trace("InitManager.run complete");buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl,.custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(o){console.warn("[InitManager]",r.id,"init failed:",o)}try{await new Promise(r=>requestAnimationFrame(r));await new Promise(r=>requestAnimationFrame(r));if(window.ScrollTrigger)layoutReady(e,function(){try{ScrollManager.refresh("init")}catch{}});}catch{}}
+		async function run(e=document,{preserveServicePins:r=!1}={}){buildIndex();const t=nsOf(e);try{CoreUtilities.Observers.clearAll({preserveServicePins:r})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl,.custom-cursor").forEach(e=>{try{e.remove()}catch{}})}catch{}for(const r of state.features)if(r.enabled&&inNamespaces(t,r.namespaces)&&hasAny(e,r.selectors))try{await r.init(e,{pageNS:t})}catch(o){console.warn("[InitManager]",r.id,"init failed:",o)}try{await new Promise(r=>requestAnimationFrame(r));await new Promise(r=>requestAnimationFrame(r));if(window.ScrollTrigger)layoutReady(e,function(){try{ScrollManager.refresh("init")}catch{}});}catch{}}
 		async function cleanup(r=document,{preserveServicePins:e=!1}={}){var o=r||document;for(const r of state.features)if("function"==typeof r.destroy)try{await r.destroy(o,{})}catch(e){console.warn("[InitManager]",r.id,"destroy failed:",e)}try{CoreUtilities.Observers.clearAll({preserveServicePins:e})}catch{}try{CoreUtilities.Cursor.destroy()}catch{}try{document.querySelectorAll(".cursor-webgl, .custom-cursor").forEach((r=>{try{r.remove()}catch{}}))}catch{}}
 		function enable(id, on = true) { const f = state.featuresById.get(id); if (f) f.enabled = !!on; }
 		function disable(id) { enable(id, false); }
@@ -545,7 +545,6 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			__ENTRY_DEBUG__("Entry animations finished");
 		// Barba init
 		function init() {
-			DebugCore.trace("EntryOrchestrator.init()");
 			__ENTRY_DEBUG__("EntryOrchestrator.init()");
 			if (window.__barbaInited) return;
 			window.__barbaInited = true;
@@ -559,17 +558,33 @@ window.__ENTRY_DEBUG__ = function(label,data){
 
 			async function orchestrateEnter({next,transition}){
 				__ENTRY_DEBUG__("orchestrateEnter start");
-				DebugCore.trace("orchestrateEnter start");
+			
 				document.documentElement.scrollTop=0
 				document.body.scrollTop=0
+			
 				await WebflowAdapter.enter(next)
+			
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
+			
 				await InitManager.run(next.container,{preserveServicePins:false})
+			
+				__ENTRY_DEBUG__("InitManager.run finished")
+			
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
+			
 				const entry=runPageEntryAnimations(next.container)
+			
 				if(transition==="swipe")await TransitionEffects.coverOut()
-				if(entry&&entry.tl&&entry.tl.duration()){entry.tl.play(entry.entryOffset||0);await new Promise(r=>entry.tl.eventCallback("onComplete",r))}
+			
+				if(entry&&entry.tl&&entry.tl.duration()){
+					entry.tl.play(entry.entryOffset||0);
+					await new Promise(r=>entry.tl.eventCallback("onComplete",r))
+				}
+			
+				__ENTRY_DEBUG__("Entry animations finished")
+			
 				document.documentElement.removeAttribute("data-preloading")
+			
 				ScrollManager.unlock()
 			}
 			
@@ -582,7 +597,6 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				__ENTRY_DEBUG__("barba.once end");
 			});
 			
-			DebugCore.trace("barba.init starting");
 			__ENTRY_DEBUG__("barba.init starting");
 			barba.init({
 				debug: window.DEBUG,
@@ -602,7 +616,6 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					}
 				]
 			});
-			DebugCore.trace("barba.init finished");
 			__ENTRY_DEBUG__("barba.init finished");
 		}
 		
