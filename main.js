@@ -597,28 +597,29 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				document.documentElement.removeAttribute("data-preloading");ScrollManager.unlock()
 				__ENTRY_DEBUG__("barba.once end");
 			});
-			
-			__ENTRY_DEBUG__("barba.init starting");
-			barba.init({
-				debug: window.DEBUG,
-				timeout: 8000,
-				prevent: ({el})=>{var a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;if(a.closest&&a.closest('[data-transition="fade"]'))return!1;try{var u=new URL(a.getAttribute("href")||a.href,location.href),p=u.pathname.replace(/\/+$/,""),cp=location.pathname.replace(/\/+$/,"");if(p===cp&&u.hash)return!0}catch(e){}if(a.hasAttribute("download")||a.target==="_blank"||a.getAttribute("rel")==="external")return!0;var c=document.querySelector('[data-barba="container"]'),ns=c&&c.dataset?c.dataset.barbaNamespace:"";if(ns!=="archive"&&ns!=="resources"){var b=a.closest&&a.closest("[data-barba-prevent]");if(b&&b.getAttribute("data-barba-prevent")==="true")return!0}return!1},
-				transitions:[
-					{
-						name:"fade",
-						custom:function(d){return TransitionDecider.shouldFadeFor(d)},
-						async leave(data){DebugCore.trace("transition leave");await orchestrateLeave(data);await gsap.to(data.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"})},
-						async enter(data){DebugCore.trace("transition enter");await orchestrateEnter({...data,transition:"fade"})}
-					},{
-						name:"swipe",
-						custom:function(d){return !TransitionDecider.shouldFadeFor(d)},
-						async leave(data){DebugCore.trace("transition leave");await orchestrateLeave(data);gsap.set(data.current.container,{pointerEvents:"none",autoAlpha:0});await TransitionEffects.coverIn();},
-						async enter(data){DebugCore.trace("transition enter");await orchestrateEnter({...data,transition:"swipe"})}
-					}
-				]
+
+			requestAnimationFrame(()=>{
+				__ENTRY_DEBUG__("barba.init starting");
+				barba.init({
+					debug: window.DEBUG,
+					timeout: 8000,
+					prevent: ({el})=>{var a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;if(a.closest&&a.closest('[data-transition="fade"]'))return!1;try{var u=new URL(a.getAttribute("href")||a.href,location.href),p=u.pathname.replace(/\/+$/,""),cp=location.pathname.replace(/\/+$/,"");if(p===cp&&u.hash)return!0}catch(e){}if(a.hasAttribute("download")||a.target==="_blank"||a.getAttribute("rel")==="external")return!0;var c=document.querySelector('[data-barba="container"]'),ns=c&&c.dataset?c.dataset.barbaNamespace:"";if(ns!=="archive"&&ns!=="resources"){var b=a.closest&&a.closest("[data-barba-prevent]");if(b&&b.getAttribute("data-barba-prevent")==="true")return!0}return!1},
+					transitions:[
+						{
+							name:"fade",
+							custom:function(d){return TransitionDecider.shouldFadeFor(d)},
+							async leave(data){DebugCore.trace("transition leave");await orchestrateLeave(data);await gsap.to(data.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"})},
+							async enter(data){DebugCore.trace("transition enter");await orchestrateEnter({...data,transition:"fade"})}
+						},{
+							name:"swipe",
+							custom:function(d){return !TransitionDecider.shouldFadeFor(d)},
+							async leave(data){DebugCore.trace("transition leave");await orchestrateLeave(data);gsap.set(data.current.container,{pointerEvents:"none",autoAlpha:0});await TransitionEffects.coverIn();},
+							async enter(data){DebugCore.trace("transition enter");await orchestrateEnter({...data,transition:"swipe"})}
+						}
+					]
+				});
+				__ENTRY_DEBUG__("barba.init finished");
 			});
-			__ENTRY_DEBUG__("barba.init finished");
-			setTimeout(()=>document.documentElement.removeAttribute("data-preloading"),100);
 		}
 		
 		return {
