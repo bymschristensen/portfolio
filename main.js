@@ -554,7 +554,6 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 			});
 
 			barba.hooks.before(()=>{window.__BARBA_NAVIGATING = true;ScrollManager.lock();try{window.ScrollTrigger && ScrollTrigger.clearScrollMemory();}catch(e){}});
-			barba.hooks.afterEnter(()=>{window.__BARBA_NAVIGATING=false;requestAnimationFrame(()=>{try{WebflowAdapter.reinit("afterEnter")}catch(e){}})});
 			
 			barba.init({
 				debug: window.DEBUG,
@@ -562,19 +561,18 @@ console.info('[BOOT] portfolio main.js loaded. src:',(document.currentScript&&do
 				prevent: ({el})=>{var a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;if(a.closest&&a.closest('[data-transition="fade"]'))return!1;try{var u=new URL(a.getAttribute("href")||a.href,location.href),p=u.pathname.replace(/\/+$/,""),cp=location.pathname.replace(/\/+$/,"");if(p===cp&&u.hash)return!0}catch(e){}if(a.hasAttribute("download")||a.target==="_blank"||a.getAttribute("rel")==="external")return!0;var c=document.querySelector('[data-barba="container"]'),ns=c&&c.dataset?c.dataset.barbaNamespace:"";if(ns!=="archive"&&ns!=="resources"){var b=a.closest&&a.closest("[data-barba-prevent]");if(b&&b.getAttribute("data-barba-prevent")==="true")return!0}return!1},
 				transitions:[
 					{
-						name: "fade",
-						custom: function(d){return!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d))},
-						leave: async function({current:c}){try{TransitionDecider&&TransitionDecider.consume&&TransitionDecider.consume()}catch(e){}ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						beforeEnter: function(){window.scrollTo(0,0)},
-						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);try{await WebflowAdapter.enter(n)}catch(e){}ScrollManager.refresh("barba.enter");window.scrollTo(0,0);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!1})},
-						afterEnter:async function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock()}
+						name:"fade",
+						custom:function(d){return !!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d))},
+						leave:async function({current:c}){try{TransitionDecider&&TransitionDecider.consume&&TransitionDecider.consume()}catch(e){}ScrollManager.lock();NavigationManager.setLock("overlay",true);await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:false});c.container.remove();},
+						enter:async function({next:n}){NavigationManager.setLock("overlay",false);window.scrollTo(0,0);try{await WebflowAdapter.enter(n)}catch(e){}ScrollManager.refresh("transition.enter");await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:false});},
+						afterEnter:async function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock();}
+
 					},{
-						name: "swipe",
-						custom: function(d){var fade=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));return !fade},
-						leave: async function({current:c}){ScrollManager.lock();NavigationManager&&NavigationManager.setLock&&NavigationManager.setLock("overlay",!0);var ok=await TransitionEffects.coverIn();ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:!1});c.container.remove()},
-						beforeEnter: function(){window.scrollTo(0,0)},
-						enter:async function({next:n}){NavigationManager.setLock("overlay",!1);try{await WebflowAdapter.enter(n)}catch(e){}ScrollManager.refresh("barba.enter");window.scrollTo(0,0);await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:!0})},
-						afterEnter:async function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock()}
+						name:"swipe",
+						custom:function(d){var fade=!!(window.TransitionDecider&&TransitionDecider.shouldFadeFor&&TransitionDecider.shouldFadeFor(d));return !fade},
+						leave:async function({current:c}){ScrollManager.lock();NavigationManager.setLock("overlay",true);var ok=await TransitionEffects.coverIn();ok||await gsap.to(c.container,{autoAlpha:0,duration:.45,ease:"power1.out"});await InitManager.cleanup({preserveServicePins:false});c.container.remove();},
+						enter:async function({next:n}){NavigationManager.setLock("overlay",false);window.scrollTo(0,0);try{await WebflowAdapter.enter(n)}catch(e){}ScrollManager.refresh("transition.enter");await EntryOrchestrator.runEntryFlow(n.container,{withCoverOut:true});},
+						afterEnter:async function({next:n}){EntryOrchestrator&&EntryOrchestrator.forceCloseMenus&&EntryOrchestrator.forceCloseMenus();requestAnimationFrame(function(){var h=n.container&&n.container.querySelector&&n.container.querySelector('h1,[role="heading"][aria-level="1"]');if(h){h.setAttribute("tabindex","-1");try{h.focus({preventScroll:true})}catch(e){}setTimeout(function(){h.removeAttribute("tabindex")},0)}});window.__MEDIA_KICK&&window.__MEDIA_KICK(n.container);ScrollManager.unlock();}
 					}
 				]
 			});
