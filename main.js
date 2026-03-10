@@ -546,8 +546,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			EntryAnimations.capabilities=function(e,i){e=e||document,i=i||{};var t=!!i.delayHero,a=gsap.timeline(),mq=matchMedia("(min-width:1024px)");if(mq.matches){var l=e.querySelector(".showreel-headline"),o=e.querySelector(".showreel-container"),b=e.querySelectorAll(".toc-block");if(!l&&!o&&(!b||!b.length))return a;l&&gsap.set(l,{autoAlpha:0,visibility:"visible"}),o&&(gsap.set(o,{autoAlpha:1,visibility:"visible",overflow:"hidden"}),gsap.set(o,{clipPath:"polygon(100% 100%,100% 100%,100% 100%,100% 100%)",willChange:"clip-path"})),b&&b.length&&gsap.set(b,{opacity:0,y:120,filter:"blur(10px)",willChange:"transform,opacity,filter"});var n=t?.2:0;return a.addLabel("hero",n),a.addLabel("showreel","hero+=0.2"),l&&a.set(l,{autoAlpha:1},"hero").call(function(){var p=CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve();p.then(function(){try{if(window.SplitText&&window.splitAndMask&&window.animateLines&&window.safelyRevertSplit){var s=splitAndMask(l);animateLines(s.lines).eventCallback("onComplete",function(){safelyRevertSplit(s,l)})}else gsap.to(l,{autoAlpha:1,duration:.01})}catch(_){gsap.to(l,{autoAlpha:1,duration:.01})}})},null,"hero"),o&&a.to(o,{clipPath:"polygon(0% 0%,100% 0%,100% 100%,0% 100%)",duration:1.05,ease:"power3.inOut",clearProps:"willChange"},"showreel"),b&&b.length&&a.to(b,{opacity:1,y:0,filter:"blur(0px)",duration:.7,ease:"power2.out",stagger:.11,clearProps:"transform,opacity,filter,willChange"},"showreel+=0.06"),a}var sec=e.querySelector(".hero-section-showreel.capabilities-devices"),vid=e.querySelector(".showreel-visual-device"),h=e.querySelector(".hero-section-showreel.capabilities-devices .hero-text h1.hero-headline-devices"),an=e.querySelector(".hero-section-showreel.capabilities-devices .showreel-anchors");if(!sec&&!vid&&!h&&!an)return a;return vid=vid||sec,vid&&gsap.set(vid,{autoAlpha:0,y:100,filter:"blur(10px)",willChange:"transform,opacity,filter"}),h&&gsap.set(h,{visibility:"visible",autoAlpha:0}),an&&gsap.set(an,{autoAlpha:0,y:20,filter:"blur(10px)",willChange:"transform,opacity,filter"}),a.addLabel("m",t?.2:0),vid&&a.to(vid,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.85,ease:"power2.out",clearProps:"y,filter,willChange"},"m"),h&&(a.addLabel("m_h","m+=0.18"),a.set(h,{autoAlpha:1},"m_h").call(function(){var p=CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve();p.then(function(){try{if(window.SplitText&&window.splitAndMask&&window.animateLines&&window.safelyRevertSplit){var s=splitAndMask(h);animateLines(s.lines).eventCallback("onComplete",function(){safelyRevertSplit(s,h)})}else gsap.to(h,{autoAlpha:1,duration:.01})}catch(_){gsap.to(h,{autoAlpha:1,duration:.01})}})},null,"m_h")),an&&a.to(an,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out",clearProps:"y,filter,willChange"},"m_h+=0.32"),a};
 			EntryAnimations.info=function(e){e=e||document;var t=gsap.timeline(),m=!!(window.matchMedia&&matchMedia("(max-width:1023px)").matches),h=null,s=null,p=null;if(m){p=e.querySelector(".section-portrait-device");h=e.querySelector(".hero-section-text h1.hero-headline-devices")||e.querySelector(".hero-section-text .hero-text h1.hero-headline-devices");s=e.querySelector(".hero-subtext")||e.querySelector(".hero-section-text .hero-text .hero-subtext");if(!p&&!h&&!s)return t;try{p&&gsap.set(p,{visibility:"visible",autoAlpha:0,y:100,filter:"blur(10px)",willChange:"transform,opacity,filter"})}catch{}try{h&&gsap.set(h,{visibility:"visible",autoAlpha:0})}catch{}try{s&&gsap.set(s,{visibility:"visible",autoAlpha:0,y:20,filter:"blur(10px)",willChange:"transform,opacity,filter"})}catch{}t.addLabel("m",0);p&&t.to(p,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.9,ease:"power2.out",clearProps:"y,filter,willChange"},"m");if(h){t.addLabel("m_h","m+=0.2");t.set(h,{autoAlpha:1},"m_h").call(function(){(CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve()).then(function(){try{if(window.splitAndMask&&window.animateLines&&window.safelyRevertSplit){var e2=splitAndMask(h);animateLines(e2.lines).eventCallback("onComplete",function(){try{safelyRevertSplit(e2,h)}catch{}})}else gsap.to(h,{y:0,opacity:1,duration:.6,ease:"power2.out"})}catch(e3){try{gsap.to(h,{y:0,opacity:1,duration:.6,ease:"power2.out"})}catch{}}})},null,"m_h")}s&&t.to(s,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out",clearProps:"y,filter,willChange"},h?"m_h+=0.48":"m+=0.48");return t}var n=e.querySelector(".hero-section-text h1:not(.hero-headline-devices)")||e.querySelector(".hero-section-text .hero-text h1:not(.hero-headline-devices)")||e.querySelector(".hero-section-text h1")||e.querySelector(".hero-section-text .hero-text h1"),r=e.querySelector(".hero-subtext")||e.querySelector(".hero-section-text .hero-text .hero-subtext");var entries=[...e.querySelectorAll(".bio-photo-entry")].sort(function(a,b){var wa=a.querySelector(".bio-photo-wrapper[data-photo]"),wb=b.querySelector(".bio-photo-wrapper[data-photo]");return(+(wa&&wa.getAttribute("data-photo")||0))-(+(wb&&wb.getAttribute("data-photo")||0))});if(entries.length){try{gsap.set(entries,{visibility:"visible",opacity:0,y:120,filter:"blur(10px)",willChange:"transform,opacity,filter"})}catch{}/* ensure wrappers inside are visible (no opacity meddling here) */try{gsap.set(entries.map(function(x){return x.querySelector(".bio-photo-wrapper")}).filter(Boolean),{visibility:"visible"})}catch{}var a=.9,l=.14;t.addLabel("p",0).to(entries,{opacity:1,y:0,filter:"blur(0px)",duration:a,ease:"power2.out",stagger:l,clearProps:"y,filter,willChange"},"p").addLabel("h","p+="+(l+a-.6))}else t.addLabel("h",0);n&&(gsap.set(n,{visibility:"visible",autoAlpha:0}),t.set(n,{autoAlpha:1},"h").call(function(){(CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve()).then(function(){if(window.splitAndMask&&window.animateLines&&window.safelyRevertSplit){var e2=splitAndMask(n);animateLines(e2.lines).eventCallback("onComplete",function(){safelyRevertSplit(e2,n)})}else gsap.to(n,{y:0,opacity:1,duration:.6,ease:"power2.out"})})},null,"h"));r&&(gsap.set(r,{visibility:"visible",autoAlpha:0,y:20,filter:"blur(10px)"}),t.to(r,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.6,ease:"power2.out"},"h+=0.48"));return t};
 			EntryAnimations.caseStudy=function(e){e=e||document;var t=gsap.timeline(),i=e.querySelector(".cs-hero-image"),r=e.querySelector(".cs-headline-wrapper"),a=e.querySelector("h1.cs-headline")||e.querySelector(".cs-headline"),n=e.querySelector(".cs-titles-inner .headline-m");i&&gsap.set(i,{autoAlpha:0,y:100,filter:"blur(10px)"}),r&&gsap.set(r,{autoAlpha:1,clearProps:"visibility"}),a&&gsap.set(a,{autoAlpha:0,display:"block",clearProps:"visibility"}),n&&gsap.set(n,{autoAlpha:0,y:20,filter:"blur(10px)"}),i&&t.to(i,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.7,ease:"power2.out"},0),a&&t.addLabel("cs_h",.15).set(r,{autoAlpha:1,clearProps:"visibility"},"cs_h").set(a,{autoAlpha:1,display:"block",clearProps:"visibility"},"cs_h").call(function(){var e=CoreUtilities&&CoreUtilities.Fonts&&CoreUtilities.Fonts.ready?CoreUtilities.Fonts.ready():Promise.resolve();e.then(function(){if(window.SplitText&&window.splitAndMask&&window.animateLines&&window.safelyRevertSplit)try{var e=splitAndMask(a);animateLines(e.lines).eventCallback("onComplete",function(){safelyRevertSplit(e,a)})}catch(e){gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})}else gsap.to(a,{y:0,autoAlpha:1,duration:.6,ease:"power2.out"})})},null,"cs_h"),n&&t.to(n,{autoAlpha:1,y:0,filter:"blur(0px)",duration:.5,ease:"power2.out"},"cs_h+=0.6");return t};
-			function runPageEntryAnimations(e){const{delayHero:t,entryOffset:r}=getEntryConfig(e);let n=(e.dataset&&e.dataset.barbaNamespace)||"";if(!n){if(e.querySelector(".selected-item-outer"))n="selected";else if(e.querySelector(".section-archive")||e.querySelector(".section-archive-playful")||e.querySelector(".section-archive-minimal"))n="archive";else if(e.querySelector(".section-resources"))n="resources";else if(e.querySelector(".hero-section-showreel")||e.querySelector(".showreel-container"))n="capabilities";else if(e.querySelector(".cs-hero-image")||e.querySelector(".cs-headline"))n="caseStudy";else if(e.querySelector(".bio-photo-entry"))n="info"}const a=gsap.timeline({paused:!0});return"archive"===n&&a.add(EntryAnimations.archive(e),0),"info"===n&&a.add(EntryAnimations.info(e),0),"resources"===n&&a.add(EntryAnimations.resources(e),0),"capabilities"===n&&a.add(EntryAnimations.capabilities(e,{delayHero:t}),0),"selected"===n&&a.add(EntryAnimations.selected(e),0),"caseStudy"===n&&a.add(EntryAnimations.caseStudy(e),0),{tl:a,entryOffset:r}}
-		
+			
 		// Barba init
 		function init() {
 			__ENTRY_DEBUG__("EntryOrchestrator.init()");
@@ -563,32 +562,29 @@ window.__ENTRY_DEBUG__ = function(label,data){
 
 			async function orchestrateEnter({next,transition}){
 				__ENTRY_DEBUG__("orchestrateEnter start");
-			
-				document.documentElement.scrollTop=0
-				document.body.scrollTop=0
-			
-				await WebflowAdapter.enter(next)
+				__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace);
 				
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
+				document.documentElement.scrollTop=0;
+				document.body.scrollTop=0;
 				
-				await InitManager.run(next.container,{preserveServicePins:false})
-				__ENTRY_DEBUG__("InitManager.run finished")
+				await WebflowAdapter.enter(next);
+				if(!next.container.dataset.barbaNamespace){await new Promise(r=>requestAnimationFrame(r));}
+				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+				await InitManager.run(next.container,{preserveServicePins:false});
+				__ENTRY_DEBUG__("InitManager.run finished");
+				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+				if(transition==="fade") gsap.set(next.container,{opacity:1});
+				if(transition==="swipe") await TransitionEffects.coverOut();
+				document.documentElement.removeAttribute("data-preloading");
 				
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
-				
-				if(transition==="fade") gsap.set(next.container,{opacity:1})
-				if(transition==="swipe")await TransitionEffects.coverOut()
-				document.documentElement.removeAttribute("data-preloading")
-				const entry=runPageEntryAnimations(next.container)
-			
-				if(entry&&entry.tl){
-					entry.tl.invalidate().restart(true,false)
-					await new Promise(r=>entry.tl.eventCallback("onComplete",r))
+				try{
+					const c=next.container,ns=c.dataset.barbaNamespace||"",{delayHero,entryOffset}=getEntryConfig(c);let tl=gsap.timeline({paused:true});"selected"===ns?tl.add(EntryAnimations.selected(c),0):"archive"===ns?tl.add(EntryAnimations.archive(c),0):"resources"===ns?tl.add(EntryAnimations.resources(c),0):"capabilities"===ns?tl.add(EntryAnimations.capabilities(c,{delayHero}),0):"info"===ns?tl.add(EntryAnimations.info(c),0):(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline"))&&tl.add(EntryAnimations.caseStudy(c),0);if(tl.duration()){tl.play(entryOffset||0);await new Promise(r=>tl.eventCallback("onComplete",r))}
+				}finally{
+					__ENTRY_DEBUG__("Entry animations finished");
+					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}));
+					ScrollManager.unlock();
 				}
-			
-				__ENTRY_DEBUG__("Entry animations finished")
-				document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}))
-				ScrollManager.unlock()
 			}
 			
 			barba.hooks.before(()=>{__ENTRY_DEBUG__("barba.before");document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
@@ -634,8 +630,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 		return {
 			init,
 			getEntryConfig,
-			EntryAnimations,
-			runPageEntryAnimations
+			EntryAnimations
 		};
 	})();
 	
