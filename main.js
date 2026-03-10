@@ -561,52 +561,53 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			}
 
 			async function orchestrateEnter({next,transition}){
-				console.log("ENTER ORCHESTRATOR",next.container.dataset.barbaNamespace,transition)
-				__ENTRY_DEBUG__("orchestrateEnter start")
-				__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace)
+				console.log("ENTER ORCHESTRATOR",next.container.dataset.barbaNamespace,transition);
+				__ENTRY_DEBUG__("orchestrateEnter start");
+				__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace);
 			
-				const c=next.container
+				const c=next.container;
 			
-				document.documentElement.scrollTop=0
-				document.body.scrollTop=0
+				document.documentElement.scrollTop=0;
+				document.body.scrollTop=0;
 			
-				await WebflowAdapter.enter(next)
-				if(!c.dataset.barbaNamespace) await new Promise(r=>requestAnimationFrame(r))
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
+				await WebflowAdapter.enter(next);
+				if(!c.dataset.barbaNamespace) await new Promise(r=>requestAnimationFrame(r));
+				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 			
-				await InitManager.run(c,{preserveServicePins:false})
-				__ENTRY_DEBUG__("InitManager.run finished")
+				await InitManager.run(c,{preserveServicePins:false});
+				__ENTRY_DEBUG__("InitManager.run finished");
 			
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
+				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 			
-				if(transition==="fade") gsap.set(c,{clearProps:"opacity,pointerEvents"})
-				if(transition==="swipe") await TransitionEffects.coverOut()
+				if(transition==="fade") gsap.set(c,{clearProps:"opacity,pointerEvents"});
+				if(transition==="swipe") await TransitionEffects.coverOut();
 			
 				try{
-					const ns=c.dataset.barbaNamespace||""
-					const {delayHero,entryOffset}=getEntryConfig(c)
-					let tl=gsap.timeline({paused:true})
+					const ns=c.dataset.barbaNamespace||"";
+					const {delayHero,entryOffset}=getEntryConfig(c);
+					let entry=null;
 			
-					if(ns==="selected") tl.add(EntryAnimations.selected(c),0)
-					else if(ns==="archive") tl.add(EntryAnimations.archive(c),0)
-					else if(ns==="resources") tl.add(EntryAnimations.resources(c),0)
-					else if(ns==="capabilities") tl.add(EntryAnimations.capabilities(c,{delayHero}),0)
-					else if(ns==="info") tl.add(EntryAnimations.info(c),0)
-					else if(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline")) tl.add(EntryAnimations.caseStudy(c),0)
+					if(ns==="selected") entry=EntryAnimations.selected(c);
+					else if(ns==="archive") entry=EntryAnimations.archive(c);
+					else if(ns==="resources") entry=EntryAnimations.resources(c);
+					else if(ns==="capabilities") entry=EntryAnimations.capabilities(c,{delayHero});
+					else if(ns==="info") entry=EntryAnimations.info(c);
+					else if(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline")) entry=EntryAnimations.caseStudy(c);
 			
-					console.log("ENTRY TL DURATION",ns,tl.duration())
+					console.log("ENTRY TL DURATION",ns,entry&&entry.duration?entry.duration():0);
 			
-					document.documentElement.removeAttribute("data-preloading")
-					await new Promise(r=>requestAnimationFrame(r))
+					document.documentElement.removeAttribute("data-preloading");
+					await new Promise(r=>requestAnimationFrame(r));
 			
-					if(tl.duration()){
-						tl.play(entryOffset||0)
-						await new Promise(r=>tl.eventCallback("onComplete",r))
+					if(entry&&entry.duration&&entry.duration()){
+						entry.pause(0,true);
+						entry.play(entryOffset||0);
+						await new Promise(r=>entry.eventCallback("onComplete",r));
 					}
 				}finally{
-					__ENTRY_DEBUG__("Entry animations finished")
-					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}))
-					ScrollManager.unlock()
+					__ENTRY_DEBUG__("Entry animations finished");
+					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}));
+					ScrollManager.unlock();
 				}
 			}
 			
