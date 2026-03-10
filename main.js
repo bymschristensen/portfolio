@@ -574,8 +574,8 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				if(!c.dataset.barbaNamespace) await new Promise(r=>requestAnimationFrame(r));
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 			
-				//await InitManager.run(c,{preserveServicePins:false});
-				//__ENTRY_DEBUG__("InitManager.run finished");
+				await InitManager.run(c,{preserveServicePins:false});
+				__ENTRY_DEBUG__("InitManager.run finished");
 			
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 			
