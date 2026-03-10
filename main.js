@@ -568,9 +568,9 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				document.body.scrollTop=0
 			
 				await WebflowAdapter.enter(next)
-				document.documentElement.removeAttribute("data-preloading")
+				
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
-			
+				document.documentElement.removeAttribute("data-preloading")
 				await InitManager.run(next.container,{preserveServicePins:false})
 				__ENTRY_DEBUG__("InitManager.run finished")
 			
