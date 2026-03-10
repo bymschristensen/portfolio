@@ -562,28 +562,62 @@ window.__ENTRY_DEBUG__ = function(label,data){
 
 			async function orchestrateEnter({next,transition}){
 				console.log("ENTER ORCHESTRATOR",next.container.dataset.barbaNamespace,transition)
-				__ENTRY_DEBUG__("orchestrateEnter start");
-				__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace);
-				
-				document.documentElement.scrollTop=0;
-				document.body.scrollTop=0;
-				
-				await WebflowAdapter.enter(next);
-				if(!next.container.dataset.barbaNamespace){await new Promise(r=>requestAnimationFrame(r));}
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-				await InitManager.run(next.container,{preserveServicePins:false});
-				__ENTRY_DEBUG__("InitManager.run finished");
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-
-				if(transition==="fade") gsap.set(next.container,{autoAlpha:1});
-				if(transition==="swipe") await TransitionEffects.coverOut();
-				
+				__ENTRY_DEBUG__("orchestrateEnter start")
+				__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace)
+			
+				const c = next.container
+			
+				// reset scroll
+				document.documentElement.scrollTop = 0
+				document.body.scrollTop = 0
+			
+				// prevent browser painting content before GSAP prepares it
+				gsap.set(c,{visibility:"hidden"})
+			
+				// Webflow DOM hooks
+				await WebflowAdapter.enter(next)
+			
+				// allow DOM injection to finish
+				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
+			
+				// run feature initialisers
+				await InitManager.run(c,{preserveServicePins:false})
+				__ENTRY_DEBUG__("InitManager.run finished")
+			
+				// allow layout + styles to settle
+				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
+			
+				// transition cleanup
+				if(transition==="fade") gsap.set(c,{clearProps:"all"})
+				if(transition==="swipe") await TransitionEffects.coverOut()
+			
 				try{
-					const c=next.container,ns=c.dataset.barbaNamespace||"",{delayHero,entryOffset}=getEntryConfig(c);let tl=gsap.timeline({paused:true});"selected"===ns?tl.add(EntryAnimations.selected(c),0):"archive"===ns?tl.add(EntryAnimations.archive(c),0):"resources"===ns?tl.add(EntryAnimations.resources(c),0):"capabilities"===ns?tl.add(EntryAnimations.capabilities(c,{delayHero}),0):"info"===ns?tl.add(EntryAnimations.info(c),0):(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline"))&&tl.add(EntryAnimations.caseStudy(c),0);console.log("ENTRY TL DURATION",ns,tl.duration());if(tl.duration()){document.documentElement.removeAttribute("data-preloading");tl.play(entryOffset||0);await new Promise(r=>tl.eventCallback("onComplete",r))}
-				}finally{
-					__ENTRY_DEBUG__("Entry animations finished");
-					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}));
-					ScrollManager.unlock();
+					const ns = c.dataset.barbaNamespace || ""
+					const {delayHero,entryOffset} = getEntryConfig(c)
+					let tl = gsap.timeline({paused:true})
+			
+					if(ns==="selected") tl.add(EntryAnimations.selected(c),0)
+					else if(ns==="archive") tl.add(EntryAnimations.archive(c),0)
+					else if(ns==="resources") tl.add(EntryAnimations.resources(c),0)
+					else if(ns==="capabilities") tl.add(EntryAnimations.capabilities(c,{delayHero}),0)
+					else if(ns==="info") tl.add(EntryAnimations.info(c),0)
+					else if(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline")){
+						tl.add(EntryAnimations.caseStudy(c),0)
+					}
+					console.log("ENTRY TL DURATION",ns,tl.duration())
+			
+					// reveal container once GSAP is ready
+					gsap.set(c,{visibility:"visible"})
+					if(tl.duration()){
+						document.documentElement.removeAttribute("data-preloading")
+						tl.play(entryOffset||0)
+						await new Promise(r=>tl.eventCallback("onComplete",r))
+					}
+				}
+				finally{
+					__ENTRY_DEBUG__("Entry animations finished")
+					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}))
+					ScrollManager.unlock()
 				}
 			}
 			
