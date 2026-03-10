@@ -577,6 +577,9 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				if(transition==="fade") gsap.set(c,{clearProps:"opacity,pointerEvents"});
 				if(transition==="swipe") await TransitionEffects.coverOut();
 				try{
+					document.documentElement.removeAttribute("data-preloading");
+					await new Promise(r=>requestAnimationFrame(r));
+					
 					const ns=c.dataset.barbaNamespace||"";
 					const {delayHero,entryOffset}=getEntryConfig(c);
 					let entry=null;
