@@ -580,7 +580,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				document.documentElement.removeAttribute("data-preloading");
 				
 				try{
-					const c=next.container,ns=c.dataset.barbaNamespace||"",{delayHero,entryOffset}=getEntryConfig(c);let tl=gsap.timeline({paused:true});"selected"===ns?tl.add(EntryAnimations.selected(c),0):"archive"===ns?tl.add(EntryAnimations.archive(c),0):"resources"===ns?tl.add(EntryAnimations.resources(c),0):"capabilities"===ns?tl.add(EntryAnimations.capabilities(c,{delayHero}),0):"info"===ns?tl.add(EntryAnimations.info(c),0):(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline"))&&tl.add(EntryAnimations.caseStudy(c),0);if(tl.duration()){tl.play(entryOffset||0);await new Promise(r=>tl.eventCallback("onComplete",r))}
+					const c=next.container,ns=c.dataset.barbaNamespace||"",{delayHero,entryOffset}=getEntryConfig(c);let tl=gsap.timeline({paused:true});"selected"===ns?tl.add(EntryAnimations.selected(c),0):"archive"===ns?tl.add(EntryAnimations.archive(c),0):"resources"===ns?tl.add(EntryAnimations.resources(c),0):"capabilities"===ns?tl.add(EntryAnimations.capabilities(c,{delayHero}),0):"info"===ns?tl.add(EntryAnimations.info(c),0):(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline"))&&tl.add(EntryAnimations.caseStudy(c),0);console.log("ENTRY TL DURATION",ns,tl.duration());if(tl.duration()){tl.play(entryOffset||0);await new Promise(r=>tl.eventCallback("onComplete",r))}
 				}finally{
 					__ENTRY_DEBUG__("Entry animations finished");
 					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}));
