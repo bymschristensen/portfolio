@@ -570,9 +570,8 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				document.documentElement.scrollTop=0
 				document.body.scrollTop=0
 			
-				gsap.set(c,{visibility:"hidden"})
-			
 				await WebflowAdapter.enter(next)
+				if(!c.dataset.barbaNamespace) await new Promise(r=>requestAnimationFrame(r))
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
 			
 				await InitManager.run(c,{preserveServicePins:false})
@@ -597,16 +596,12 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			
 					console.log("ENTRY TL DURATION",ns,tl.duration())
 			
+					document.documentElement.removeAttribute("data-preloading")
+					await new Promise(r=>requestAnimationFrame(r))
+			
 					if(tl.duration()){
-						tl.pause(0)
-						await new Promise(r=>requestAnimationFrame(r))
-						document.documentElement.removeAttribute("data-preloading")
-						gsap.set(c,{visibility:"visible"})
 						tl.play(entryOffset||0)
 						await new Promise(r=>tl.eventCallback("onComplete",r))
-					}else{
-						document.documentElement.removeAttribute("data-preloading")
-						gsap.set(c,{visibility:"visible"})
 					}
 				}finally{
 					__ENTRY_DEBUG__("Entry animations finished")
