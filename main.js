@@ -595,12 +595,9 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					await new Promise(r=>requestAnimationFrame(r));
 				
 					if(entry&&entry.duration&&entry.duration()){
-						document.documentElement.removeAttribute("data-preloading");
 						await new Promise(r=>requestAnimationFrame(r));
 						entry.play(0);
 						await new Promise(r=>entry.eventCallback("onComplete",r));
-					}else{
-						document.documentElement.removeAttribute("data-preloading");
 					}
 				
 					await InitManager.run(c,{preserveServicePins:false});
