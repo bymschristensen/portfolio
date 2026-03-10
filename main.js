@@ -574,8 +574,8 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				if(!c.dataset.barbaNamespace) await new Promise(r=>requestAnimationFrame(r));
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 			
-				await InitManager.run(c,{preserveServicePins:false});
-				__ENTRY_DEBUG__("InitManager.run finished");
+				//await InitManager.run(c,{preserveServicePins:false});
+				//__ENTRY_DEBUG__("InitManager.run finished");
 			
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 			
@@ -594,13 +594,15 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					else if(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline")) entry=EntryAnimations.caseStudy(c);
 				
 					console.log("ENTRY TL DURATION",ns,entry&&entry.duration?entry.duration():0);
-				
-					document.documentElement.removeAttribute("data-preloading");
 					await new Promise(r=>requestAnimationFrame(r));
 				
 					if(entry&&entry.duration&&entry.duration()){
+						document.documentElement.removeAttribute("data-preloading");
+						await new Promise(r=>requestAnimationFrame(r));
 						entry.play(entryOffset||0);
 						await new Promise(r=>entry.eventCallback("onComplete",r));
+					}else{
+						document.documentElement.removeAttribute("data-preloading");
 					}
 				}finally{
 					__ENTRY_DEBUG__("Entry animations finished");
