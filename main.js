@@ -594,7 +594,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					if(entry&&entry.duration&&entry.duration()){
 						document.documentElement.removeAttribute("data-preloading");
 						await new Promise(r=>requestAnimationFrame(r));
-						entry.play(entryOffset||0);
+						entry.play(0);
 						await new Promise(r=>entry.eventCallback("onComplete",r));
 					}else{
 						document.documentElement.removeAttribute("data-preloading");
@@ -639,18 +639,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					
 						async enter(data){
 							DebugCore.trace("transition enter");
-						
-							// hide new container first
-							gsap.set(data.next.container,{autoAlpha:0});
-						
 							await orchestrateEnter({...data,transition:"fade"});
-						
-							// fade it in
-							await gsap.to(data.next.container,{
-								autoAlpha:1,
-								duration:.45,
-								ease:"power1.out"
-							});
 						}
 					},
 					{
