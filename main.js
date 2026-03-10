@@ -561,6 +561,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			}
 
 			async function orchestrateEnter({next,transition}){
+				console.log("ENTER ORCHESTRATOR",next.container.dataset.barbaNamespace,transition)
 				__ENTRY_DEBUG__("orchestrateEnter start");
 				__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace);
 				
