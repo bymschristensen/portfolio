@@ -576,6 +576,23 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			
 				if(transition==="fade") gsap.set(c,{clearProps:"opacity,pointerEvents"});
 				if(transition==="swipe") await TransitionEffects.coverOut();
+
+				const overlay=document.querySelector(".page-overlay,.preloader,[aria-hidden='true'].page-overlay");
+				if(overlay){
+				  const cs=getComputedStyle(overlay);
+				  console.log("OVERLAY STATE AFTER ENTER START",{
+				    opacity:cs.opacity,
+				    visibility:cs.visibility,
+				    display:cs.display,
+				    pointerEvents:cs.pointerEvents,
+				    zIndex:cs.zIndex
+				  });
+				}
+				console.log("CONTAINER STATE AFTER ENTER START",{
+				  opacity:getComputedStyle(c).opacity,
+				  visibility:getComputedStyle(c).visibility,
+				  display:getComputedStyle(c).display
+				});
 			
 				try{
 					const ns=c.dataset.barbaNamespace||"";
@@ -633,6 +650,21 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					await InitManager.run(c,{preserveServicePins:false});
 					__ENTRY_DEBUG__("InitManager.run finished");
 				}finally{
+					if(overlay){
+					  const cs=getComputedStyle(overlay);
+					  console.log("OVERLAY STATE BEFORE ENTRY FINISH",{
+					    opacity:cs.opacity,
+					    visibility:cs.visibility,
+					    display:cs.display,
+					    pointerEvents:cs.pointerEvents,
+					    zIndex:cs.zIndex
+					  });
+					}
+					console.log("CONTAINER STATE BEFORE ENTRY FINISH",{
+					  opacity:getComputedStyle(c).opacity,
+					  visibility:getComputedStyle(c).visibility,
+					  display:getComputedStyle(c).display
+					});
 					__ENTRY_DEBUG__("Entry animations finished");
 					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}));
 					ScrollManager.unlock();
