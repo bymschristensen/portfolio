@@ -536,6 +536,10 @@ window.__ENTRY_DEBUG__ = function(label,data){
 	window.EntryOrchestrator = window.EntryOrchestrator || (function () {
 		const entryConfigByNamespace={selected:{delayHero:!1,entryOffset:-.2},archive:{delayHero:!1,entryOffset:-.2},resources:{delayHero:!1,entryOffset:-.2},capabilities:{delayHero:!0,entryOffset:.1},info:{delayHero:!1,entryOffset:-.2}};
 		function getEntryConfig(e){const a=e?.dataset?.barbaNamespace||e?.getAttribute?.("data-barba-namespace")||"";return entryConfigByNamespace[a]||{delayHero:!1,entryOffset:0}}
+		function transitionCloseNavigation(){document.querySelectorAll(".nav-primary-wrap").forEach(e=>{var m=e._menuTimeline,f=e._filterTimeline;m&&m.progress()>0&&m.timeScale(2).reverse(),f&&f.progress()>0&&f.timeScale(2).reverse();var w=e.querySelector(".menu-wrapper"),c=e.querySelector(".menu-container"),l=e.querySelector(".filters-container");w&&(w.style.display="none"),c&&(c.style.display="none"),l&&(l.style.display="none")}),document.body.style.overflow=""}
+		function transitionReleasePreloading(){try{var e=document&&document.documentElement;e&&e.hasAttribute("data-preloading")&&e.removeAttribute("data-preloading")}catch(e){}}
+		async function transitionStability(e){await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(r,30))));try{window.ScrollTrigger&&requestAnimationFrame(()=>ScrollTrigger.refresh(!0))}catch(e){}}
+		async function transitionEnterSequence(e,t){e=e||document,t=t||{};var n=t.transition||"none",a=e.dataset&&e.dataset.barbaNamespace||"",i=getEntryConfig(e),r=!!i.delayHero,o="swipe"===n?(i.entryOffset||0):0,l=null;"fade"===n&&gsap.set(e,{clearProps:"opacity,pointerEvents"}),"swipe"===n&&window.TransitionEffects&&TransitionEffects.coverOut&&await TransitionEffects.coverOut(),transitionReleasePreloading(),await new Promise(t=>requestAnimationFrame(()=>requestAnimationFrame(t))),"selected"===a?l=EntryAnimations.selected(e):"archive"===a?l=EntryAnimations.archive(e):"resources"===a?l=EntryAnimations.resources(e):"capabilities"===a?l=EntryAnimations.capabilities(e,{delayHero:r}):"info"===a?l=EntryAnimations.info(e):(e.querySelector(".cs-hero-image")||e.querySelector(".cs-headline"))&&(l=EntryAnimations.caseStudy(e)),console.log("ENTRY TL DURATION",a,l&&l.duration?l.duration():0),l&&l.duration&&l.duration()&&(void e.offsetHeight,await new Promise(t=>requestAnimationFrame(()=>requestAnimationFrame(t))),l.play(o||0),await new Promise(e=>l.eventCallback("onComplete",e))),await InitManager.run(e,{preserveServicePins:!1}),__ENTRY_DEBUG__("InitManager.run finished"),await transitionStability(e)}
 		window.TransitionDecider=window.TransitionDecider||function(){function shouldFadeFor(d){try{var a=d&&d.trigger&&(d.trigger.tagName==="A"?d.trigger:d.trigger.closest&&d.trigger.closest("a"));if(!a)return!1;return!!(a.closest&&a.closest('[data-transition="fade"]'))}catch(e){return!1}}function consume(){}return{shouldFadeFor:shouldFadeFor,consume:consume}}();
 		
 		// Entry Animations
@@ -553,123 +557,8 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			if (window.__barbaInited) return;
 			window.__barbaInited = true;
 
-			async function orchestrateLeave({current}){
-				__ENTRY_DEBUG__("orchestrateLeave");
-				ScrollManager.lock()
-				document.querySelectorAll(".nav-primary-wrap").forEach(e=>{var m=e._menuTimeline,f=e._filterTimeline;m&&m.progress()>0&&m.timeScale(2).reverse(),f&&f.progress()>0&&f.timeScale(2).reverse();var w=e.querySelector(".menu-wrapper"),c=e.querySelector(".menu-container"),l=e.querySelector(".filters-container");w&&(w.style.display="none"),c&&(c.style.display="none"),l&&(l.style.display="none")}),document.body.style.overflow=""
-				await InitManager.cleanup({preserveServicePins:false})
-			}
-
-			async function orchestrateEnter({next,transition}){
-				console.log("ENTER ORCHESTRATOR",next.container.dataset.barbaNamespace,transition);
-				__ENTRY_DEBUG__("orchestrateEnter start");
-				__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace);
-			
-				const c=next.container;
-			
-				document.documentElement.scrollTop=0;
-				document.body.scrollTop=0;
-			
-				await WebflowAdapter.enter(next);
-				if(!c.dataset.barbaNamespace) await new Promise(r=>requestAnimationFrame(r));
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-			
-				if(transition==="fade") gsap.set(c,{clearProps:"opacity,pointerEvents"});
-				if(transition==="swipe") await TransitionEffects.coverOut();
-
-				const overlay=document.querySelector(".page-overlay,.preloader,[aria-hidden='true'].page-overlay");
-				if(overlay){
-				  const cs=getComputedStyle(overlay);
-				  console.log("OVERLAY STATE AFTER ENTER START",{
-				    opacity:cs.opacity,
-				    visibility:cs.visibility,
-				    display:cs.display,
-				    pointerEvents:cs.pointerEvents,
-				    zIndex:cs.zIndex
-				  });
-				}
-				console.log("CONTAINER STATE AFTER ENTER START",{
-				  opacity:getComputedStyle(c).opacity,
-				  visibility:getComputedStyle(c).visibility,
-				  display:getComputedStyle(c).display
-				});
-			
-				try{
-					const ns=c.dataset.barbaNamespace||"";
-					const {delayHero}=getEntryConfig(c);
-					let entry=null;
-			
-					const pickProbeTarget=()=>c.querySelector(".hero-section-text h1:not(.hero-headline-devices)")||c.querySelector(".hero-section-text h1")||c.querySelector(".hero-subtext")||c.querySelector(".section-archive")||c.querySelector(".section-resources")||c.querySelector(".showreel-container")||c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline");
-					const logProbe=(label)=>{
-						const el=pickProbeTarget();
-						if(!el){
-							console.log(label,{ns,target:null,preloading:document.documentElement.hasAttribute("data-preloading")});
-							return;
-						}
-						const cs=getComputedStyle(el);
-						console.log(label,{
-							ns,
-							target:el.className||el.tagName,
-							preloading:document.documentElement.hasAttribute("data-preloading"),
-							opacity:cs.opacity,
-							visibility:cs.visibility,
-							display:cs.display,
-							filter:cs.filter,
-							transform:cs.transform
-						});
-					};
-			
-					document.documentElement.removeAttribute("data-preloading");
-					await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-					logProbe("ENTRY AFTER PRELOADING REMOVED");
-			
-					console.log("ENTRY START",ns,transition);
-					logProbe("ENTRY BEFORE BUILD");
-			
-					if(ns==="selected") entry=EntryAnimations.selected(c);
-					else if(ns==="archive") entry=EntryAnimations.archive(c);
-					else if(ns==="resources") entry=EntryAnimations.resources(c);
-					else if(ns==="capabilities") entry=EntryAnimations.capabilities(c,{delayHero});
-					else if(ns==="info") entry=EntryAnimations.info(c);
-					else if(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline")) entry=EntryAnimations.caseStudy(c);
-			
-					console.log("ENTRY BUILT",ns,entry&&entry.duration?entry.duration():0);
-					logProbe("ENTRY AFTER BUILD");
-			
-					if(entry&&entry.duration&&entry.duration()){
-						await new Promise(r=>requestAnimationFrame(r));
-						logProbe("ENTRY BEFORE PLAY");
-						console.log("ENTRY PLAY",ns,0);
-						entry.play(0);
-						setTimeout(()=>logProbe("ENTRY t=100"),100);
-						setTimeout(()=>logProbe("ENTRY t=300"),300);
-						setTimeout(()=>logProbe("ENTRY t=600"),600);
-						await new Promise(r=>entry.eventCallback("onComplete",r));
-					}
-			
-					await InitManager.run(c,{preserveServicePins:false});
-					__ENTRY_DEBUG__("InitManager.run finished");
-				}finally{
-					if(overlay){
-					  const cs=getComputedStyle(overlay);
-					  console.log("OVERLAY STATE BEFORE ENTRY FINISH",{
-					    opacity:cs.opacity,
-					    visibility:cs.visibility,
-					    display:cs.display,
-					    pointerEvents:cs.pointerEvents,
-					    zIndex:cs.zIndex
-					  });
-					}
-					console.log("CONTAINER STATE BEFORE ENTRY FINISH",{
-					  opacity:getComputedStyle(c).opacity,
-					  visibility:getComputedStyle(c).visibility,
-					  display:getComputedStyle(c).display
-					});
-					__ENTRY_DEBUG__("Entry animations finished");
-					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}));
-					ScrollManager.unlock();
-				}
-			}
+			async function orchestrateLeave({current}){__ENTRY_DEBUG__("orchestrateLeave"),ScrollManager.lock(),transitionCloseNavigation(),await InitManager.cleanup({preserveServicePins:!1})}
+			async function orchestrateEnter({next,transition}){console.log("ENTER ORCHESTRATOR",next.container.dataset.barbaNamespace,transition),__ENTRY_DEBUG__("orchestrateEnter start"),__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace);const c=next.container;document.documentElement.scrollTop=0,document.body.scrollTop=0,await WebflowAdapter.enter(next),c.dataset.barbaNamespace||await new Promise(r=>requestAnimationFrame(r)),await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));try{await transitionEnterSequence(c,{transition})}finally{__ENTRY_DEBUG__("Entry animations finished"),document.dispatchEvent(new CustomEvent("page:ready",{bubbles:!0})),ScrollManager.unlock()}}
 			
 			barba.hooks.before(()=>{__ENTRY_DEBUG__("barba.before");document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
 
@@ -677,63 +566,17 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			barba.init({
 				debug: window.DEBUG,
 				timeout: 8000,
-				once: async data=>{
-					DebugCore.trace("global once");
-					await orchestrateEnter({...data,transition:"none"});
-				},
-				prevent: () => false,
+				once:async e=>{DebugCore.trace("global once"),await orchestrateEnter({...e,transition:"none"})},
+				prevent:({el})=>{const a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;try{const e=new URL(a.getAttribute("href")||a.href,location.href),t=e.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"");if(t&&e.hash)return!0}catch(e){}if(a.hasAttribute("download")||"_blank"===a.target||"external"===a.getAttribute("rel"))return!0;const e=document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace||"";if("archive"!==e&&"resources"!==e){const e=a.closest&&a.closest("[data-barba-prevent]");if(e&&"true"===e.getAttribute("data-barba-prevent"))return!0}return!1},
 				transitions:[
-					{
-						name:"fade",
-						custom:d=>TransitionDecider.shouldFadeFor(d),
-					
-						async once(data){
-							DebugCore.trace("transition once");
-							await orchestrateEnter({...data,transition:"fade"});
-						},
-					
-						async leave(data){
-							DebugCore.trace("transition leave");
-							await orchestrateLeave(data);
-							await gsap.to(data.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"});
-						},
-					
-						async enter(data){
-							DebugCore.trace("transition enter");
-							await orchestrateEnter({...data,transition:"fade"});
-						}
-					},
-					{
-						name:"swipe",
-						custom:d=>!TransitionDecider.shouldFadeFor(d),
-					
-						async once(data){
-							DebugCore.trace("transition once");
-							await orchestrateEnter({...data,transition:"swipe"});
-						},
-					
-						async leave(data){
-							DebugCore.trace("transition leave");
-							await orchestrateLeave(data);
-							gsap.set(data.current.container,{pointerEvents:"none",autoAlpha:0});
-							await TransitionEffects.coverIn();
-						},
-					
-						async enter(data){
-							DebugCore.trace("transition enter");
-							await orchestrateEnter({...data,transition:"swipe"});
-						}
-					}
+					{name:"fade",custom:e=>TransitionDecider.shouldFadeFor(e),async leave(e){DebugCore.trace("transition leave"),await orchestrateLeave(e),await gsap.to(e.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"})},async enter(e){DebugCore.trace("transition enter"),await orchestrateEnter({...e,transition:"fade"})}},
+					{name:"swipe",custom:e=>!TransitionDecider.shouldFadeFor(e),async leave(e){DebugCore.trace("transition leave"),await orchestrateLeave(e),gsap.set(e.current.container,{pointerEvents:"none",autoAlpha:0}),await TransitionEffects.coverIn()},async enter(e){DebugCore.trace("transition enter"),await orchestrateEnter({...e,transition:"swipe"})}}
 				]
 			});
 			__ENTRY_DEBUG__("barba.init finished");
 		}
 		
-		return {
-			init,
-			getEntryConfig,
-			EntryAnimations
-		};
+		return{init,getEntryConfig,EntryAnimations,transitionCloseNavigation,transitionReleasePreloading,transitionEnterSequence,transitionStability}
 	})();
 	
 	function bootEntryOrchestrator(){if(window.EntryOrchestrator&&EntryOrchestrator.init){window.__ENTRY_DEBUG__&&__ENTRY_DEBUG__("Booting EntryOrchestrator");EntryOrchestrator.init()}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",bootEntryOrchestrator)}else{bootEntryOrchestrator()}
