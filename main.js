@@ -573,9 +573,9 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				
 				await InitManager.run(next.container,{preserveServicePins:false})
 				__ENTRY_DEBUG__("InitManager.run finished")
-				document.documentElement.removeAttribute("data-preloading")
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
 				
+				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
+				document.documentElement.removeAttribute("data-preloading")
 				if(transition==="fade") gsap.set(next.container,{opacity:1})
 				if(transition==="swipe")await TransitionEffects.coverOut()
 			
