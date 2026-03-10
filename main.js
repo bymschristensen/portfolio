@@ -581,7 +581,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			
 				if(transition==="fade") gsap.set(c,{clearProps:"opacity,pointerEvents"});
 				if(transition==="swipe") await TransitionEffects.coverOut();
-			
+				document.documentElement.removeAttribute("data-preloading");
 				try{
 					const ns=c.dataset.barbaNamespace||"";
 					const {delayHero,entryOffset}=getEntryConfig(c);
@@ -596,7 +596,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			
 					console.log("ENTRY TL DURATION",ns,entry&&entry.duration?entry.duration():0);
 			
-					document.documentElement.removeAttribute("data-preloading");
+					
 					await new Promise(r=>requestAnimationFrame(r));
 			
 					if(entry&&entry.duration&&entry.duration()){
