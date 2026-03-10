@@ -639,7 +639,18 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					
 						async enter(data){
 							DebugCore.trace("transition enter");
+						
+							// hide new container first
+							gsap.set(data.next.container,{autoAlpha:0});
+						
 							await orchestrateEnter({...data,transition:"fade"});
+						
+							// fade it in
+							await gsap.to(data.next.container,{
+								autoAlpha:1,
+								duration:.45,
+								ease:"power1.out"
+							});
 						}
 					},
 					{
