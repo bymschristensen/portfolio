@@ -582,8 +582,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				const entry=runPageEntryAnimations(next.container)
 			
 				if(entry&&entry.tl){
-					entry.tl.progress(0).pause()
-					entry.tl.play(entry.entryOffset||0)
+					entry.tl.invalidate().restart(true,false)
 					await new Promise(r=>entry.tl.eventCallback("onComplete",r))
 				}
 			
