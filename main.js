@@ -561,12 +561,11 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			async function orchestrateEnter({next,transition}){console.log("ENTER ORCHESTRATOR",next.container.dataset.barbaNamespace,transition),__ENTRY_DEBUG__("orchestrateEnter start"),__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace);const c=next.container;document.documentElement.scrollTop=0,document.body.scrollTop=0,await WebflowAdapter.enter(next),c.dataset.barbaNamespace||await new Promise(r=>requestAnimationFrame(r)),await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));try{await transitionEnterSequence(c,{transition})}finally{__ENTRY_DEBUG__("Entry animations finished"),document.dispatchEvent(new CustomEvent("page:ready",{bubbles:!0})),ScrollManager.unlock()}}
 			
 			barba.hooks.before(()=>{__ENTRY_DEBUG__("barba.before");document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
-
+			barba.hooks.once(async e=>{DebugCore.trace("global once"),await orchestrateEnter({...e,transition:"none"})});
 			__ENTRY_DEBUG__("barba.init starting");
 			barba.init({
 				debug: window.DEBUG,
 				timeout: 8000,
-				once:async e=>{DebugCore.trace("global once"),await orchestrateEnter({...e,transition:"none"})},
 				prevent:({el})=>{const a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;try{const e=new URL(a.getAttribute("href")||a.href,location.href),t=e.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"");if(t&&e.hash)return!0}catch(e){}if(a.hasAttribute("download")||"_blank"===a.target||"external"===a.getAttribute("rel"))return!0;const e=document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace||"";if("archive"!==e&&"resources"!==e){const e=a.closest&&a.closest("[data-barba-prevent]");if(e&&"true"===e.getAttribute("data-barba-prevent"))return!0}return!1},
 				transitions:[
 					{name:"fade",custom:e=>TransitionDecider.shouldFadeFor(e),async leave(e){DebugCore.trace("transition leave"),await orchestrateLeave(e),await gsap.to(e.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"})},async enter(e){DebugCore.trace("transition enter"),await orchestrateEnter({...e,transition:"fade"})}},
