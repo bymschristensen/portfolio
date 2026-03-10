@@ -563,21 +563,23 @@ window.__ENTRY_DEBUG__ = function(label,data){
 
 			async function orchestrateEnter({next,transition}){
 				__ENTRY_DEBUG__("orchestrateEnter start");
-			
 				document.documentElement.scrollTop=0
 				document.body.scrollTop=0
 				await WebflowAdapter.enter(next)
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
 				await InitManager.run(next.container,{preserveServicePins:false})
-			
+				
 				__ENTRY_DEBUG__("InitManager.run finished")
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
-				document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}))
 				const entry=runPageEntryAnimations(next.container)
 				if(transition==="swipe")await TransitionEffects.coverOut()
-				if(entry&&entry.tl&&entry.tl.duration()){entry.tl.play(entry.entryOffset||0);await new Promise(r=>entry.tl.eventCallback("onComplete",r))}
-				
+				if(entry&&entry.tl&&entry.tl.duration()){
+					entry.tl.play(entry.entryOffset||0)
+					await new Promise(r=>entry.tl.eventCallback("onComplete",r))
+				}
+			
 				__ENTRY_DEBUG__("Entry animations finished")
+				document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}))
 				document.documentElement.removeAttribute("data-preloading")
 				ScrollManager.unlock()
 			}
