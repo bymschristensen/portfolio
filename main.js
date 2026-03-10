@@ -575,7 +575,8 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				__ENTRY_DEBUG__("InitManager.run finished")
 			
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
-			
+				
+				if(transition==="fade") gsap.set(next.container,{opacity:1})
 				if(transition==="swipe")await TransitionEffects.coverOut()
 			
 				const entry=runPageEntryAnimations(next.container)
