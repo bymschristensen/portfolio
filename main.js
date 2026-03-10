@@ -576,29 +576,60 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			
 				if(transition==="fade") gsap.set(c,{clearProps:"opacity,pointerEvents"});
 				if(transition==="swipe") await TransitionEffects.coverOut();
+			
 				try{
-					document.documentElement.removeAttribute("data-preloading");
-					await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-				
 					const ns=c.dataset.barbaNamespace||"";
 					const {delayHero}=getEntryConfig(c);
 					let entry=null;
-				
+			
+					const pickProbeTarget=()=>c.querySelector(".hero-section-text h1:not(.hero-headline-devices)")||c.querySelector(".hero-section-text h1")||c.querySelector(".hero-subtext")||c.querySelector(".section-archive")||c.querySelector(".section-resources")||c.querySelector(".showreel-container")||c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline");
+					const logProbe=(label)=>{
+						const el=pickProbeTarget();
+						if(!el){
+							console.log(label,{ns,target:null,preloading:document.documentElement.hasAttribute("data-preloading")});
+							return;
+						}
+						const cs=getComputedStyle(el);
+						console.log(label,{
+							ns,
+							target:el.className||el.tagName,
+							preloading:document.documentElement.hasAttribute("data-preloading"),
+							opacity:cs.opacity,
+							visibility:cs.visibility,
+							display:cs.display,
+							filter:cs.filter,
+							transform:cs.transform
+						});
+					};
+			
+					document.documentElement.removeAttribute("data-preloading");
+					await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+					logProbe("ENTRY AFTER PRELOADING REMOVED");
+			
+					console.log("ENTRY START",ns,transition);
+					logProbe("ENTRY BEFORE BUILD");
+			
 					if(ns==="selected") entry=EntryAnimations.selected(c);
 					else if(ns==="archive") entry=EntryAnimations.archive(c);
 					else if(ns==="resources") entry=EntryAnimations.resources(c);
 					else if(ns==="capabilities") entry=EntryAnimations.capabilities(c,{delayHero});
 					else if(ns==="info") entry=EntryAnimations.info(c);
 					else if(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline")) entry=EntryAnimations.caseStudy(c);
-				
-					console.log("ENTRY TL DURATION",ns,entry&&entry.duration?entry.duration():0);
-				
+			
+					console.log("ENTRY BUILT",ns,entry&&entry.duration?entry.duration():0);
+					logProbe("ENTRY AFTER BUILD");
+			
 					if(entry&&entry.duration&&entry.duration()){
 						await new Promise(r=>requestAnimationFrame(r));
+						logProbe("ENTRY BEFORE PLAY");
+						console.log("ENTRY PLAY",ns,0);
 						entry.play(0);
+						setTimeout(()=>logProbe("ENTRY t=100"),100);
+						setTimeout(()=>logProbe("ENTRY t=300"),300);
+						setTimeout(()=>logProbe("ENTRY t=600"),600);
 						await new Promise(r=>entry.eventCallback("onComplete",r));
 					}
-				
+			
 					await InitManager.run(c,{preserveServicePins:false});
 					__ENTRY_DEBUG__("InitManager.run finished");
 				}finally{
