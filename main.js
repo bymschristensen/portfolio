@@ -578,10 +578,10 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				if(transition==="swipe") await TransitionEffects.coverOut();
 				try{
 					document.documentElement.removeAttribute("data-preloading");
-					await new Promise(r=>requestAnimationFrame(r));
-					
+					await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+				
 					const ns=c.dataset.barbaNamespace||"";
-					const {delayHero,entryOffset}=getEntryConfig(c);
+					const {delayHero}=getEntryConfig(c);
 					let entry=null;
 				
 					if(ns==="selected") entry=EntryAnimations.selected(c);
@@ -592,7 +592,6 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					else if(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline")) entry=EntryAnimations.caseStudy(c);
 				
 					console.log("ENTRY TL DURATION",ns,entry&&entry.duration?entry.duration():0);
-					await new Promise(r=>requestAnimationFrame(r));
 				
 					if(entry&&entry.duration&&entry.duration()){
 						await new Promise(r=>requestAnimationFrame(r));
