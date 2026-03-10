@@ -574,11 +574,6 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				if(!c.dataset.barbaNamespace) await new Promise(r=>requestAnimationFrame(r));
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 			
-				await InitManager.run(c,{preserveServicePins:false});
-				__ENTRY_DEBUG__("InitManager.run finished");
-			
-				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-			
 				if(transition==="fade") gsap.set(c,{clearProps:"opacity,pointerEvents"});
 				if(transition==="swipe") await TransitionEffects.coverOut();
 				try{
@@ -604,6 +599,9 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					}else{
 						document.documentElement.removeAttribute("data-preloading");
 					}
+				
+					await InitManager.run(c,{preserveServicePins:false});
+					__ENTRY_DEBUG__("InitManager.run finished");
 				}finally{
 					__ENTRY_DEBUG__("Entry animations finished");
 					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}));
@@ -612,11 +610,6 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			}
 			
 			barba.hooks.before(()=>{__ENTRY_DEBUG__("barba.before");document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
-			barba.hooks.once(async({next})=>{
-				__ENTRY_DEBUG__("barba.once start");
-				await orchestrateEnter({next,transition:"none"});
-				__ENTRY_DEBUG__("barba.once end");
-			});
 
 			requestAnimationFrame(()=>{
 				__ENTRY_DEBUG__("barba.init starting");
@@ -627,14 +620,34 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					transitions:[
 						{
 							name:"fade",
+							async once(data){
+								DebugCore.trace("transition once");
+								await orchestrateEnter({...data,transition:"none"});
+							},
 							custom:function(d){return TransitionDecider.shouldFadeFor(d)},
-							async leave(data){DebugCore.trace("transition leave");await orchestrateLeave(data);await gsap.to(data.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"})},
-							async enter(data){DebugCore.trace("transition enter");await orchestrateEnter({...data,transition:"fade"})}
-						},{
+							async leave(data){
+								DebugCore.trace("transition leave");
+								await orchestrateLeave(data);
+								await gsap.to(data.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"});
+							},
+							async enter(data){
+								DebugCore.trace("transition enter");
+								await orchestrateEnter({...data,transition:"fade"});
+							}
+						},
+						{
 							name:"swipe",
 							custom:function(d){return !TransitionDecider.shouldFadeFor(d)},
-							async leave(data){DebugCore.trace("transition leave");await orchestrateLeave(data);gsap.set(data.current.container,{pointerEvents:"none",autoAlpha:0});await TransitionEffects.coverIn();},
-							async enter(data){DebugCore.trace("transition enter");await orchestrateEnter({...data,transition:"swipe"})}
+							async leave(data){
+								DebugCore.trace("transition leave");
+								await orchestrateLeave(data);
+								gsap.set(data.current.container,{pointerEvents:"none",autoAlpha:0});
+								await TransitionEffects.coverIn();
+							},
+							async enter(data){
+								DebugCore.trace("transition enter");
+								await orchestrateEnter({...data,transition:"swipe"});
+							}
 						}
 					]
 				});
