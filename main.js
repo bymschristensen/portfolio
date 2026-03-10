@@ -581,7 +581,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			
 				const entry=runPageEntryAnimations(next.container)
 			
-				if(entry&&entry.tl&&entry.tl.duration()){
+				if(entry&&entry.tl){
 					entry.tl.play(entry.entryOffset||0)
 					await new Promise(r=>entry.tl.eventCallback("onComplete",r))
 				}
