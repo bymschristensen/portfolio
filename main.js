@@ -575,10 +575,10 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				__ENTRY_DEBUG__("InitManager.run finished")
 				
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
-				document.documentElement.removeAttribute("data-preloading")
+				
 				if(transition==="fade") gsap.set(next.container,{opacity:1})
 				if(transition==="swipe")await TransitionEffects.coverOut()
-			
+				document.documentElement.removeAttribute("data-preloading")
 				const entry=runPageEntryAnimations(next.container)
 			
 				if(entry&&entry.tl){
