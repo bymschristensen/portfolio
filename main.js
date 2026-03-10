@@ -624,12 +624,19 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				transitions:[
 					{
 						name:"fade",
-						custom:function(d){return TransitionDecider.shouldFadeFor(d)},
+						custom:d=>TransitionDecider.shouldFadeFor(d),
+					
+						async once(data){
+							DebugCore.trace("transition once");
+							await orchestrateEnter({...data,transition:"fade"});
+						},
+					
 						async leave(data){
 							DebugCore.trace("transition leave");
 							await orchestrateLeave(data);
 							await gsap.to(data.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"});
 						},
+					
 						async enter(data){
 							DebugCore.trace("transition enter");
 							await orchestrateEnter({...data,transition:"fade"});
@@ -637,13 +644,20 @@ window.__ENTRY_DEBUG__ = function(label,data){
 					},
 					{
 						name:"swipe",
-						custom:function(d){return !TransitionDecider.shouldFadeFor(d)},
+						custom:d=>!TransitionDecider.shouldFadeFor(d),
+					
+						async once(data){
+							DebugCore.trace("transition once");
+							await orchestrateEnter({...data,transition:"swipe"});
+						},
+					
 						async leave(data){
 							DebugCore.trace("transition leave");
 							await orchestrateLeave(data);
 							gsap.set(data.current.container,{pointerEvents:"none",autoAlpha:0});
 							await TransitionEffects.coverIn();
 						},
+					
 						async enter(data){
 							DebugCore.trace("transition enter");
 							await orchestrateEnter({...data,transition:"swipe"});
