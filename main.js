@@ -568,7 +568,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				document.body.scrollTop=0
 			
 				await WebflowAdapter.enter(next)
-			
+				document.documentElement.removeAttribute("data-preloading")
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
 			
 				await InitManager.run(next.container,{preserveServicePins:false})
@@ -587,11 +587,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				}
 			
 				__ENTRY_DEBUG__("Entry animations finished")
-			
 				document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}))
-			
-				document.documentElement.removeAttribute("data-preloading")
-			
 				ScrollManager.unlock()
 			}
 			
