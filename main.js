@@ -582,8 +582,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				const entry=runPageEntryAnimations(next.container)
 			
 				if(entry&&entry.tl){
-					entry.tl.progress(0).pause()
-					entry.tl.play(entry.entryOffset||0)
+					entry.tl.seek(entry.entryOffset||0).play()
 					await new Promise(r=>entry.tl.eventCallback("onComplete",r))
 				}
 			
@@ -595,9 +594,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			barba.hooks.before(()=>{__ENTRY_DEBUG__("barba.before");document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
 			barba.hooks.once(async({next})=>{
 				__ENTRY_DEBUG__("barba.once start");
-				ScrollManager.lock();document.documentElement.scrollTop=0;document.body.scrollTop=0;window.scrollTo(0,0);await WebflowAdapter.enter(next);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));await InitManager.run(next.container,{preserveServicePins:false});__ENTRY_DEBUG__("once InitManager.run finished");const entry=runPageEntryAnimations(next.container);if(entry&&entry.tl&&entry.tl.duration())entry.tl.play(entry.entryOffset||0);
-				/* if you ever enable it again: if (PreloaderService.shouldRun()) await PreloaderService.maybeRun(); */
-				document.documentElement.removeAttribute("data-preloading");ScrollManager.unlock()
+				await orchestrateEnter({next,transition:"none"});
 				__ENTRY_DEBUG__("barba.once end");
 			});
 
