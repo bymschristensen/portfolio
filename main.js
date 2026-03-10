@@ -565,56 +565,50 @@ window.__ENTRY_DEBUG__ = function(label,data){
 				__ENTRY_DEBUG__("orchestrateEnter start")
 				__ENTRY_DEBUG__("namespace:",next.container.dataset.barbaNamespace)
 			
-				const c = next.container
+				const c=next.container
 			
-				// reset scroll
-				document.documentElement.scrollTop = 0
-				document.body.scrollTop = 0
+				document.documentElement.scrollTop=0
+				document.body.scrollTop=0
 			
-				// prevent browser painting content before GSAP prepares it
 				gsap.set(c,{visibility:"hidden"})
 			
-				// Webflow DOM hooks
 				await WebflowAdapter.enter(next)
-			
-				// allow DOM injection to finish
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
 			
-				// run feature initialisers
 				await InitManager.run(c,{preserveServicePins:false})
 				__ENTRY_DEBUG__("InitManager.run finished")
 			
-				// allow layout + styles to settle
 				await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))
 			
-				// transition cleanup
-				if(transition==="fade") gsap.set(c,{clearProps:"all"})
+				if(transition==="fade") gsap.set(c,{clearProps:"opacity,pointerEvents"})
 				if(transition==="swipe") await TransitionEffects.coverOut()
 			
 				try{
-					const ns = c.dataset.barbaNamespace || ""
-					const {delayHero,entryOffset} = getEntryConfig(c)
-					let tl = gsap.timeline({paused:true})
+					const ns=c.dataset.barbaNamespace||""
+					const {delayHero,entryOffset}=getEntryConfig(c)
+					let tl=gsap.timeline({paused:true})
 			
 					if(ns==="selected") tl.add(EntryAnimations.selected(c),0)
 					else if(ns==="archive") tl.add(EntryAnimations.archive(c),0)
 					else if(ns==="resources") tl.add(EntryAnimations.resources(c),0)
 					else if(ns==="capabilities") tl.add(EntryAnimations.capabilities(c,{delayHero}),0)
 					else if(ns==="info") tl.add(EntryAnimations.info(c),0)
-					else if(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline")){
-						tl.add(EntryAnimations.caseStudy(c),0)
-					}
+					else if(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline")) tl.add(EntryAnimations.caseStudy(c),0)
+			
 					console.log("ENTRY TL DURATION",ns,tl.duration())
 			
-					// reveal container once GSAP is ready
-					gsap.set(c,{visibility:"visible"})
 					if(tl.duration()){
+						tl.pause(0)
+						await new Promise(r=>requestAnimationFrame(r))
 						document.documentElement.removeAttribute("data-preloading")
+						gsap.set(c,{visibility:"visible"})
 						tl.play(entryOffset||0)
 						await new Promise(r=>tl.eventCallback("onComplete",r))
+					}else{
+						document.documentElement.removeAttribute("data-preloading")
+						gsap.set(c,{visibility:"visible"})
 					}
-				}
-				finally{
+				}finally{
 					__ENTRY_DEBUG__("Entry animations finished")
 					document.dispatchEvent(new CustomEvent("page:ready",{bubbles:true}))
 					ScrollManager.unlock()
