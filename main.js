@@ -166,7 +166,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 
 // Preloader Service
 	window.PreloaderService = (function () {
-		let _enabled = false;
+		let _enabled = true;
 		let _built = false;
 		let runIntroTimeline = async () => {};
 		let runPreloader = async () => {};
@@ -174,9 +174,12 @@ window.__ENTRY_DEBUG__ = function(label,data){
 		function isSlowConnection(){const e=navigator.connection||{};return!(!e.effectiveType||"4g"===e.effectiveType)}
 		function isReload(){const e=performance.getEntriesByType("navigation");return e.length?"reload"===e[0].type:1===performance.navigation?.type}
 		function shouldShowPreloader() {
-			// keep off for now
-			// return isSlowConnection() || isReload() || !sessionStorage.getItem("preloaderSeen");
-			return false;
+			try{
+				if(sessionStorage.getItem("preloaderDebug")==="1") return true;
+				return false;
+			}catch(_){
+				return false;
+			}
 		}
 		function buildOnce() {
 			if (_built) return;
@@ -256,7 +259,6 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			window.__barbaInited = true;
 
 			async function orchestrateLeave(e){__ENTRY_DEBUG__("orchestrateLeave");await transitionLeaveSequence(e,{transition:e&&e.transition||"none"})}
-			//async function orchestrateEnter({next,transition}){console.log("ENTER ORCHESTRATOR",next&&next.container&&next.container.dataset?next.container.dataset.barbaNamespace:void 0,transition),__ENTRY_DEBUG__("orchestrateEnter start"),__ENTRY_DEBUG__("namespace:",next&&next.container&&next.container.dataset?next.container.dataset.barbaNamespace:void 0);const c=next&&next.container;if(!c)return console.error("orchestrateEnter: missing next.container");window.__ENTRY_ACTIVE__=1;var a=c.dataset&&c.dataset.barbaNamespace||"",s=!!(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline"));console.log("ENTER STEP 1 container",c),"swipe"===transition?gsap.set(c,{autoAlpha:1,visibility:"visible",pointerEvents:"auto"}):gsap.set(c,{autoAlpha:0}),document.documentElement.scrollTop=0,document.body.scrollTop=0,console.log("ENTER STEP 2 scroll reset"),await WebflowAdapter.enter(next),console.log("ENTER STEP 3 WebflowAdapter.enter done",c.dataset&&c.dataset.barbaNamespace),c.dataset&&c.dataset.barbaNamespace||await new Promise(r=>requestAnimationFrame(r)),console.log("ENTER STEP 4 namespace after raf",c.dataset&&c.dataset.barbaNamespace),await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))),console.log("ENTER STEP 5 double raf done");try{console.log("ENTER STEP 6 before transitionEnterSequence",transition),"fade"===transition?transitionEnterSequence(c,{transition}):await transitionEnterSequence(c,{transition}),console.log("ENTER STEP 7 after transitionEnterSequence")}catch(e){console.error("ENTER ERROR",e);throw e}finally{__ENTRY_DEBUG__("Entry animations finished"),console.log("ENTER STEP 8 finally"),document.dispatchEvent(new CustomEvent("page:ready",{bubbles:!0})),setTimeout(function(){try{c&&c.__wfEntered||WebflowAdapter.enter(next)}catch(_){}},0),window.__ENTRY_ACTIVE__=0,ScrollManager.unlock(),console.log("ENTER STEP 9 unlock done")}}
 			async function orchestrateEnter({next,transition}){console.log("ENTER ORCHESTRATOR",next&&next.container&&next.container.dataset?next.container.dataset.barbaNamespace:void 0,transition),__ENTRY_DEBUG__("orchestrateEnter start"),__ENTRY_DEBUG__("namespace:",next&&next.container&&next.container.dataset?next.container.dataset.barbaNamespace:void 0);const c=next&&next.container;if(!c)return console.error("orchestrateEnter: missing next.container");window.__ENTRY_ACTIVE__=1;var a=c.dataset&&c.dataset.barbaNamespace||"",s=!!(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline"));console.log("ENTER STEP 1 container",c),"swipe"===transition?gsap.set(c,{autoAlpha:1,visibility:"visible",pointerEvents:"auto"}):gsap.set(c,{autoAlpha:0}),document.documentElement.scrollTop=0,document.body.scrollTop=0,console.log("ENTER STEP 2 scroll reset"),await WebflowAdapter.enter(next),console.log("ENTER STEP 3 WebflowAdapter.enter done",c.dataset&&c.dataset.barbaNamespace),c.dataset&&c.dataset.barbaNamespace||await new Promise(r=>requestAnimationFrame(r)),console.log("ENTER STEP 4 namespace after raf",c.dataset&&c.dataset.barbaNamespace),await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))),console.log("ENTER STEP 5 double raf done");try{console.log("ENTER STEP 6 before transitionEnterSequence",transition),"fade"===transition?transitionEnterSequence(c,{transition}):await transitionEnterSequence(c,{transition}),console.log("ENTER STEP 7 after transitionEnterSequence")}catch(e){console.error("ENTER ERROR",e);throw e}finally{__ENTRY_DEBUG__("Entry animations finished"),console.log("ENTER STEP 8 finally"),document.dispatchEvent(new CustomEvent("page:ready",{bubbles:!0})),window.__ENTRY_ACTIVE__=0,ScrollManager.unlock(),console.log("ENTER STEP 9 unlock done")}}
 			
 			barba.hooks.before(()=>{__ENTRY_DEBUG__("barba.before");document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
