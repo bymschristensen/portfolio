@@ -176,9 +176,9 @@ window.__ENTRY_DEBUG__ = function(label,data){
 		function shouldShowPreloader() {
 			try{
 				if(sessionStorage.getItem("preloaderDebug")==="1") return true;
-				return false;
+				return !sessionStorage.getItem("preloaderSeen") || isReload();
 			}catch(_){
-				return false;
+				return true;
 			}
 		}
 		function buildOnce() {
