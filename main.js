@@ -137,7 +137,6 @@ if (window.__PORTFOLIO_MAIN__) {} else {
 			barba.hooks.before(()=>{document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
 			barba.hooks.after(e=>{var ns=e&&e.next&&e.next.container&&e.next.container.dataset?e.next.container.dataset.barbaNamespace:void 0;try{document.dispatchEvent(new CustomEvent("wf:guard",{bubbles:!0,detail:{namespace:ns,source:"barba.after"}}))}catch(_){}});
 			
-			__ENTRY_DEBUG__("barba.init starting");
 			barba.init({
 				debug: window.DEBUG,
 				timeout: 8000,
@@ -148,7 +147,6 @@ if (window.__PORTFOLIO_MAIN__) {} else {
 					{name:"swipe",custom:e=>!TransitionDecider.shouldFadeFor(e),async once(e){try{window.PreloaderService&&PreloaderService.maybeRun&&await PreloaderService.maybeRun()}catch(_){}await orchestrateEnter({...e,transition:"none"})},async leave(e){var t=performance.now(),a=window.TransitionEffects&&TransitionEffects.coverIn?TransitionEffects.coverIn():null;if(a&&a.then)try{await a}catch(r){console.warn("[SWIPE] coverIn promise error",r)}else if(a&&a.eventCallback)await new Promise(r=>{var n=0,o=function(){if(n)return;n=1,r()};try{a.eventCallback("onComplete",o),setTimeout(o,1200)}catch(i){console.warn("[SWIPE] coverIn eventCallback error",i),setTimeout(o,1200)}});else await new Promise(r=>setTimeout(()=>{r()},1200));await orchestrateLeave({...e,transition:"swipe"})},async enter(e){await orchestrateEnter({...e,transition:"swipe"})}}
 				]
 			});
-			__ENTRY_DEBUG__("barba.init finished");
 		}
 		
 		return{init,getEntryConfig,EntryAnimations,transitionCloseNavigation,transitionReleasePreloading,transitionEnterSequence,transitionStability}
