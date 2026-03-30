@@ -128,14 +128,13 @@ if (window.__PORTFOLIO_MAIN__) {} else {
 			
 		// Barba init
 		function init() {
-			__ENTRY_DEBUG__("EntryOrchestrator.init()");
 			if (window.__barbaInited) return;
 			window.__barbaInited = true;
 
-			async function orchestrateLeave(e){__ENTRY_DEBUG__("orchestrateLeave");await transitionLeaveSequence(e,{transition:e&&e.transition||"none"})}
+			async function orchestrateLeave(e){await transitionLeaveSequence(e,{transition:e&&e.transition||"none"})}
 			async function orchestrateEnter({next,transition,skipEntry}){__ENTRY_DEBUG__("orchestrateEnter start"),__ENTRY_DEBUG__("namespace:",next&&next.container&&next.container.dataset?next.container.dataset.barbaNamespace:void 0);const c=next&&next.container;if(!c)return;window.__ENTRY_ACTIVE__=1;var a=c.dataset&&c.dataset.barbaNamespace||"",s=!!(c.querySelector(".cs-hero-image")||c.querySelector(".cs-headline"));"swipe"===transition?gsap.set(c,{autoAlpha:1,visibility:"visible",pointerEvents:"auto"}):gsap.set(c,{autoAlpha:0}),document.documentElement.scrollTop=0,document.body.scrollTop=0,await WebflowAdapter.enter(next),c.dataset&&c.dataset.barbaNamespace||await new Promise(r=>requestAnimationFrame(r)),await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));try{skipEntry?gsap.set(c,{autoAlpha:1,visibility:"visible",pointerEvents:"auto"}):"fade"===transition?transitionEnterSequence(c,{transition}):await transitionEnterSequence(c,{transition})}catch(e){try{window.NavigationManager&&NavigationManager.resetNavigation&&NavigationManager.resetNavigation()}catch(_){}throw e}finally{__ENTRY_DEBUG__("Entry animations finished");document.dispatchEvent(new CustomEvent("page:ready",{bubbles:!0}));window.__ENTRY_ACTIVE__=0;ScrollManager.unlock();try{window.NavigationManager&&NavigationManager.resetNavigation&&NavigationManager.resetNavigation()}catch(_){}}}
 			
-			barba.hooks.before(()=>{__ENTRY_DEBUG__("barba.before");document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
+			barba.hooks.before(()=>{document.documentElement.hasAttribute("data-preloading")||document.documentElement.setAttribute("data-preloading","true")});
 			barba.hooks.after(e=>{var ns=e&&e.next&&e.next.container&&e.next.container.dataset?e.next.container.dataset.barbaNamespace:void 0;try{document.dispatchEvent(new CustomEvent("wf:guard",{bubbles:!0,detail:{namespace:ns,source:"barba.after"}}))}catch(_){}});
 			
 			__ENTRY_DEBUG__("barba.init starting");
