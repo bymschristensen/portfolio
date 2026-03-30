@@ -277,6 +277,7 @@ window.__ENTRY_DEBUG__ = function(label,data){
 			barba.init({
 				debug: window.DEBUG,
 				timeout: 8000,
+				preventRunning: !0,
 				prevent:({el})=>{const a=el&&(el.tagName==="A"?el:el.closest&&el.closest("a"));if(!a)return!1;try{const e=new URL(a.getAttribute("href")||a.href,location.href),t=e.pathname.replace(/\/+$/,"")===location.pathname.replace(/\/+$/,"");if(t&&e.hash)return!0}catch(e){}if(a.hasAttribute("download")||"_blank"===a.target||"external"===a.getAttribute("rel"))return!0;const e=document.querySelector('[data-barba="container"]')?.dataset?.barbaNamespace||"";if("archive"!==e&&"published"!==e){const e=a.closest&&a.closest("[data-barba-prevent]");if(e&&"true"===e.getAttribute("data-barba-prevent"))return!0}return!1},
 				transitions:[
 					{name:"fade",custom:e=>TransitionDecider.shouldFadeFor(e),async once(e){DebugCore.trace("transition once");try{window.PreloaderService&&PreloaderService.maybeRun&&await PreloaderService.maybeRun()}catch(_){}await orchestrateEnter({...e,transition:"fade"})},async leave(e){DebugCore.trace("transition leave"),await orchestrateLeave({...e,transition:"fade"}),await gsap.to(e.current.container,{autoAlpha:0,duration:.45,ease:"power1.out"})},async enter(e){DebugCore.trace("transition enter"),await orchestrateEnter({...e,transition:"fade"})}},
